@@ -18,8 +18,8 @@ output_dir=output_dir
 validation_file=validation_file_name
 
 deepspeed_config_file=ds_zero2_no_offload.json
-
-torchrun --nnodes 1 --nproc_per_node 1 run_clm_sft_with_peft.py \
+nproc_per_node=1
+torchrun --nnodes 1 --nproc_per_node ${nproc_per_node} run_clm_sft_with_peft.py \
     --deepspeed ${deepspeed_config_file} \
     --model_name_or_path ${pretrained_model} \
     --tokenizer_name_or_path ${chinese_tokenizer_path} \
