@@ -23,7 +23,7 @@ inference:
 train:
 	scripts/training/run_pt.sh
 
-chat：
+chat:
 	scripts/training/run_sft.sh
 
 
