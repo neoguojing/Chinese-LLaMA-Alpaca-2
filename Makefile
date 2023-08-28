@@ -24,7 +24,7 @@ train:
 	scripts/training/run_pt.sh
 
 chat：
-	scripts/training/run_clm_sft_with_peft.py
+	scripts/training/run_sft.sh
 
 
 
