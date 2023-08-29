@@ -1,21 +1,25 @@
 # 定义目标文件
-HFModelDIR = my_project
-LORAModelDIR = /
-
-
+PWD = $(shell pwd)
+HFModelDIR = $(PWD)/model/llama/llama-2-7b
+LORAModelDIR = $(PWD)
 
 LORA := 0
+USE_CPU := "--only_cpu"
 # 推理
 inference:	
+	echo $(HFModelDIR)
 	ifeq ($(LORA),0)
+		echo $(HFModelDIR)
 		python scripts/inference/inference_hf.py \
 			--base_model $(HFModelDIR) \
+			$(USE_CPU) \
 			--with_prompt \
 			--interactive
 	else
 		python scripts/inference/inference_hf.py \
 			--base_model $(HFModelDIR) \
 			--lora_model $(LORAModelDIR) \
+			$(USE_CPU) \
 			--with_prompt \
 			--interactive
 
@@ -29,4 +33,4 @@ chat:
 
 
 # 默认规则
-.PHONY: inference train
+.PHONY: inference train chat
