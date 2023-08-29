@@ -1,6 +1,6 @@
 # 定义目标文件
 PWD = $(shell pwd)
-HFModelDIR = $(PWD)/model/llama/llama-2-7b
+HFModelDIR = $(PWD)/model/llama/llama-2-7b/hf
 LORAModelDIR = $(PWD)
 
 LORA := 0
