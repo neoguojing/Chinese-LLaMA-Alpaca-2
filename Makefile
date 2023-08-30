@@ -4,7 +4,7 @@ HFModelDIR = $(PWD)/model/llama/llama-2-7b/hf
 LORAModelDIR = $(PWD)
 
 LORA = 0
-USE_CPU := "--only_cpu"
+USE_CPU = --only_cpu
 # 推理
 inference:	
 	echo $(HFModelDIR)
