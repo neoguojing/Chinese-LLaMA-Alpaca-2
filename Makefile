@@ -2,33 +2,44 @@
 PWD = $(shell pwd)
 HFModelDIR = $(PWD)/model/llama/llama-2-7b/hf
 ChatModelDIR = $(PWD)model/chinese/chinese-alpaca-2-7b-hf
+
+ModelPath = $(ChatModelDIR)
+
 LORAModelDIR = $(PWD)
 
-LORA = 0
-USE_CPU = --only_cpu
+lora = 0
+cpu = --only_cpu
+
+chat = 1
+ifeq ($(chat),0)
+	ModelPath = $(HFModelDIR)
+
 # 推理
-inference:	
-	echo $(HFModelDIR)
-	ifeq ($(LORA),0)
+run:	
+	echo $(ModelPath)
+	ifeq ($(lora),0)
 		python scripts/inference/inference_hf.py \
-			--base_model $(HFModelDIR) \
-			$(USE_CPU) \
+			--base_model $(ModelPath) \
+			$(cpu) \
 			--with_prompt \
 			--interactive
 	else
 		python scripts/inference/inference_hf.py \
-			--base_model $(HFModelDIR) \
+			--base_model $(ModelPath) \
 			--lora_model $(LORAModelDIR) \
-			$(USE_CPU) \
+			$(cpu) \
 			--with_prompt \
 			--interactive
+	endif
+
 
 # # 训练
 train:
-	scripts/training/run_pt.sh
-
-chat:
-	scripts/training/run_sft.sh
+	ifeq ($(chat),0)
+		scripts/training/run_pt.sh
+	else 
+		scripts/training/run_sft.sh
+	endif
 
 init:
 	pip install -r requirements.txt
