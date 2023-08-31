@@ -11,13 +11,13 @@ lora = 0
 cpu = --only_cpu
 
 chat = 1
-ifeq ($(chat),0)
+ifeq ($(chat), 0)
 	ModelPath = $(HFModelDIR)
 endif
 # 推理
 run:	
 	echo $(ModelPath)
-	ifeq ($(lora),0)
+	ifeq ($(lora), 0)
 		python scripts/inference/inference_hf.py \
 			--base_model $(ModelPath) \
 			$(cpu) \
