@@ -1,6 +1,7 @@
 # 定义目标文件
 PWD = $(shell pwd)
 HFModelDIR = $(PWD)/model/llama/llama-2-7b/hf
+ChatModelDIR = $(PWD)model/chinese/chinese-alpaca-2-7b-hf
 LORAModelDIR = $(PWD)
 
 LORA = 0
@@ -8,8 +9,7 @@ USE_CPU = --only_cpu
 # 推理
 inference:	
 	echo $(HFModelDIR)
-	
-		echo $(HFModelDIR)
+	ifeq ($(LORA),0)
 		python scripts/inference/inference_hf.py \
 			--base_model $(HFModelDIR) \
 			$(USE_CPU) \
