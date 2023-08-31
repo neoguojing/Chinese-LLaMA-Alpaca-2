@@ -9,15 +9,16 @@ LORAModelDIR = $(PWD)
 
 lora = 0
 cpu = --only_cpu
-
 chat = 1
+
 ifeq ($(chat), 0)
 	ModelPath = $(HFModelDIR)
 endif
+
 # 推理
 run:	
 	echo $(ModelPath)
-	ifeq ($(lora), 0)
+	ifeq ($(lora), 1)
 		python scripts/inference/inference_hf.py \
 			--base_model $(ModelPath) \
 			$(cpu) \
@@ -35,7 +36,7 @@ run:
 
 # # 训练
 train:
-	ifeq ($(chat),0)
+	ifeq ($(chat), 1)
 		scripts/training/run_pt.sh
 	else 
 		scripts/training/run_sft.sh
@@ -45,4 +46,4 @@ init:
 	pip install -r requirements.txt
 
 # 默认规则
-.PHONY: inference train chat
+.PHONY: run train init
