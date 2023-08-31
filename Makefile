@@ -13,7 +13,7 @@ cpu = --only_cpu
 chat = 1
 ifeq ($(chat),0)
 	ModelPath = $(HFModelDIR)
-
+endif
 # 推理
 run:	
 	echo $(ModelPath)
