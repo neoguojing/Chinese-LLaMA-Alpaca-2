@@ -7,6 +7,8 @@ CACEH_DATA_DIR := $(PWD)/cache
 
 HFModelDIR := $(MODEL_DIR)/llama/llama-2-7b/hf
 HFTOkenModelDIR := $(MODEL_DIR)/llama/llama-2-7b/tokenizer.model
+ZHModelDIR := $(MODEL_DIR)/chinese/chinese-llama-2-7b-hf
+ZHTOkenModelDIR := $(MODEL_DIR)/chinese/chinese-llama-2-7b-hf/tokenizer.model
 ChatModelDIR := $(MODEL_DIR)/chinese/chinese-alpaca-2-7b-hf
 LORAModelDIR := $(MODEL_DIR)/lora/lora-2-7b/hf
 ModelOutputDIR := $(MODEL_DIR)
@@ -41,7 +43,7 @@ lora:
 
  # Training
 train:
-	cd scripts/training && ./run_pt.sh $(HFModelDIR) $(HFTOkenModelDIR) $(GENE_DATA_DIR) $(CACEH_DATA_DIR) $(ModelOutputDIR)
+	cd scripts/training && ./run_pt.sh $(ZHModelDIR) $(ZHTOkenModelDIR) $(GENE_DATA_DIR) $(CACEH_DATA_DIR) $(ModelOutputDIR)
 
 sft:
 	scripts/training/run_sft.sh
