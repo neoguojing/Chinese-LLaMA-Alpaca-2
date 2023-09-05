@@ -41,8 +41,7 @@ lora:
 
  # Training
 train:
-	cd scripts/training
-	./run_pt.sh $(HFModelDIR) $(HFTOkenModelDIR) $(GENE_DATA_DIR) $(CACEH_DATA_DIR) $(ModelOutputDIR)
+	cd scripts/training && ./run_pt.sh $(HFModelDIR) $(HFTOkenModelDIR) $(GENE_DATA_DIR) $(CACEH_DATA_DIR) $(ModelOutputDIR)
 
 sft:
 	scripts/training/run_sft.sh
