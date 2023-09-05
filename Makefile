@@ -1,16 +1,19 @@
  # Define target files
 PWD = $(shell pwd)
 MODEL_DIR := $(PWD)/model
+GENE_DATA_DIR := $(PWD)/dataset/generate
+CHAT_DATA_DIR := $(PWD)/dataset/chat
+CACEH_DATA_DIR := $(PWD)/cache
 
 HFModelDIR := $(MODEL_DIR)/llama/llama-2-7b/hf
+HFTOkenModelDIR := $(MODEL_DIR)/llama/llama-2-7b/tokenizer.model
 ChatModelDIR := $(MODEL_DIR)/chinese/chinese-alpaca-2-7b-hf
 LORAModelDIR := $(MODEL_DIR)/lora/lora-2-7b/hf
+ModelOutputDIR := $(MODEL_DIR)
 
 ModelPath := $(ChatModelDIR)
 
-lora := 0
 cpu := --only_cpu
-chat := 1
  
 
 ifeq ($(chat), 0)
@@ -38,7 +41,7 @@ lora:
 
  # Training
 train:
-	scripts/training/run_pt.sh
+	scripts/training/run_pt.sh $(HFModelDIR) $(HFTOkenModelDIR) $(GENE_DATA_DIR) $(CACEH_DATA_DIR) $(ModelOutputDIR)
 
 sft:
 	scripts/training/run_sft.sh

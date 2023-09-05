@@ -7,16 +7,16 @@ lora_trainable="q_proj,v_proj,k_proj,o_proj,gate_proj,down_proj,up_proj"
 modules_to_save="embed_tokens,lm_head"
 lora_dropout=0.05
 
-pretrained_model=path/to/hf/llama-2/dir
-chinese_tokenizer_path=path/to/chinese-llama-2/tokenizer/dir
-dataset_dir=path/to/pt/data/dir
-data_cache=temp_data_cache_dir
+pretrained_model=$1
+chinese_tokenizer_path=$2
+dataset_dir=$3
+data_cache=$4
 per_device_train_batch_size=1
 gradient_accumulation_steps=8
 block_size=512
-output_dir=output_dir
+output_dir=$5
 
-nproc_per_node=1
+nproc_per_node=4
 
 deepspeed_config_file=ds_zero2_no_offload.json
 
