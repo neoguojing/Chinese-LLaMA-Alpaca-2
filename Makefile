@@ -80,13 +80,16 @@ quantize:
 	cd llama.cpp && python convert.py $(ChatModelDIR)
 	cd llama.cpp && ./quantize $(ChatModelDIR)/ggml-model-f16.gguf $(ChatModelDIR)/ggml-model-q4_0.gguf q4_0
 
-deploy:
+test:
 	cd llama.cpp && ./main -m "$(ChatModelDIR)/ggml-model-q4_0.gguf" \
 	--color -i -c 4096 -t 8 --temp 0.5 --top_k 40 --top_p 0.9 --repeat_penalty 1.1 \
 	--in-prefix-bos --in-prefix ' [INST] ' --in-suffix ' [/INST]'
+
+deploy:
+
 
 init: llama.cpp
 	pip install -r requirements.txt
  
  # Default rules
-.PHONY: run train init prepare deploy quantize
+.PHONY: run train init prepare deploy quantize test
