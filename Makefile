@@ -77,11 +77,22 @@ quantize:
 	cd llama.cpp && python convert.py $(ChatModelDIR)
 	cd llama.cpp && ./quantize $(ChatModelDIR)/ggml-model-f16.gguf $(ChatModelDIR)/ggml-model-q4_0.gguf q4_0
 
+
+SYSTEM_PROMPT='You are a helpful assistant. 你是一个乐于助人的助手。'
+FIRST_INSTRUCTION="hello"
+
 deploy:
-	cd scripts/llama-cpp && ./chat.sh $(ChatModelDIR)/ggml-model-q4_0.gguf "hello"
+	cd llama.cpp && ./main -m "$(ChatModelDIR)/ggml-model-q4_0.gguf" \
+	--color -i -c 4096 -t 8 --temp 0.5 --top_k 40 --top_p 0.9 --repeat_penalty 1.1 \
+	--in-prefix-bos --in-prefix ' [INST] ' --in-suffix ' [/INST]' -p \
+	"[INST] <<SYS>>
+	$(SYSTEM_PROMPT)
+	<</SYS>>
+
+	$(FIRST_INSTRUCTION) [/INST]"
 
 init: llama.cpp
 	pip install -r requirements.txt
  
  # Default rules
-.PHONY: run train init prepare deploy
+.PHONY: run train init prepare deploy quantize
