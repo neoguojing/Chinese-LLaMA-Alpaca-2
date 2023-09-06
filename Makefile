@@ -84,12 +84,7 @@ FIRST_INSTRUCTION="hello"
 deploy:
 	cd llama.cpp && ./main -m "$(ChatModelDIR)/ggml-model-q4_0.gguf" \
 	--color -i -c 4096 -t 8 --temp 0.5 --top_k 40 --top_p 0.9 --repeat_penalty 1.1 \
-	--in-prefix-bos --in-prefix ' [INST] ' --in-suffix ' [/INST]' -p \
-	"[INST] <<SYS>>
-	$(SYSTEM_PROMPT)
-	<</SYS>>
-
-	$(FIRST_INSTRUCTION) [/INST]"
+	--in-prefix-bos --in-prefix ' [INST] ' --in-suffix ' [/INST]'
 
 init: llama.cpp
 	pip install -r requirements.txt
