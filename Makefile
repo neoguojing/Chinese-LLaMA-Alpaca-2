@@ -73,6 +73,8 @@ llama.cpp:
 	git clone https://github.com/ggerganov/llama.cpp
 	cd llama.cpp && make $(BUILD_FLAGS)
 
+quantize:
+	cd llama.cpp && python convert.py $(ChatModelDIR)
 deploy:
 
 
