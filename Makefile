@@ -3,14 +3,24 @@ PWD = $(shell pwd)
 MODEL_DIR := $(PWD)/model
 GENE_DATA_DIR := $(PWD)/dataset/generate
 CHAT_DATA_DIR := $(PWD)/dataset/chat
+CHAT_VALIDATE_FILE := $(PWD)/dataset/chat/validate
 CACEH_DATA_DIR := $(PWD)/cache
 
 HFModelDIR := $(MODEL_DIR)/llama/llama-2-7b/hf
 HFTOkenModelDIR := $(MODEL_DIR)/llama/llama-2-7b/tokenizer.model
+
 ZHModelDIR := $(MODEL_DIR)/chinese/chinese-llama-2-7b-hf
 ZHTOkenModelDIR := $(MODEL_DIR)/chinese/chinese-llama-2-7b-hf/tokenizer.model
+
 ChatModelDIR := $(MODEL_DIR)/chinese/chinese-alpaca-2-7b-hf
+
 LORAModelDIR := $(MODEL_DIR)/lora/lora-2-7b/hf
+
+ChatPreTrainModelDIR := $(MODEL_DIR)/chinese/chinese-llama-2-7b-hf
+ChatPreTrainTokenDIR := $(MODEL_DIR)/chinese/chinese-llama-2-7b-hf
+
+
+
 ModelOutputDIR := $(MODEL_DIR)
 
 ModelPath := $(ChatModelDIR)
@@ -43,10 +53,14 @@ lora:
 
  # Training
 train:
+	rm -rf cache/*
 	cd scripts/training && ./run_pt.sh $(ZHModelDIR) $(ZHTOkenModelDIR) $(GENE_DATA_DIR) $(CACEH_DATA_DIR) $(ModelOutputDIR)
 
 sft:
-	scripts/training/run_sft.sh
+	rm -rf cache/*
+	cd scripts/training && run_sft.sh $(ChatPreTrainModelDIR) $(ChatPreTrainTokenDIR) $(CHAT_DATA_DIR) $(ModelOutputDIR) $(CHAT_VALIDATE_FILE)
+
+prepare:
 
  
 init:
