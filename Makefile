@@ -76,9 +76,9 @@ llama.cpp:
 quantize:
 	cd llama.cpp && python convert.py $(ChatModelDIR)
 	cd llama.cpp && ./quantize $(ChatModelDIR)/ggml-model-f16.gguf $(ChatModelDIR)/ggml-model-q4_0.gguf q4_0
-	
-deploy:
 
+deploy:
+	cd scripts/llama-cpp && ./chat.sh $(ChatModelDIR)/ggml-model-q4_0.gguf "hello"
 
 init: llama.cpp
 	pip install -r requirements.txt
