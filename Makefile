@@ -26,7 +26,16 @@ ModelOutputDIR := $(MODEL_DIR)
 ModelPath := $(ChatModelDIR)
 
 cpu := --only_cpu
- 
+
+export cuda?=0
+
+BUILD_FLAGS:=LLAMA_OPENBLAS=1
+
+ifeq ($(cuda), 1)
+	cpu :=
+	BUILD_FLAGS:=LLAMA_CUBLAS=1
+endif
+
 
 ifeq ($(chat), 0)
 	ModelPath :=$(HFModelDIR) 
@@ -60,11 +69,15 @@ sft:
 	rm -rf cache/*
 	cd scripts/training && run_sft.sh $(ChatPreTrainModelDIR) $(ChatPreTrainTokenDIR) $(CHAT_DATA_DIR) $(ModelOutputDIR) $(CHAT_VALIDATE_FILE)
 
-prepare:
+llama.cpp:
+	git clone https://github.com/ggerganov/llama.cpp
+	cd llama.cpp && make $(BUILD_FLAGS)
 
- 
-init:
+deploy:
+
+
+init: llama.cpp
 	pip install -r requirements.txt
  
  # Default rules
-.PHONY: run train init
+.PHONY: run train init prepare
