@@ -25,6 +25,9 @@ ModelOutputDIR := $(MODEL_DIR)
 
 ModelPath := $(ChatModelDIR)
 
+SYSTEM_PROMPT='You are a helpful assistant. 你是一个乐于助人的助手。'
+FIRST_INSTRUCTION="hello"
+
 cpu := --only_cpu
 
 export cuda?=0
@@ -76,10 +79,6 @@ llama.cpp:
 quantize:
 	cd llama.cpp && python convert.py $(ChatModelDIR)
 	cd llama.cpp && ./quantize $(ChatModelDIR)/ggml-model-f16.gguf $(ChatModelDIR)/ggml-model-q4_0.gguf q4_0
-
-
-SYSTEM_PROMPT='You are a helpful assistant. 你是一个乐于助人的助手。'
-FIRST_INSTRUCTION="hello"
 
 deploy:
 	cd llama.cpp && ./main -m "$(ChatModelDIR)/ggml-model-q4_0.gguf" \
