@@ -85,6 +85,7 @@ test:
 	--in-prefix-bos --in-prefix ' [INST] ' --in-suffix ' [/INST]'
 
 deploy:
+	cd ../text-generation-webui && python server.py --model-dir $(ChatModelDIR) --loader llamacpp --model $(ChatModelDIR)/ggml-model-q4_0.gguf
 
 
 init:
