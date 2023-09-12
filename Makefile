@@ -73,7 +73,6 @@ sft:
 	cd scripts/training && run_sft.sh $(ChatPreTrainModelDIR) $(ChatPreTrainTokenDIR) $(CHAT_DATA_DIR) $(ModelOutputDIR) $(CHAT_VALIDATE_FILE)
 
 llama.cpp:
-	git clone https://github.com/ggerganov/llama.cpp
 	cd llama.cpp && make $(BUILD_FLAGS)
 
 quantize:
@@ -86,10 +85,12 @@ test:
 	--in-prefix-bos --in-prefix ' [INST] ' --in-suffix ' [/INST]'
 
 deploy:
+	cd ../text-generation-webui && python server.py --model-dir $(ChatModelDIR) --loader llamacpp --model $(ChatModelDIR)/ggml-model-q4_0.gguf
 
 
-init: llama.cpp
+init:
 	pip install -r requirements.txt
+	git clone https://github.com/ggerganov/llama.cpp
  
  # Default rules
 .PHONY: run train init prepare deploy quantize test
