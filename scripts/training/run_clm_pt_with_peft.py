@@ -425,6 +425,7 @@ def main():
                 " before being passed to the model."
             )
         return output
+    
     if data_args.block_size is None:
         block_size = tokenizer.model_max_length
         if block_size > 1024:
@@ -458,6 +459,7 @@ def main():
         }
         result["labels"] = result["input_ids"].copy()
         return result
+    
     with training_args.main_process_first(desc="dataset map tokenization and grouping"):
         lm_datasets = []
         path = Path(data_args.dataset_dir)
@@ -513,6 +515,7 @@ def main():
         logger.info(f"Num train_samples  {len(train_dataset)}")
         logger.info("Training example:")
         logger.info(tokenizer.decode(train_dataset[0]['input_ids']))
+
     if training_args.do_eval:
         eval_dataset = lm_datasets["test"]
         if data_args.max_eval_samples is not None:
@@ -521,6 +524,7 @@ def main():
         logger.info(f"Num eval_samples  {len(eval_dataset)}")
         logger.info("Evaluation example:")
         logger.info(tokenizer.decode(eval_dataset[0]['input_ids']))
+        
     torch_dtype = (
         model_args.torch_dtype
         if model_args.torch_dtype in ["auto", None]

@@ -16,7 +16,7 @@ gradient_accumulation_steps=8
 block_size=512
 output_dir=$5
 
-nproc_per_node=4
+nproc_per_node=1
 
 deepspeed_config_file=ds_zero2_no_offload.json
 
