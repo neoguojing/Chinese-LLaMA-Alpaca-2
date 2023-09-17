@@ -16,7 +16,7 @@ gradient_accumulation_steps=8
 max_seq_length=512
 output_dir=$4
 validation_file=$5
-
+seed=101
 deepspeed_config_file=ds_zero2_no_offload.json
 nproc_per_node=1
 torchrun --nnodes 1 --nproc_per_node ${nproc_per_node} run_clm_sft_with_peft.py \
@@ -28,7 +28,7 @@ torchrun --nnodes 1 --nproc_per_node ${nproc_per_node} run_clm_sft_with_peft.py 
     --per_device_eval_batch_size ${per_device_eval_batch_size} \
     --do_train \
     --do_eval \
-    --seed $RANDOM \
+    --seed ${seed} \
     --fp16 \
     --num_train_epochs 1 \
     --lr_scheduler_type cosine \

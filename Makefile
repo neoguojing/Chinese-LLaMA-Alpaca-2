@@ -46,7 +46,6 @@ endif
  
  # Inference
 run:
-	conda activate train
 	@echo "Using model path: $(ModelPath)"
 	python scripts/inference/inference_hf.py \
 		--base_model $(ModelPath) \
@@ -56,7 +55,6 @@ run:
 
 
 lora:
-	conda activate train
  	@echo "Using model path: $(ModelPath)"
 	python scripts/inference/inference_hf.py \
 				--base_model $(ModelPath) \
@@ -67,12 +65,10 @@ lora:
 
  # Training
 train:
-	# conda activate train
 	rm -rf cache/*
-	cd scripts/training && ./run_pt.sh $(ZHModelDIR) $(ZHTOkenModelDIR) $(GENE_DATA_DIR) $(CACEH_DATA_DIR) $(ModelOutputDIR)
+	cd scripts/training && ./run_pt.sh $(ZHModelDIR) $(ZHTOkenModelDIR) $(GENE_DATA_DIR) $(CACEH_DATA_DIR) $(ModelOutputDIR) 
 
 sft:
-	conda activate train
 	rm -rf cache/*
 	cd scripts/training && run_sft.sh $(ChatPreTrainModelDIR) $(ChatPreTrainTokenDIR) $(CHAT_DATA_DIR) $(ModelOutputDIR) $(CHAT_VALIDATE_FILE)
 

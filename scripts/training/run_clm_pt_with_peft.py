@@ -32,6 +32,10 @@ from typing import Optional, List, Dict, Any, Mapping
 from pathlib import Path
 import datasets
 import torch
+torch.cuda.empty_cache()
+import gc
+gc.collect()
+
 from datasets import load_dataset, concatenate_datasets
 
 import transformers
@@ -58,6 +62,7 @@ from sklearn.metrics import accuracy_score
 from peft import LoraConfig, TaskType, get_peft_model, PeftModel, get_peft_model_state_dict
 from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR
 
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:32"
 
 class SavePeftModelCallback(transformers.TrainerCallback):
     def save_model(self, args, state, kwargs):
