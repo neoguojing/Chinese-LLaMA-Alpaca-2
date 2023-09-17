@@ -30,7 +30,7 @@ FIRST_INSTRUCTION="hello"
 
 cpu := --only_cpu
 
-export cuda?=0
+export cuda?=1
 
 BUILD_FLAGS:=LLAMA_OPENBLAS=1
 
@@ -90,7 +90,7 @@ deploy:
 
 init:
 	pip install -r requirements.txt
-	git clone https://github.com/ggerganov/llama.cpp
+	# git clone https://github.com/ggerganov/llama.cpp
  
  # Default rules
 .PHONY: run train init prepare deploy quantize test

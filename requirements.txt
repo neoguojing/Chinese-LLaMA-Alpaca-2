@@ -5,3 +5,4 @@ sentencepiece==0.1.97
 bitsandbytes==0.41.0
 datasets
 deepspeed
+scipy
