@@ -59,10 +59,11 @@ from transformers.utils import send_example_telemetry
 from transformers.utils.versions import require_version
 
 from sklearn.metrics import accuracy_score
-from peft import LoraConfig, TaskType, get_peft_model, PeftModel, get_peft_model_state_dict
+from peft import LoraConfig, TaskType, get_peft_model, PeftModel, get_peft_model_state_dict,prepare_model_for_int8_training
 from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR
 
-os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:32"
+# os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:32"
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "caching_allocator"
 
 class SavePeftModelCallback(transformers.TrainerCallback):
     def save_model(self, args, state, kwargs):
@@ -318,6 +319,7 @@ class MyTrainingArguments(TrainingArguments):
     debug_mode : Optional[bool] = field(default=False)
     peft_path : Optional[str] = field(default=None)
     flash_attn : Optional[bool] = field(default=False)
+    quantization: Optional[bool] = field(default=False)
 
 
 logger = logging.getLogger(__name__)
@@ -336,6 +338,7 @@ def main():
         from flash_attn_patch import replace_llama_attn_with_flash_attn
         replace_llama_attn_with_flash_attn()
 
+    print("training_args:",training_args)
     # Sending telemetry. Tracking the example usage helps us better allocate resources to maintain them. The
     # information sent is the one passed as arguments along with your Python/PyTorch versions.
     send_example_telemetry("run_clm", model_args, data_args)
@@ -379,7 +382,8 @@ def main():
             )
 
     # Set seed before initializing model.
-    set_seed(training_args.seed)
+    seed = np.random.randint(1, 65535)  
+    set_seed(seed)
 
     config_kwargs = {
         "cache_dir": model_args.cache_dir,
@@ -545,8 +549,10 @@ def main():
         use_auth_token=True if model_args.use_auth_token else None,
         torch_dtype=torch_dtype,
         low_cpu_mem_usage=True,
-        device_map=device_map
+        load_in_8bit=True if training_args.quantization else None,
+        device_map="auto" if training_args.quantization else device_map,
     )
+    # 为了节约时间空间换时间 gradient_checkpointing和use_cache不能同时设置为True
     model.config.use_cache = False
 
     model_vocab_size = model.get_output_embeddings().weight.size(0)
@@ -587,6 +593,8 @@ def main():
         lambda self, *_, **__: get_peft_model_state_dict(self, old_state_dict())
     ).__get__(model, type(model))
 
+    if training_args.quantization:
+        model = prepare_model_for_int8_training(model)
     # Initialize our Trainer
     trainer = Trainer(
         model=model,

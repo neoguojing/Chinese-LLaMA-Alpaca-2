@@ -13,13 +13,12 @@ dataset_dir=$3
 data_cache=$4
 per_device_train_batch_size=1
 gradient_accumulation_steps=4
-block_size=64
+block_size=4
 output_dir=$5
 
 nproc_per_node=1
 
 deepspeed_config_file=ds_zero2_no_offload.json
-seed=100
 
 torchrun --nnodes 1 --nproc_per_node ${nproc_per_node} run_clm_pt_with_peft.py \
     --deepspeed ${deepspeed_config_file} \
@@ -30,8 +29,7 @@ torchrun --nnodes 1 --nproc_per_node ${nproc_per_node} run_clm_pt_with_peft.py \
     --validation_split_percentage 0.001 \
     --per_device_train_batch_size ${per_device_train_batch_size} \
     --do_train \
-    --seed ${seed}\
-    --fp16 \
+    --quantization True \
     --num_train_epochs 1 \
     --lr_scheduler_type cosine \
     --learning_rate ${lr} \
@@ -43,7 +41,7 @@ torchrun --nnodes 1 --nproc_per_node ${nproc_per_node} run_clm_pt_with_peft.py \
     --save_total_limit 3 \
     --save_steps 200 \
     --gradient_accumulation_steps ${gradient_accumulation_steps} \
-    --gradient_checkpointing
+    --gradient_checkpointing True \
     --preprocessing_num_workers 8 \
     --block_size ${block_size} \
     --output_dir ${output_dir} \
@@ -54,5 +52,8 @@ torchrun --nnodes 1 --nproc_per_node ${nproc_per_node} run_clm_pt_with_peft.py \
     --lora_alpha ${lora_alpha} \
     --trainable ${lora_trainable} \
     --lora_dropout ${lora_dropout} \
-    # --modules_to_save ${modules_to_save} \
+    --flash_attn True \
     --torch_dtype float16 
+    # --fp16 \
+    # --modules_to_save ${modules_to_save} \
+    # --torch_dtype auto

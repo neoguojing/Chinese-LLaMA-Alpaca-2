@@ -8,3 +8,5 @@ deepspeed
 scipy
 scikit-learn
 accelerate
+einops
+flash_attn
