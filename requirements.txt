@@ -7,3 +7,4 @@ datasets
 deepspeed
 scipy
 scikit-learn
+accelerate
