@@ -12,7 +12,7 @@ chinese_tokenizer_path=$2
 dataset_dir=$3
 data_cache=$4
 per_device_train_batch_size=1
-gradient_accumulation_steps=8
+gradient_accumulation_steps=4
 block_size=64
 output_dir=$5
 
@@ -43,6 +43,7 @@ torchrun --nnodes 1 --nproc_per_node ${nproc_per_node} run_clm_pt_with_peft.py \
     --save_total_limit 3 \
     --save_steps 200 \
     --gradient_accumulation_steps ${gradient_accumulation_steps} \
+    --gradient_checkpointing
     --preprocessing_num_workers 8 \
     --block_size ${block_size} \
     --output_dir ${output_dir} \
