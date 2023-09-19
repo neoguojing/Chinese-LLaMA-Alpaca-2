@@ -421,6 +421,7 @@ def main():
             "You are instantiating a new tokenizer from scratch. This is not supported by this script."
             "You can do it from another script, save it, and load it from here, using --tokenizer_name."
         )
+    # 它的作用是向分词器中添加特定的结束标记（End-of-Sequence，EOS）。
     tokenizer.add_eos_token = True
 
     # Preprocessing the datasets.
