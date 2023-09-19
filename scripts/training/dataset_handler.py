@@ -8,10 +8,97 @@ from itertools import chain
 from pathlib import Path
 import os
 from datasets import load_dataset, concatenate_datasets
-from tokenizer import create_tokenizer
+import sys
+from transformers import (
+    CONFIG_MAPPING,
+    MODEL_FOR_CAUSAL_LM_MAPPING,
+    AutoConfig,
+    AutoModelForCausalLM,
+    LlamaForCausalLM,
+    LlamaTokenizer,
+    AutoTokenizer,
+    HfArgumentParser,
+    Trainer,
+    TrainingArguments,
+    is_torch_tpu_available,
+    set_seed,
+)
 import logging
 logger = logging.getLogger(__name__)
 block_size = 512
+
+
+
+@dataclass
+class TokenizerArguments:
+    """
+    Arguments pertaining to which model/config/tokenizer we are going to fine-tune, or train from scratch.
+    """
+    tokenizer_name_or_path: Optional[str] = field(
+        default=None,
+        metadata={
+            "help": (
+                "The tokenizer for weights initialization.Don't set if you want to train a model from scratch."
+            )
+        },
+    )
+    tokenizer_name: Optional[str] = field(
+        default=None, metadata={"help": "Pretrained tokenizer name or path if not the same as model_name"}
+    )
+    cache_dir: Optional[str] = field(
+        default=None,
+        metadata={"help": "Where do you want to store the pretrained models downloaded from huggingface.co"},
+    )
+    use_fast_tokenizer: bool = field(
+        default=True,
+        metadata={"help": "Whether to use one of the fast tokenizer (backed by the tokenizers library) or not."},
+    )
+    model_revision: str = field(
+        default="main",
+        metadata={"help": "The specific model version to use (can be a branch name, tag name or commit id)."},
+    )
+    use_auth_token: bool = field(
+        default=False,
+        metadata={
+            "help": (
+                "Will use the token generated when running `huggingface-cli login` (necessary to use this script "
+                "with private models)."
+            )
+        },
+    )
+
+def singleton(cls):
+    instances = {}
+
+    def wrapper(*args, **kwargs):
+        if cls not in instances:
+            instances[cls] = cls(*args, **kwargs)
+        return instances[cls]
+
+    return wrapper
+
+@singleton
+class TokenizerSingleton:
+    def __init__(self, token_args):
+        tokenizer_kwargs = {
+            "cache_dir": token_args.cache_dir,
+            "use_fast": token_args.use_fast_tokenizer,
+            "revision": token_args.model_revision,
+            "use_auth_token": True if token_args.use_auth_token else None,
+        }
+        if token_args.tokenizer_name:
+            self.tokenizer = AutoTokenizer.from_pretrained(token_args.tokenizer_name, **tokenizer_kwargs)
+        elif token_args.tokenizer_name_or_path:
+            self.tokenizer = LlamaTokenizer.from_pretrained(token_args.tokenizer_name_or_path, **tokenizer_kwargs)
+        else:
+            raise ValueError(
+                "You are instantiating a new tokenizer from scratch. This is not supported by this script."
+                "You can do it from another script, save it, and load it from here, using --tokenizer_name."
+            )
+        self.tokenizer.add_eos_token = True
+
+def create_tokenizer(token_args):
+    return TokenizerSingleton(token_args).tokenizer
 
 @dataclass
 class DataTrainingArguments:
@@ -84,31 +171,57 @@ class DataTrainingArguments:
 tok_logger = transformers.utils.logging.get_logger("transformers.tokenization_utils_base")
 
 # 使用分词器对输入的文本进行分词
+count = 0
 def tokenize_function(examples):
+    # examples = {'text': []}
+    # 默认加载1000行,text对应的数组按照行加载
+    global count
+    if count == 0:
+        print("tokenize_function:examples----",len(examples["text"][101]))
     with CaptureLogger(tok_logger) as cl:
+        # output = { "input_ids": [],attention_mask:[]}
         output = tokenizer(examples["text"])
+        if count == 0:
+            print("tokenize_function---tokenizer",len(output["input_ids"][101]),len(output["attention_mask"][101]))
     # clm input could be much much longer than block_size
     if "Token indices sequence length is longer than the" in cl.out:
         tok_logger.warning(
             "^^^^^^^^^^^^^^^^ Please ignore the warning above - this long input will be chunked into smaller bits"
             " before being passed to the model."
         )
+    
+    count += 1
+    # print("tokenize_function:count",count)
     return output
-
+gcount = 0
+# 将token之后的数据,按blocksize组织
 def group_texts(examples):
+    global gcount
     # Concatenate all texts.
+    if gcount == 0:
+        print("group_texts:keys:",len(examples["input_ids"][101]),len(examples["attention_mask"][101]))
+        print("group_texts:keys:",len(examples.keys()),type(examples.keys()))
+        for k in examples.keys():
+            print("iner examples.keys",k)
     concatenated_examples = {k: list(chain(*examples[k])) for k in examples.keys()}
     total_length = len(concatenated_examples[list(examples.keys())[0]])
     # We drop the small remainder, we could add padding if the model supported it instead of this drop, you can
     # customize this part to your needs.
+    
     if total_length >= block_size:
         total_length = (total_length // block_size) * block_size
     # Split by chunks of max_len.
+    # result = {"input_ids":[512*99],"attention_mask":[512*99]}
     result = {
         k: [t[i : i + block_size] for i in range(0, total_length, block_size)]
         for k, t in concatenated_examples.items()
     }
     result["labels"] = result["input_ids"].copy()
+    if gcount == 0:
+        print("concatenated_examples:keys:",len(concatenated_examples["input_ids"]),len(concatenated_examples["attention_mask"]),type(concatenated_examples))
+        print("total_length:keys:",total_length)
+        print("result",len(result["input_ids"]),len(result["input_ids"][0]),)
+    gcount += 1
     return result
 
 def determine_block_size(data_args, tokenizer):
@@ -139,59 +252,83 @@ def determine_block_size(data_args, tokenizer):
                 f"({tokenizer.model_max_length}). Using block_size={tokenizer.model_max_length}."
             )
         block_size = min(block_size, tokenizer.model_max_length)
-
+    print("block_size:-----",block_size)
     return block_size
 
-def preprocess_dataset(data_args, training_args,block_size):
-    with training_args.main_process_first(desc="dataset map tokenization and grouping"):
-        determine_block_size(block_size)
-        lm_datasets = []
-        path = Path(data_args.dataset_dir)
-        files = [file.name for file in path.glob("*.txt")]
-        if training_args.debug_mode is True:
-            files = [files[0]]
-        for idx, file in enumerate(files):
-            data_file = os.path.join(path, file)
-            filename = ''.join(file.split(".")[:-1])
-            cache_path = os.path.join(data_args.data_cache_dir, filename+f"_{block_size}")
-            os.makedirs(cache_path, exist_ok=True)
-            try:
-                processed_dataset = datasets.load_from_disk(cache_path, keep_in_memory=False)
-                logger.info(f'training datasets-{filename} has been loaded from disk')
-            except Exception:
-                cache_dir = os.path.join(data_args.data_cache_dir, filename+f"_text_{block_size}")
-                os.makedirs(cache_dir, exist_ok=True)
-                raw_dataset = load_dataset("text", data_files=data_file, cache_dir=cache_dir, keep_in_memory=False)
-                logger.info(f"{file} has been loaded")
-                # 分词处理
-                tokenized_dataset = raw_dataset.map(
-                    tokenize_function,
-                    batched=True,
-                    num_proc=data_args.preprocessing_num_workers,
-                    remove_columns="text",
-                    load_from_cache_file=True,
-                    keep_in_memory=False,
-                    cache_file_names = {k: os.path.join(cache_dir, 'tokenized.arrow') for k in raw_dataset},
-                    desc="Running tokenizer on dataset",
-                )
-                grouped_datasets = tokenized_dataset.map(
-                    group_texts,
-                    batched=True,
-                    num_proc=data_args.preprocessing_num_workers,
-                    load_from_cache_file=True,
-                    keep_in_memory=False,
-                    cache_file_names = {k: os.path.join(cache_dir, 'grouped.arrow') for k in tokenized_dataset},
-                    desc=f"Grouping texts in chunks of {block_size}",
-                )
-                processed_dataset = grouped_datasets
-                processed_dataset.save_to_disk(cache_path)
-            if idx == 0:
-                lm_datasets = processed_dataset['train']
-            else:
-                assert lm_datasets.features.type == processed_dataset["train"].features.type
-                lm_datasets = concatenate_datasets([lm_datasets, processed_dataset["train"]])
-        lm_datasets = lm_datasets.train_test_split(test_size = data_args.validation_split_percentage)
-        train_dataset = lm_datasets['train']
-        eval_dataset = lm_datasets["test"]
-        return train_dataset,eval_dataset
+# 返回
+# Dataset({
+#     features: ['input_ids', 'attention_mask', 'labels'],
+#     num_rows: 7532
+# })
+def preprocess_dataset(data_args,block_size):
+    
+    lm_datasets = []
+    path = Path(data_args.dataset_dir)
+    files = [file.name for file in path.glob("*.txt")]
+    print("files---",files)
+    for idx, file in enumerate(files):
+        data_file = os.path.join(path, file)
+        filename = ''.join(file.split(".")[:-1])
+        cache_path = os.path.join(data_args.data_cache_dir, filename+f"_{block_size}")
+        print("cache_path---",cache_path)
+        os.makedirs(cache_path, exist_ok=True)
+        try:
+            processed_dataset = datasets.load_from_disk(cache_path, keep_in_memory=False)
+            print("processed_dataset---",processed_dataset)
+            logger.info(f'training datasets-{filename} has been loaded from disk')
+        except Exception:
+            cache_dir = os.path.join(data_args.data_cache_dir, filename+f"_text_{block_size}")
+            print("cache_dir---",cache_dir)
+            os.makedirs(cache_dir, exist_ok=True)
+            raw_dataset = load_dataset("text", data_files=data_file, cache_dir=cache_dir, keep_in_memory=False)
+            logger.info(f"{file} has been loaded")
+            # 分词处理
+            tokenized_dataset = raw_dataset.map(
+                tokenize_function,
+                batched=True,
+                num_proc=data_args.preprocessing_num_workers,
+                remove_columns="text",
+                load_from_cache_file=True,
+                keep_in_memory=False,
+                cache_file_names = {k: os.path.join(cache_dir, 'tokenized.arrow') for k in raw_dataset},
+                desc="Running tokenizer on dataset",
+            )
+            print("tokenized_dataset---",tokenized_dataset)
+            grouped_datasets = tokenized_dataset.map(
+                group_texts,
+                batched=True,
+                num_proc=data_args.preprocessing_num_workers,
+                load_from_cache_file=True,
+                keep_in_memory=False,
+                cache_file_names = {k: os.path.join(cache_dir, 'grouped.arrow') for k in tokenized_dataset},
+                desc=f"Grouping texts in chunks of {block_size}",
+            )
+            print("grouped_datasets---",grouped_datasets)
+            processed_dataset = grouped_datasets
+            processed_dataset.save_to_disk(cache_path)
+        if idx == 0:
+            lm_datasets = processed_dataset['train']
+        else:
+            assert lm_datasets.features.type == processed_dataset["train"].features.type
+            print("features.type---",lm_datasets.features.type)
+            lm_datasets = concatenate_datasets([lm_datasets, processed_dataset["train"]])
+    lm_datasets = lm_datasets.train_test_split(test_size = data_args.validation_split_percentage)
+    train_dataset = lm_datasets['train']
+    eval_dataset = lm_datasets["test"]
+    print("train_dataset---",train_dataset)
+    print("eval_dataset---",eval_dataset)
+    return train_dataset,eval_dataset
 
+if __name__ == "__main__":
+    global tokenizer
+    parser = HfArgumentParser((DataTrainingArguments,TokenizerArguments))
+    if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
+        # If we pass only one argument to the script and it's the path to a json file,
+        # let's parse it to get our arguments.
+        data_args,token_arg = parser.parse_json_file(json_file=os.path.abspath(sys.argv[1]))
+    else:
+        data_args,token_arg = parser.parse_args_into_dataclasses()
+
+    tokenizer = create_tokenizer(token_arg)
+    determine_block_size(data_args,tokenizer)
+    preprocess_dataset(data_args,block_size)

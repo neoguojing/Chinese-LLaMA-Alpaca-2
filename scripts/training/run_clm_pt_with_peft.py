@@ -563,7 +563,7 @@ def main():
         revision=model_args.model_revision,
         use_auth_token=True if model_args.use_auth_token else None,
         torch_dtype=torch_dtype,
-        low_cpu_mem_usage=False, # 指示是否启用低CPU内存使用模式
+        low_cpu_mem_usage=True, # 指示是否启用低CPU内存使用模式
         load_in_8bit=True if training_args.quantization else None, #指示是否以8位精度加载模型。这通常用于量化（quantization）训练
         device_map="auto" if training_args.quantization else device_map,
     )

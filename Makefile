@@ -87,6 +87,13 @@ test:
 deploy:
 	cd ../text-generation-webui && python server.py --model-dir $(ChatModelDIR) --loader llamacpp --model $(ChatModelDIR)/ggml-model-q4_0.gguf
 
+dataset:
+	rm -rf cache
+	python scripts/training/dataset_handler.py \
+    --tokenizer_name_or_path $(ZHTOkenModelDIR) \
+    --dataset_dir $(GENE_DATA_DIR) \
+    --data_cache_dir $(CACEH_DATA_DIR) \
+    --block_size 512
 
 init:
 	conda create -n train python=3.10
@@ -94,4 +101,4 @@ init:
 	# git clone https://github.com/ggerganov/llama.cpp
  
  # Default rules
-.PHONY: run train init prepare deploy quantize test
+.PHONY: run train init prepare deploy quantize test dataset
