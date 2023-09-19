@@ -326,7 +326,7 @@ logger = logging.getLogger(__name__)
 
 
 def main():
-
+    # 参数解析
     parser = HfArgumentParser((ModelArguments, DataTrainingArguments, MyTrainingArguments))
     if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
         # If we pass only one argument to the script and it's the path to a json file,
@@ -334,6 +334,8 @@ def main():
         model_args, data_args, training_args = parser.parse_json_file(json_file=os.path.abspath(sys.argv[1]))
     else:
         model_args, data_args, training_args = parser.parse_args_into_dataclasses()
+    
+    # 开启多头注意力
     if training_args.flash_attn:
         from flash_attn_patch import replace_llama_attn_with_flash_attn
         replace_llama_attn_with_flash_attn()
@@ -366,7 +368,7 @@ def main():
         + f"distributed training: {bool(training_args.local_rank != -1)}, 16-bits training: {training_args.fp16}"
     )
 
-    # Detecting last checkpoint.
+    # 获取上次保存的检查点 Detecting last checkpoint.
     last_checkpoint = None
     if os.path.isdir(training_args.output_dir) and training_args.do_train and not training_args.overwrite_output_dir:
         last_checkpoint = get_last_checkpoint(training_args.output_dir)
@@ -381,10 +383,11 @@ def main():
                 "the `--output_dir` or add `--overwrite_output_dir` to train from scratch."
             )
 
-    # Set seed before initializing model.
+    # 设置随机数 Set seed before initializing model.
     seed = np.random.randint(1, 65535)  
     set_seed(seed)
 
+    # 模型配置加载
     config_kwargs = {
         "cache_dir": model_args.cache_dir,
         "revision": model_args.model_revision,
@@ -402,6 +405,7 @@ def main():
             config.update_from_string(model_args.config_overrides)
             logger.info(f"New config: {config}")
 
+    # tokenizer加载
     tokenizer_kwargs = {
         "cache_dir": model_args.cache_dir,
         "use_fast": model_args.use_fast_tokenizer,
@@ -423,7 +427,7 @@ def main():
     # First we tokenize all the texts.
     # since this will be pickled to avoid _LazyModule error in Hasher force logger loading before tokenize_function
     tok_logger = transformers.utils.logging.get_logger("transformers.tokenization_utils_base")
-
+    # 使用分词器对输入的文本进行分词
     def tokenize_function(examples):
         with CaptureLogger(tok_logger) as cl:
             output = tokenizer(examples["text"])
@@ -434,7 +438,7 @@ def main():
                 " before being passed to the model."
             )
         return output
-    
+    # 确定block_size
     if data_args.block_size is None:
         block_size = tokenizer.model_max_length
         if block_size > 1024:
@@ -453,6 +457,8 @@ def main():
         block_size = min(data_args.block_size, tokenizer.model_max_length)
 
     # Main data processing function that will concatenate all texts from our dataset and generate chunks of block_size.
+    # 将输入的文本分割成指定长度的块，并将结果存储在一个字典中返回。如果文本长度超过了block_size，它会将其截断为block_size的倍数。
+    # 另外，它还将分割前的文本列表中的input_ids复制给labels
     def group_texts(examples):
         # Concatenate all texts.
         concatenated_examples = {k: list(chain(*examples[k])) for k in examples.keys()}
@@ -468,7 +474,7 @@ def main():
         }
         result["labels"] = result["input_ids"].copy()
         return result
-    
+    # 对数据进行处理，主要是加载，分片和tokenize
     with training_args.main_process_first(desc="dataset map tokenization and grouping"):
         lm_datasets = []
         path = Path(data_args.dataset_dir)
@@ -488,6 +494,7 @@ def main():
                 os.makedirs(cache_dir, exist_ok=True)
                 raw_dataset = load_dataset("text", data_files=data_file, cache_dir=cache_dir, keep_in_memory=False)
                 logger.info(f"{file} has been loaded")
+                # 分词处理
                 tokenized_dataset = raw_dataset.map(
                     tokenize_function,
                     batched=True,
@@ -516,6 +523,7 @@ def main():
                 lm_datasets = concatenate_datasets([lm_datasets, processed_dataset["train"]])
         lm_datasets = lm_datasets.train_test_split(test_size = data_args.validation_split_percentage)
 
+    # 获取训练集
     if training_args.do_train:
         train_dataset = lm_datasets['train']
         if data_args.max_train_samples is not None:
@@ -525,6 +533,7 @@ def main():
         logger.info("Training example:")
         logger.info(tokenizer.decode(train_dataset[0]['input_ids']))
 
+    # 获取测试集
     if training_args.do_eval:
         eval_dataset = lm_datasets["test"]
         if data_args.max_eval_samples is not None:
@@ -533,28 +542,38 @@ def main():
         logger.info(f"Num eval_samples  {len(eval_dataset)}")
         logger.info("Evaluation example:")
         logger.info(tokenizer.decode(eval_dataset[0]['input_ids']))
-        
+    
+    # torch_dtype变量用于指定PyTorch张量的数据类型
     torch_dtype = (
         model_args.torch_dtype
         if model_args.torch_dtype in ["auto", None]
         else getattr(torch, model_args.torch_dtype)
     )
+    # LOCAL_RANK环境变量用于指示当前进程或设备的本地排名
+    # 从而在分布式训练中进行进程间的通信、数据分发和同步等操作
     device_map = {"":int(os.environ.get("LOCAL_RANK") or 0)}
+
+    # 加载预训练模型
     model = LlamaForCausalLM.from_pretrained(
         model_args.model_name_or_path,
-        from_tf=bool(".ckpt" in model_args.model_name_or_path),
+        from_tf=bool(".ckpt" in model_args.model_name_or_path), #指示模型是否来自TensorFlow的检查点（.ckpt文件）。如果模型路径包含.ckpt，则为True；否则为False
         config=config,
         cache_dir=model_args.cache_dir,
         revision=model_args.model_revision,
         use_auth_token=True if model_args.use_auth_token else None,
         torch_dtype=torch_dtype,
-        low_cpu_mem_usage=True,
-        load_in_8bit=True if training_args.quantization else None,
+        low_cpu_mem_usage=False, # 指示是否启用低CPU内存使用模式
+        load_in_8bit=True if training_args.quantization else None, #指示是否以8位精度加载模型。这通常用于量化（quantization）训练
         device_map="auto" if training_args.quantization else device_map,
     )
     # 为了节约时间空间换时间 gradient_checkpointing和use_cache不能同时设置为True
     model.config.use_cache = False
 
+    # model.get_output_embeddings()：获取模型的输出嵌入层。输出嵌入层通常用于将模型的最后一层隐藏状态映射到词汇表中的词向量表示。
+    # weight：获取输出嵌入层的权重矩阵。该权重矩阵包含了词汇表中每个词对应的词向量。
+    # size(0)：获取权重矩阵的第一个维度的大小，即词汇表的大小。
+    #这个隐藏状态可以被认为是模型对输入序列的理解或编码表示。它通常包含了模型在处理输入时提取到的关键信息和语义表示。在处理文本生成、语言建模、机器翻译等任务时，这个隐藏状态可以用作生成下一个词或预测序列的条件概率分布。
+    # 在模型的最后一层，隐藏状态的维度通常与模型的输出维度相匹配。对于语言模型或文本生成任务，最后一层隐藏状态的维度通常是词汇表的大小，用于生成下一个词的条件概率分布。
     model_vocab_size = model.get_output_embeddings().weight.size(0)
     tokenizer_vocab_size = len(tokenizer)
     logger.info(f"Model vocab size: {model_vocab_size}")
@@ -563,8 +582,13 @@ def main():
         raise ValueError(f"The vocab size of tokenizer is {tokenizer_vocab_size}, not 55296. Please use Chinese-LLaMA-2 tokenizer.")
     if model_vocab_size != tokenizer_vocab_size:
         logger.info(f"Rezize model vocab size to {tokenizer_vocab_size}")
+        # 标记嵌入层通常是作为模型的第一层 
+        # 标记代表一个离散的单元
+        # 标记嵌入层的作用是将这些离散的标记映射为连续的向量表示，也称为嵌入向量
+        # 模型的标记嵌入层将被调整为与词汇表大小相匹配的大小
         model.resize_token_embeddings(len(tokenizer))
 
+    # 创建peft模型
     if training_args.peft_path is not None:
         logger.info("Peft from pre-trained model")
         model = PeftModel.from_pretrained(model, training_args.peft_path, device_map=device_map)
@@ -587,7 +611,10 @@ def main():
             lora_dropout=lora_dropout,
             modules_to_save=modules_to_save)
         model = get_peft_model(model, peft_config)
+    # 可训练参数通常是指神经网络中的权重（weights）和偏置（biases
     model.print_trainable_parameters()
+    # state_dict字典将每个模型参数的名称作为键（key），将对应参数的张量值作为值（value）。
+    # 这些参数张量包含了模型在训练过程中学习到的权重和偏置等可训练参数。
     old_state_dict = model.state_dict
     model.state_dict = (
         lambda self, *_, **__: get_peft_model_state_dict(self, old_state_dict())
@@ -602,11 +629,11 @@ def main():
         train_dataset=train_dataset if training_args.do_train else None,
         eval_dataset=eval_dataset if training_args.do_eval else None,
         tokenizer=tokenizer,
-        data_collator=fault_tolerance_data_collator,
-        compute_metrics=compute_metrics if training_args.do_eval and not is_torch_tpu_available() else None,
-        preprocess_logits_for_metrics=preprocess_logits_for_metrics
+        data_collator=fault_tolerance_data_collator, #数据批处理和数据加载的数据整合器（data collator）对象。它处理训练和评估数据集的样本，并将它们整合成适当的格式供模型使用。
+        compute_metrics=compute_metrics if training_args.do_eval and not is_torch_tpu_available() else None, #计算模型性能指标的函数
+        preprocess_logits_for_metrics=preprocess_logits_for_metrics 
         if training_args.do_eval and not is_torch_tpu_available()
-        else None,
+        else None, #对模型输出进行预处理以计算指标的函数
     )
     trainer.add_callback(SavePeftModelCallback)
     # Training
@@ -637,6 +664,11 @@ def main():
 
         max_eval_samples = data_args.max_eval_samples if data_args.max_eval_samples is not None else len(eval_dataset)
         metrics["eval_samples"] = min(max_eval_samples, len(eval_dataset))
+        # 它用于评估模型对给定序列的预测能力和模型的概率分布的复杂度
+        # 困惑度是对该概率分布的度量，表示模型对真实序列的预测能力。具体来说，困惑度越低表示模型对真实序列的预测越准确
+        # 对于一个由N个词组成的序列，困惑度的计算如下：
+        # 困惑度 = exp(交叉熵损失 / N)
+        # 其中，交叉熵损失是模型对该序列的负对数似然（negative log-likelihood），N是序列的长度。
         try:
             perplexity = math.exp(metrics["eval_loss"])
         except OverflowError:

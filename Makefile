@@ -65,11 +65,11 @@ lora:
 
  # Training
 train:
-	rm -rf cache/*
+	# rm -rf cache/*
 	cd scripts/training && ./run_pt.sh $(ZHModelDIR) $(ZHTOkenModelDIR) $(GENE_DATA_DIR) $(CACEH_DATA_DIR) $(ModelOutputDIR) 
 
 sft:
-	rm -rf cache/*
+	# rm -rf cache/*
 	cd scripts/training && run_sft.sh $(ChatPreTrainModelDIR) $(ChatPreTrainTokenDIR) $(CHAT_DATA_DIR) $(ModelOutputDIR) $(CHAT_VALIDATE_FILE)
 
 llama.cpp:
