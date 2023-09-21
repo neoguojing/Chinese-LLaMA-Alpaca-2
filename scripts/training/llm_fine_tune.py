@@ -3,6 +3,7 @@ from torch.utils.data.dataloader import DataLoader
 import sys
 import os
 import math
+import torch
 import bitsandbytes as bnb
 from torch import nn
 from transformers.trainer_pt_utils import get_parameter_names
@@ -20,69 +21,114 @@ from transformers import (
     is_torch_tpu_available,
     set_seed,
 )
+from sklearn.metrics import accuracy_score
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Any, Mapping
 from dataset_handler import DataTrainingArguments,create_tokenizer,TokenizerArguments,determine_block_size,preprocess_dataset
 from llm_model import ModelArguments,load_pretrained_model,determine_vocab_size,create_peft_model
+from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR
 import logging
 logger = logging.getLogger(__name__)
+
+
+class SavePeftModelCallback(transformers.TrainerCallback):
+    def save_model(self, args, state, kwargs):
+        if state.best_model_checkpoint is not None:
+            checkpoint_folder = os.path.join(state.best_model_checkpoint, "pt_lora_model")
+        else:
+            checkpoint_folder = os.path.join(args.output_dir, f"{PREFIX_CHECKPOINT_DIR}-{state.global_step}")
+
+        peft_model_path = os.path.join(checkpoint_folder, "pt_lora_model")
+        kwargs["model"].save_pretrained(peft_model_path)
+        kwargs["tokenizer"].save_pretrained(peft_model_path)
+
+    def on_save(self, args, state, control, **kwargs):
+        self.save_model(args, state, kwargs)
+        return control
+
+    def on_train_end(self, args, state, control, **kwargs):
+        peft_model_path = os.path.join(args.output_dir, "pt_lora_model")
+        kwargs["model"].save_pretrained(peft_model_path)
+        kwargs["tokenizer"].save_pretrained(peft_model_path)
+
+
+def accuracy(predictions, references, normalize=True, sample_weight=None):
+    return {
+        "accuracy": float(
+            accuracy_score(references, predictions, normalize=normalize, sample_weight=sample_weight)
+        )
+    }
+
+
+def compute_metrics(eval_preds):
+    preds, labels = eval_preds
+    # preds have the same shape as the labels, after the argmax(-1) has been calculated
+    # by preprocess_logits_for_metrics but we need to shift the labels
+    labels = labels[:, 1:].reshape(-1)
+    preds = preds[:, :-1].reshape(-1)
+    return accuracy(predictions=preds, references=labels)
+
+
+def preprocess_logits_for_metrics(logits, labels):
+    if isinstance(logits, tuple):
+        # Depending on the model and config, logits may contain extra tensors,
+        # like past_key_values, but logits always come first
+        logits = logits[0]
+    return logits.argmax(dim=-1)
+
+
+def fault_tolerance_data_collator(features: List) -> Dict[str, Any]:
+    if not isinstance(features[0], Mapping):
+        features = [vars(f) for f in features]
+    first = features[0]
+    batch = {}
+
+    # Special handling for labels.
+    # Ensure that tensor is created with the correct type
+    # (it should be automatically the case, but let's make sure of it.)
+    if "label" in first and first["label"] is not None:
+        label = first["label"].item() if isinstance(first["label"], torch.Tensor) else first["label"]
+        dtype = torch.long if isinstance(label, int) else torch.float
+        batch["labels"] = torch.tensor([f["label"] for f in features], dtype=dtype)
+    elif "label_ids" in first and first["label_ids"] is not None:
+        if isinstance(first["label_ids"], torch.Tensor):
+            batch["labels"] = torch.stack([f["label_ids"] for f in features])
+        else:
+            dtype = torch.long if isinstance(first["label_ids"][0], int) else torch.float
+            batch["labels"] = torch.tensor([f["label_ids"] for f in features], dtype=dtype)
+
+    # Handling of all other possible keys.
+    # Again, we will use the first element to figure out which key/values are not None for this model.
+
+    try:
+        for k, v in first.items():
+            if k not in ("label", "label_ids") and v is not None and not isinstance(v, str):
+                if isinstance(v, torch.Tensor):
+                    batch[k] = torch.stack([f[k] for f in features])
+                elif isinstance(v, np.ndarray):
+                    batch[k] = torch.tensor(np.stack([f[k] for f in features]))
+                else:
+                    batch[k] = torch.tensor([f[k] for f in features])
+    except ValueError: # quick fix by simply take the first example
+        for k, v in first.items():
+            if k not in ("label", "label_ids") and v is not None and not isinstance(v, str):
+                if isinstance(v, torch.Tensor):
+                    batch[k] = torch.stack([features[0][k]] * len(features))
+                elif isinstance(v, np.ndarray):
+                    batch[k] = torch.tensor(np.stack([features[0][k]] * len(features)))
+                else:
+                    batch[k] = torch.tensor([features[0][k]] * len(features))
+
+    return batch
+
+
+MODEL_CONFIG_CLASSES = list(MODEL_FOR_CAUSAL_LM_MAPPING.keys())
+MODEL_TYPES = tuple(conf.model_type for conf in MODEL_CONFIG_CLASSES)
+
 @dataclass
 class MyTrainingArguments(TrainingArguments):
     
     debug_mode : Optional[bool] = field(default=False)
-
-# training_args = TrainingArguments(per_device_train_batch_size=4, **default_args)
-
-# decay_parameters = get_parameter_names(model, [nn.LayerNorm])
-# decay_parameters = [name for name in decay_parameters if "bias" not in name]
-# optimizer_grouped_parameters = [
-#     {
-#         "params": [p for n, p in model.named_parameters() if n in decay_parameters],
-#         "weight_decay": training_args.weight_decay,
-#     },
-#     {
-#         "params": [p for n, p in model.named_parameters() if n not in decay_parameters],
-#         "weight_decay": 0.0,
-#     },
-# ]
-
-# optimizer_kwargs = {
-#     "betas": (training_args.adam_beta1, training_args.adam_beta2),
-#     "eps": training_args.adam_epsilon,
-# }
-# optimizer_kwargs["lr"] = training_args.learning_rate
-# adam_bnb_optim = bnb.optim.Adam8bit(
-#     optimizer_grouped_parameters,
-#     betas=(training_args.adam_beta1, training_args.adam_beta2),
-#     eps=training_args.adam_epsilon,
-#     lr=training_args.learning_rate,
-# )
-
-
-# training_args = TrainingArguments(
-#     per_device_train_batch_size=1,
-#     gradient_accumulation_steps=4,
-#     gradient_checkpointing=True,
-#     fp16=True,
-#     optimizers=(adam_bnb_optim, None)
-# )
-
-# dataloader = DataLoader(ds, batch_size=training_args.per_device_train_batch_size)
-
-# if training_args.gradient_checkpointing:
-#     model.gradient_checkpointing_enable()
-
-# accelerator = Accelerator(fp16=training_args.fp16)
-# model, optimizer, dataloader = accelerator.prepare(model, adam_bnb_optim, dataloader)
-
-# model.train()
-# for step, batch in enumerate(dataloader, start=1):
-#     loss = model(**batch).loss
-#     loss = loss / training_args.gradient_accumulation_steps
-#     accelerator.backward(loss)
-#     if step % training_args.gradient_accumulation_steps == 0:
-#         optimizer.step()
-#         optimizer.zero_grad()
 
 
 

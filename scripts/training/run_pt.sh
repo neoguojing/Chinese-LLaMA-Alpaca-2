@@ -1,8 +1,10 @@
 # 运行脚本前请仔细阅读wiki(https://github.com/ymcui/Chinese-LLaMA-Alpaca-2/wiki/pt_scripts_zh)
 # Read the wiki(https://github.com/ymcui/Chinese-LLaMA-Alpaca-2/wiki/pt_scripts_zh) carefully before running the script
 lr=2e-4
-lora_rank=64
-lora_alpha=128
+# lora_rank=64
+# lora_alpha=128
+lora_rank=8
+lora_alpha=32
 lora_trainable="q_proj,v_proj,k_proj,o_proj,gate_proj,down_proj,up_proj"
 modules_to_save="embed_tokens,lm_head"
 lora_dropout=0.05
@@ -53,7 +55,7 @@ torchrun --nnodes 1 --nproc_per_node ${nproc_per_node} run_clm_pt_with_peft.py \
     --trainable ${lora_trainable} \
     --lora_dropout ${lora_dropout} \
     --flash_attn True \
-    --torch_dtype float16 
-    # --fp16 \
+    --torch_dtype float16 \
+    --fp16 False
     # --modules_to_save ${modules_to_save} \
     # --torch_dtype auto
