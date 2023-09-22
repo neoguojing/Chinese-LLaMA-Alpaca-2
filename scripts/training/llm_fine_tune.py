@@ -147,7 +147,7 @@ if __name__ == "__main__":
         model_args, data_args, training_args,token_arg = parser.parse_json_file(json_file=os.path.abspath(sys.argv[1]))
     else:
         model_args, data_args, training_args,token_arg = parser.parse_args_into_dataclasses()
-
+    print(training_args)
     tokenizer = create_tokenizer(token_arg)
     block_size = determine_block_size(data_args,tokenizer)
     train_dataset,eval_dataset =  preprocess_dataset(data_args,block_size)
