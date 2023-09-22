@@ -20,6 +20,8 @@ import logging
 logger = logging.getLogger(__name__)
 import os
 
+MODEL_CONFIG_CLASSES = list(MODEL_FOR_CAUSAL_LM_MAPPING.keys())
+MODEL_TYPES = tuple(conf.model_type for conf in MODEL_CONFIG_CLASSES)
 
 device_map = {"":int(os.environ.get("LOCAL_RANK") or 0)}
 @dataclass

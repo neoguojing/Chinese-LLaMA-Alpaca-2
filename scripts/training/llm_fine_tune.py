@@ -124,8 +124,7 @@ def fault_tolerance_data_collator(features: List) -> Dict[str, Any]:
     return batch
 
 
-MODEL_CONFIG_CLASSES = list(MODEL_FOR_CAUSAL_LM_MAPPING.keys())
-MODEL_TYPES = tuple(conf.model_type for conf in MODEL_CONFIG_CLASSES)
+
 
 @dataclass
 class MyTrainingArguments(TrainingArguments):
