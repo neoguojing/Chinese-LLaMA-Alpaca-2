@@ -58,7 +58,7 @@ torchrun --nnodes 1 --nproc_per_node ${nproc_per_node} run_clm_pt_with_peft.py \
     --torch_dtype float16 \
     --bf16=True \
     --dataloader_num_workers 4 \
-    --optim "adamw_bnb_8bit"
+    --optim adamw_bnb_8bit
     # --optim="adafactor"
     # --fp16 False
     # --modules_to_save ${modules_to_save} \
