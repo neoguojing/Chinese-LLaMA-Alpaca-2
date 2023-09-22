@@ -45,27 +45,12 @@ class TokenizerArguments:
     tokenizer_name: Optional[str] = field(
         default=None, metadata={"help": "Pretrained tokenizer name or path if not the same as model_name"}
     )
-    cache_dir: Optional[str] = field(
-        default=None,
-        metadata={"help": "Where do you want to store the pretrained models downloaded from huggingface.co"},
-    )
+
     use_fast_tokenizer: bool = field(
         default=True,
         metadata={"help": "Whether to use one of the fast tokenizer (backed by the tokenizers library) or not."},
     )
-    model_revision: str = field(
-        default="main",
-        metadata={"help": "The specific model version to use (can be a branch name, tag name or commit id)."},
-    )
-    use_auth_token: bool = field(
-        default=False,
-        metadata={
-            "help": (
-                "Will use the token generated when running `huggingface-cli login` (necessary to use this script "
-                "with private models)."
-            )
-        },
-    )
+    
 
 def singleton(cls):
     instances = {}
@@ -81,10 +66,7 @@ def singleton(cls):
 class TokenizerSingleton:
     def __init__(self, token_args):
         tokenizer_kwargs = {
-            "cache_dir": token_args.cache_dir,
             "use_fast": token_args.use_fast_tokenizer,
-            "revision": token_args.model_revision,
-            "use_auth_token": True if token_args.use_auth_token else None,
         }
         if token_args.tokenizer_name:
             self.tokenizer = AutoTokenizer.from_pretrained(token_args.tokenizer_name, **tokenizer_kwargs)

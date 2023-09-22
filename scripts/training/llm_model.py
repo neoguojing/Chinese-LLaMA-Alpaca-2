@@ -42,6 +42,22 @@ class ModelArguments:
         default=None,
         metadata={"help": "If training from scratch, pass a model type from the list: " + ", ".join(MODEL_TYPES)},
     )
+
+    model_revision: str = field(
+        default="main",
+        metadata={"help": "The specific model version to use (can be a branch name, tag name or commit id)."},
+    )
+    
+    use_auth_token: bool = field(
+        default=False,
+        metadata={
+            "help": (
+                "Will use the token generated when running `huggingface-cli login` (necessary to use this script "
+                "with private models)."
+            )
+        },
+    )
+
     config_overrides: Optional[str] = field(
         default=None,
         metadata={
@@ -69,7 +85,7 @@ class ModelArguments:
         default=None,
         metadata={"help": "Where do you want to store the pretrained models downloaded from huggingface.co"},
     )
-    
+
     flash_attn : Optional[bool] = field(default=False)
     use_cache: Optional[bool] = field(default=False)
     quantization: Optional[bool] = field(default=False)
