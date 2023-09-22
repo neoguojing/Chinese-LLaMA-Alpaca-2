@@ -7,6 +7,7 @@ import torch
 import numpy as np
 import bitsandbytes as bnb
 from torch import nn
+import transformers
 from transformers.trainer_pt_utils import get_parameter_names
 from transformers import (
     CONFIG_MAPPING,
