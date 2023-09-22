@@ -27,6 +27,7 @@ from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Any, Mapping
 from dataset_handler import DataTrainingArguments,create_tokenizer,TokenizerArguments,determine_block_size,preprocess_dataset
 from llm_model import ModelArguments,load_pretrained_model,determine_vocab_size,create_peft_model
+from optimizer import create_optimizer
 from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR
 import logging
 logger = logging.getLogger(__name__)
@@ -153,6 +154,7 @@ if __name__ == "__main__":
     model = load_pretrained_model(model_args)
     model = determine_vocab_size(model,len(tokenizer))
     model = create_peft_model(model,model_args)
+    optm = create_optimizer(training_args,model)
     # Initialize our Trainer
     trainer = Trainer(
         model=model,
@@ -165,6 +167,8 @@ if __name__ == "__main__":
         preprocess_logits_for_metrics=preprocess_logits_for_metrics 
         if training_args.do_eval and not is_torch_tpu_available()
         else None, #对模型输出进行预处理以计算指标的函数
+        optimizers=(optm, None),
+
     )
     trainer.add_callback(SavePeftModelCallback)
     # Training
