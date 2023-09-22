@@ -65,7 +65,11 @@ class ModelArguments:
             "choices": ["auto", "bfloat16", "float16", "float32"],
         },
     )
-
+    cache_dir: Optional[str] = field(
+        default=None,
+        metadata={"help": "Where do you want to store the pretrained models downloaded from huggingface.co"},
+    )
+    
     flash_attn : Optional[bool] = field(default=False)
     use_cache: Optional[bool] = field(default=False)
     quantization: Optional[bool] = field(default=False)
