@@ -4,6 +4,7 @@ import sys
 import os
 import math
 import torch
+import numpy as np
 import bitsandbytes as bnb
 from torch import nn
 from transformers.trainer_pt_utils import get_parameter_names
@@ -134,6 +135,10 @@ class MyTrainingArguments(TrainingArguments):
 
 
 if __name__ == "__main__":
+    # 设置随机数 Set seed before initializing model.
+    seed = np.random.randint(1, 65535)  
+    set_seed(seed)
+
     parser = HfArgumentParser((ModelArguments, DataTrainingArguments, MyTrainingArguments,TokenizerArguments))
     if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
         # If we pass only one argument to the script and it's the path to a json file,
