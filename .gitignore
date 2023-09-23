@@ -4,6 +4,9 @@
 llama.cpp/
 model/chinese/chinese-alpaca-2-7b-hf
 model/chinese/chinese-llama-2-7b-hf
+model/checkpoint-*
+model/pt_lora_model/
+model/*.json
 dataset/generate/walkinsnowwithnigh.txt
 scripts/__pycache__/
 scripts/training/__pycache__/
