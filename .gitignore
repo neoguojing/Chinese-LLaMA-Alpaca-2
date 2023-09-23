@@ -11,3 +11,4 @@ dataset/generate/walkinsnowwithnigh.txt
 scripts/__pycache__/
 scripts/training/__pycache__/
 cache/*
+model/target/

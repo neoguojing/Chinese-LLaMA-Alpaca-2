@@ -14,14 +14,13 @@ ZHTOkenModelDIR := $(MODEL_DIR)/chinese/chinese-llama-2-7b-hf/tokenizer.model
 
 ChatModelDIR := $(MODEL_DIR)/chinese/chinese-alpaca-2-7b-hf
 
-LORAModelDIR := $(MODEL_DIR)/lora/lora-2-7b/hf
+LORAModelDIR := $(MODEL_DIR)/pt_lora_model
 
 ChatPreTrainModelDIR := $(MODEL_DIR)/chinese/chinese-llama-2-7b-hf
 ChatPreTrainTokenDIR := $(MODEL_DIR)/chinese/chinese-llama-2-7b-hf
 
-
-
 ModelOutputDIR := $(MODEL_DIR)
+TrainTargetDIR := $(MODEL_DIR)/target
 
 ModelPath := $(ChatModelDIR)
 
@@ -41,7 +40,7 @@ endif
 
 
 ifeq ($(chat), 0)
-	ModelPath :=$(HFModelDIR) 
+	ModelPath :=$(TrainTargetDIR) 
 endif
  
  # Inference
@@ -55,7 +54,7 @@ run:
 
 
 lora:
- 	@echo "Using model path: $(ModelPath)"
+	@echo "Using model path: $(ModelPath)"
 	python scripts/inference/inference_hf.py \
 				--base_model $(ModelPath) \
 				--lora_model $(LORAModelDIR) \
@@ -95,10 +94,17 @@ dataset:
     --data_cache_dir $(CACEH_DATA_DIR) \
     --block_size 512
 
+merge:
+	python scripts/merge_llama2_with_chinese_lora_low_mem.py \
+    --base_model $(ZHModelDIR) \
+    --lora_model $(LORAModelDIR) \
+    --output_type huggingface \
+    --output_dir $(TrainTargetDIR)
+
 init:
 	conda create -n train python=3.10
 	pip install -r requirements.txt
 	# git clone https://github.com/ggerganov/llama.cpp
  
  # Default rules
-.PHONY: run train init prepare deploy quantize test dataset
+.PHONY: run train init prepare deploy quantize test dataset lora
