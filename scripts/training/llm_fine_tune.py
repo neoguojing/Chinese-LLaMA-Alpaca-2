@@ -4,6 +4,9 @@ import sys
 import os
 import math
 import torch
+torch.cuda.empty_cache()
+import gc
+gc.collect()
 import numpy as np
 import bitsandbytes as bnb
 from torch import nn
@@ -33,6 +36,7 @@ from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR
 import logging
 logger = logging.getLogger(__name__)
 
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:32"
 
 class SavePeftModelCallback(transformers.TrainerCallback):
     def save_model(self, args, state, kwargs):

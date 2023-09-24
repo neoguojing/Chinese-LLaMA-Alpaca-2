@@ -14,7 +14,7 @@ chinese_tokenizer_path=$2
 dataset_dir=$3
 data_cache=$4
 per_device_train_batch_size=1
-gradient_accumulation_steps=4
+gradient_accumulation_steps=8
 block_size=512
 output_dir=$5
 
@@ -30,7 +30,6 @@ torchrun --nnodes 1 --nproc_per_node ${nproc_per_node} llm_fine_tune.py \
     --validation_split_percentage 0.001 \
     --per_device_train_batch_size ${per_device_train_batch_size} \
     --do_train \
-    --quantization True \
     --num_train_epochs 1 \
     --lr_scheduler_type cosine \
     --learning_rate ${lr} \
@@ -52,14 +51,17 @@ torchrun --nnodes 1 --nproc_per_node ${nproc_per_node} llm_fine_tune.py \
     --lora_alpha ${lora_alpha} \
     --trainable ${lora_trainable} \
     --lora_dropout ${lora_dropout} \
-    --flash_attn True \
     --torch_dtype float16 \
-    --bf16=True \
+    --fp16=True \
     --dataloader_num_workers 4 \
-    --optim adamw_bnb_8bit
+    --ddp_find_unused_parameters False \
+    --deepspeed ${deepspeed_config_file}
     # --gradient_checkpointing True \
-    # --optim="adafactor"
-    # --fp16 False
     # --modules_to_save ${modules_to_save} \
+    # --optim adamw_bnb_8bit \
+    # --flash_attn True \
+    # --quantization True \
+    # --optim adafactor
+    # --bf16 False
     # --torch_dtype auto
-    # --deepspeed ${deepspeed_config_file} \
+    
