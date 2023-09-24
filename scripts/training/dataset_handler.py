@@ -26,7 +26,7 @@ from transformers import (
 import logging
 logger = logging.getLogger(__name__)
 block_size = 512
-
+tokenizer = None
 
 
 @dataclass
@@ -80,7 +80,9 @@ class TokenizerSingleton:
         self.tokenizer.add_eos_token = True
 
 def create_tokenizer(token_args):
-    return TokenizerSingleton(token_args).tokenizer
+    global tokenizer
+    tokenizer = TokenizerSingleton(token_args).tokenizer
+    return tokenizer
 
 @dataclass
 class DataTrainingArguments:
@@ -302,7 +304,6 @@ def preprocess_dataset(data_args,block_size):
     return train_dataset,eval_dataset
 
 if __name__ == "__main__":
-    global tokenizer
     parser = HfArgumentParser((DataTrainingArguments,TokenizerArguments))
     if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
         # If we pass only one argument to the script and it's the path to a json file,
@@ -311,6 +312,6 @@ if __name__ == "__main__":
     else:
         data_args,token_arg = parser.parse_args_into_dataclasses()
 
-    tokenizer = create_tokenizer(token_arg)
+    create_tokenizer(token_arg)
     determine_block_size(data_args,tokenizer)
     preprocess_dataset(data_args,block_size)

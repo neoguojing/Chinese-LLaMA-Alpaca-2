@@ -1,10 +1,10 @@
 # 运行脚本前请仔细阅读wiki(https://github.com/ymcui/Chinese-LLaMA-Alpaca-2/wiki/pt_scripts_zh)
 # Read the wiki(https://github.com/ymcui/Chinese-LLaMA-Alpaca-2/wiki/pt_scripts_zh) carefully before running the script
 lr=2e-4
-# lora_rank=64
-# lora_alpha=128
-lora_rank=8
-lora_alpha=32
+lora_rank=64
+lora_alpha=128
+# lora_rank=8
+# lora_alpha=32
 lora_trainable="q_proj,v_proj,k_proj,o_proj,gate_proj,down_proj,up_proj"
 modules_to_save="embed_tokens,lm_head"
 lora_dropout=0.05
@@ -42,7 +42,6 @@ torchrun --nnodes 1 --nproc_per_node ${nproc_per_node} llm_fine_tune.py \
     --save_total_limit 3 \
     --save_steps 200 \
     --gradient_accumulation_steps ${gradient_accumulation_steps} \
-    --gradient_checkpointing True \
     --preprocessing_num_workers 8 \
     --block_size ${block_size} \
     --output_dir ${output_dir} \
@@ -58,6 +57,7 @@ torchrun --nnodes 1 --nproc_per_node ${nproc_per_node} llm_fine_tune.py \
     --bf16=True \
     --dataloader_num_workers 4 \
     --optim adamw_bnb_8bit
+    # --gradient_checkpointing True \
     # --optim="adafactor"
     # --fp16 False
     # --modules_to_save ${modules_to_save} \
