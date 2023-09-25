@@ -4,6 +4,7 @@ import os
 import argparse
 import pandas as pd
 import torch
+torch.cuda.empty_cache()
 import json
 from llama_evaluator import Llama_Evaluator
 

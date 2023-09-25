@@ -12,3 +12,6 @@ scripts/__pycache__/
 scripts/training/__pycache__/
 cache/*
 model/target/
+eval/
+scripts/ceval/__pycache__/
+scripts/ceval/data/

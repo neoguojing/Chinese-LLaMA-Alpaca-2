@@ -10,3 +10,4 @@ scikit-learn
 accelerate
 einops
 flash_attn
+modelscope

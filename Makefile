@@ -23,6 +23,7 @@ ModelOutputDIR := $(MODEL_DIR)
 TrainTargetDIR := $(MODEL_DIR)/target
 
 ModelPath := $(ChatModelDIR)
+EvalPath := $(PWD)/eval
 
 SYSTEM_PROMPT='You are a helpful assistant. 你是一个乐于助人的助手。'
 FIRST_INSTRUCTION="hello"
@@ -101,10 +102,24 @@ merge:
     --output_type huggingface \
     --output_dir $(TrainTargetDIR)
 
+ceval:
+	cd scripts/ceval && python eval.py \
+		--model_path ${ZHModelDIR} \
+		--cot False \
+		--few_shot False \
+		--with_prompt False \
+		--constrained_decoding True \
+		--temperature 0.2 \
+		--n_times 1 \
+		--ntrain 5 \
+		--do_save_csv False \
+		--do_test False \
+		--output_dir ${EvalPath}
+
 init:
 	conda create -n train python=3.10
 	pip install -r requirements.txt
 	# git clone https://github.com/ggerganov/llama.cpp
  
  # Default rules
-.PHONY: run train init prepare deploy quantize test dataset lora
+.PHONY: run train init prepare deploy quantize test dataset lora ceval
