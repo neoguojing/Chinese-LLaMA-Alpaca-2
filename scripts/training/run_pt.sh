@@ -3,8 +3,6 @@
 lr=2e-4
 lora_rank=64
 lora_alpha=128
-# lora_rank=8
-# lora_alpha=32
 lora_trainable="q_proj,v_proj,k_proj,o_proj,gate_proj,down_proj,up_proj"
 modules_to_save="embed_tokens,lm_head"
 lora_dropout=0.05
