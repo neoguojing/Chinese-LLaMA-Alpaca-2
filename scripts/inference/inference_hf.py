@@ -27,6 +27,7 @@ parser.add_argument("--use_vllm", action='store_true', help="Use vLLM as back-en
 parser.add_argument('--system_prompt', type=str, default=DEFAULT_SYSTEM_PROMPT, help="The system prompt of the prompt template.")
 parser.add_argument('--negative_prompt', type=str, default=None, help="Negative prompt in CFG sampling.")
 parser.add_argument('--guidance_scale', type=float, default=1.0, help="The guidance scale for CFG sampling. CFG is enabled by setting `guidance_scale > 1`.")
+parser.add_argument('--llama', default=True, type=bool, required=False)
 args = parser.parse_args()
 
 if args.guidance_scale > 1:
@@ -52,7 +53,7 @@ if args.only_cpu is True:
         raise ValueError("Quantization is unavailable on CPU.")
 os.environ["CUDA_VISIBLE_DEVICES"] = args.gpus
 import torch
-from transformers import LlamaForCausalLM, LlamaTokenizer
+from transformers import LlamaForCausalLM, LlamaTokenizer,AutoConfig,AutoModelForCausalLM,AutoTokenizer
 from transformers import GenerationConfig
 from transformers import BitsAndBytesConfig
 from peft import  PeftModel
@@ -109,19 +110,24 @@ if __name__ == '__main__':
             tensor_parallel_size=len(args.gpus.split(',')))
         tokenizer = LlamaTokenizer.from_pretrained(args.tokenizer_path, legacy=True)
     else:
-        tokenizer = LlamaTokenizer.from_pretrained(args.tokenizer_path, legacy=True)
+        if args.llama:
+            tokenizer = LlamaTokenizer.from_pretrained(args.tokenizer_path, legacy=True)
 
-        base_model = LlamaForCausalLM.from_pretrained(
-            args.base_model,
-            torch_dtype=load_type,
-            low_cpu_mem_usage=True,
-            device_map='auto',
-            quantization_config=BitsAndBytesConfig(
-                load_in_4bit=args.load_in_4bit,
-                load_in_8bit=args.load_in_8bit,
-                bnb_4bit_compute_dtype=load_type
-            )
-            )
+            base_model = LlamaForCausalLM.from_pretrained(
+                args.base_model,
+                torch_dtype=load_type,
+                low_cpu_mem_usage=True,
+                device_map='auto',
+                quantization_config=BitsAndBytesConfig(
+                    load_in_4bit=args.load_in_4bit,
+                    load_in_8bit=args.load_in_8bit,
+                    bnb_4bit_compute_dtype=load_type
+                )
+                )
+        else:
+            tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_path, trust_remote_code=True)
+            base_model = AutoModelForCausalLM.from_pretrained(args.base_model, device_map="auto", trust_remote_code=True)
+            generation_config = GenerationConfig.from_pretrained(args.base_model, trust_remote_code=True)
 
         model_vocab_size = base_model.get_input_embeddings().weight.size(0)
         tokenizer_vocab_size = len(tokenizer)
