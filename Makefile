@@ -44,7 +44,7 @@ EvalPath := $(PWD)/eval
 
 
 cpu := --only_cpu
-isLLaMaLikeModel ：= True
+isLLaMaLikeModel := True
 
 export cuda?=1
 export chat?=1
