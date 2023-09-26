@@ -44,6 +44,7 @@ EvalPath := $(PWD)/eval
 
 
 cpu := --only_cpu
+isLLaMaLikeModel ：= True
 
 export cuda?=1
 export chat?=1
@@ -67,6 +68,7 @@ ifeq ($(chat), 0)
 	ifeq ($(qwen), 1)
 		BaseModelPath :=$(QWenModelDIR)
 		BaseTokenPath := $(QWenTokenModelDIR)
+		isLLaMaLikeModel = False
 	endif
 
 	ifeq ($(zh), 1)
@@ -84,6 +86,7 @@ else
 	ifeq ($(qwen), 1)
 		BaseModelPath :=$(QWenChatModelDIR)
 		BaseTokenPath := $(QWenChatTokenModelDIR)
+		isLLaMaLikeModel = False
 	endif
 
 	ifeq ($(zh), 1)
@@ -106,6 +109,7 @@ run:
 	python scripts/inference/inference_hf.py \
 		--base_model $(BaseModelPath) \
 		$(cpu) \
+		--llama $(isLLaMaLikeModel) \
 		--with_prompt \
 		--interactive 
 
