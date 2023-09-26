@@ -27,7 +27,7 @@ parser.add_argument("--use_vllm", action='store_true', help="Use vLLM as back-en
 parser.add_argument('--system_prompt', type=str, default=DEFAULT_SYSTEM_PROMPT, help="The system prompt of the prompt template.")
 parser.add_argument('--negative_prompt', type=str, default=None, help="Negative prompt in CFG sampling.")
 parser.add_argument('--guidance_scale', type=float, default=1.0, help="The guidance scale for CFG sampling. CFG is enabled by setting `guidance_scale > 1`.")
-parser.add_argument('--llama', default=True, type=bool, required=False)
+parser.add_argument('--llama',action='store_true', help="is llama like model")
 args = parser.parse_args()
 
 if args.guidance_scale > 1:
