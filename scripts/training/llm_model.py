@@ -320,6 +320,10 @@ def create_peft_model(model, model_args):
         modules_to_save = model_args.modules_to_save
         if modules_to_save is not None:
             modules_to_save = modules_to_save.split(',')
+        
+        if not model_args.llama:
+            modules_to_save = ["wte", "lm_head"] 
+
         lora_rank = model_args.lora_rank
         lora_dropout = model_args.lora_dropout
         lora_alpha = model_args.lora_alpha
