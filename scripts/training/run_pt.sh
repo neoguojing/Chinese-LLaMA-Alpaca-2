@@ -18,7 +18,7 @@ output_dir=$5
 
 nproc_per_node=1
 
-deepspeed_config_file=ds_zero2_no_offload.json
+deepspeed_config_file=ds_config_zero2.json
 
 torchrun --nnodes 1 --nproc_per_node ${nproc_per_node} llm_fine_tune.py \
     --model_name_or_path ${pretrained_model} \

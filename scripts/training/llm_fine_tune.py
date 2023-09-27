@@ -144,15 +144,22 @@ if __name__ == "__main__":
     seed = np.random.randint(1, 65535)  
     set_seed(seed)
 
-    parser = HfArgumentParser((ModelArguments, DataTrainingArguments, MyTrainingArguments,TokenizerArguments))
+    parser = HfArgumentParser((ModelArguments, DataTrainingArguments, MyTrainingArguments))
     if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
         # If we pass only one argument to the script and it's the path to a json file,
         # let's parse it to get our arguments.
-        model_args, data_args, training_args,token_arg = parser.parse_json_file(json_file=os.path.abspath(sys.argv[1]))
+        model_args, data_args, training_args = parser.parse_json_file(json_file=os.path.abspath(sys.argv[1]))
     else:
-        model_args, data_args, training_args,token_arg = parser.parse_args_into_dataclasses()
+        model_args, data_args, training_args = parser.parse_args_into_dataclasses()
     print(training_args)
-    tokenizer = create_tokenizer(token_arg)
+
+    if model_args.q_lora:
+        training_args.fp16 = True
+        training_args.bf16 = False
+    else:
+        training_args.fp16 = False
+        training_args.bf16 = True
+    tokenizer = create_tokenizer(model_args)
     block_size = determine_block_size(data_args,tokenizer)
     train_dataset,eval_dataset =  preprocess_dataset(data_args,block_size,tokenizer)
     model = load_pretrained_model(model_args)
