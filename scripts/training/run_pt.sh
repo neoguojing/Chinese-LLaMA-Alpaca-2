@@ -54,11 +54,13 @@ torchrun --nnodes 1 --nproc_per_node ${nproc_per_node} llm_fine_tune.py \
     --dataloader_num_workers 4 \
     --ddp_find_unused_parameters False \
     --deepspeed ${deepspeed_config_file}
+    # --llama \
+    # --qlota \
+    # --gptq \
     # --gradient_checkpointing True \
     # --modules_to_save ${modules_to_save} \
     # --optim adamw_bnb_8bit \
     # --flash_attn True \
-    # --quantization True \
     # --optim adafactor
     # --bf16 False
     # --torch_dtype auto

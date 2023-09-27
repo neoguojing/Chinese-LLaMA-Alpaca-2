@@ -29,8 +29,8 @@ from transformers import (
 from sklearn.metrics import accuracy_score
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Any, Mapping
-from dataset_handler import DataTrainingArguments,create_tokenizer,TokenizerArguments,determine_block_size,preprocess_dataset
-from llm_model import ModelArguments,load_pretrained_model,determine_vocab_size,create_peft_model
+from dataset_handler import DataTrainingArguments,determine_block_size,preprocess_dataset
+from llm_model import ModelArguments,load_pretrained_model,determine_vocab_size,create_peft_model,create_tokenizer
 from optimizer import create_optimizer
 from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR
 import logging
@@ -154,10 +154,13 @@ if __name__ == "__main__":
     print(training_args)
     tokenizer = create_tokenizer(token_arg)
     block_size = determine_block_size(data_args,tokenizer)
-    train_dataset,eval_dataset =  preprocess_dataset(data_args,block_size)
+    train_dataset,eval_dataset =  preprocess_dataset(data_args,block_size,tokenizer)
     model = load_pretrained_model(model_args)
     model = determine_vocab_size(model,len(tokenizer))
     model = create_peft_model(model,model_args)
+
+    if training_args.gradient_checkpointing:
+        model.enable_input_require_grads()
     # optm = create_optimizer(training_args,model)
     # Initialize our Trainer
     trainer = Trainer(
