@@ -357,4 +357,12 @@ def create_peft_model(model, model_args):
 
     return model
 
-   
+def print_number_of_trainable_model_parameters(model):
+  trainable_model_params = 0
+  all_model_params = 0
+  for _, param in model.named_parameters():
+    all_model_params += param.numel()
+    if param.requires_grad:
+      trainable_model_params += param.numel()
+  print(f"all params num: {all_model_params}, trainable param num: {trainable_model_params}")
+  return trainable_model_params
