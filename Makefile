@@ -1,63 +1,123 @@
  # Define target files
 PWD = $(shell pwd)
 MODEL_DIR := $(PWD)/model
+
+SYSTEM_PROMPT='You are a helpful assistant. 你是一个乐于助人的助手。'
+FIRST_INSTRUCTION="hello"
+
+# data
 GENE_DATA_DIR := $(PWD)/dataset/generate
 CHAT_DATA_DIR := $(PWD)/dataset/chat
 CHAT_VALIDATE_FILE := $(PWD)/dataset/chat/validate
 CACEH_DATA_DIR := $(PWD)/cache
 
+# llama
 HFModelDIR := $(MODEL_DIR)/llama/llama-2-7b/hf
-HFTOkenModelDIR := $(MODEL_DIR)/llama/llama-2-7b/tokenizer.model
+HFTokenModelDIR := $(MODEL_DIR)/llama/llama-2-7b/tokenizer.model
+HFChatModelDIR := $(MODEL_DIR)/llama/llama-2-7b/hf
+HFChatTokenModelDIR := $(MODEL_DIR)/llama/llama-2-7b/tokenizer.model
 
+
+# chinise llama
 ZHModelDIR := $(MODEL_DIR)/chinese/chinese-llama-2-7b-hf
-ZHTOkenModelDIR := $(MODEL_DIR)/chinese/chinese-llama-2-7b-hf/tokenizer.model
+ZHTokenModelDIR := $(MODEL_DIR)/chinese/chinese-llama-2-7b-hf/tokenizer.model
+ZHChatModelDIR := $(MODEL_DIR)/chinese/chinese-alpaca-2-7b-hf
+ZHChatTokenDIR := $(MODEL_DIR)/chinese/chinese-alpaca-2-7b-hf/tokenizer.model
 
-ChatModelDIR := $(MODEL_DIR)/chinese/chinese-alpaca-2-7b-hf
+# qwen
+QWenModelDIR := $(MODEL_DIR)/chinese/qwen/Qwen-7B
+QWenTokenModelDIR := $(MODEL_DIR)/chinese/qwen/Qwen-7B/qwen.tiktoken
+QWenChatModelDIR := $(MODEL_DIR)/chinese/qwen/Qwen-7B-Chat
+QWenChatTokenModelDIR := $(MODEL_DIR)/chinese/qwen/Qwen-7B-Chat/qwen.tiktoken
 
+# lora
 LORAModelDIR := $(MODEL_DIR)/pt_lora_model
 
-ChatPreTrainModelDIR := $(MODEL_DIR)/chinese/chinese-llama-2-7b-hf
-ChatPreTrainTokenDIR := $(MODEL_DIR)/chinese/chinese-llama-2-7b-hf
 
+# output
 ModelOutputDIR := $(MODEL_DIR)
-TrainTargetDIR := $(MODEL_DIR)/target
+MergeTargetDIR := $(MODEL_DIR)/target
 
-ModelPath := $(ChatModelDIR)
+# eval
 EvalPath := $(PWD)/eval
 
-SYSTEM_PROMPT='You are a helpful assistant. 你是一个乐于助人的助手。'
-FIRST_INSTRUCTION="hello"
+
 
 cpu := --only_cpu
+isLLaMaLikeModel := --llama
 
 export cuda?=1
+export chat?=1
+export qwen?=1
+export test?=0
+export zh?=0
+export llama?=0
 
 BUILD_FLAGS:=LLAMA_OPENBLAS=1
+
+BaseModelPath := $(ZHModelDIR)
+BaseTokenPath := $(ZHTokenModelDIR)
 
 ifeq ($(cuda), 1)
 	cpu :=
 	BUILD_FLAGS:=LLAMA_CUBLAS=1
 endif
 
-
 ifeq ($(chat), 0)
-	ModelPath :=$(TrainTargetDIR) 
+
+	ifeq ($(qwen), 1)
+		BaseModelPath :=$(QWenModelDIR)
+		BaseTokenPath := $(QWenTokenModelDIR)
+		isLLaMaLikeModel :=
+	endif
+
+	ifeq ($(zh), 1)
+		BaseModelPath :=$(QWenModelDIR)
+		BaseTokenPath := $(ZHTokenModelDIR)
+	endif
+
+	ifeq ($(llama), 1)
+		BaseModelPath :=$(QWenModelDIR)
+		BaseTokenPath := $(HFTokenModelDIR)
+	endif
+
+else
+
+	ifeq ($(qwen), 1)
+		BaseModelPath :=$(QWenChatModelDIR)
+		BaseTokenPath := $(QWenChatTokenModelDIR)
+		isLLaMaLikeModel :=
+	endif
+
+	ifeq ($(zh), 1)
+		BaseModelPath :=$(ZHChatModelDIR)
+		BaseTokenPath := $(ZHChatTokenDIR)
+	endif
+
+	ifeq ($(llama), 1)
+		BaseModelPath :=$(HFChatModelDIR)
+		BaseTokenPath := $(HFChatTokenModelDIR)
+	endif
+
 endif
+
+
  
  # Inference
 run:
-	@echo "Using model path: $(ModelPath)"
+	@echo "Using model path: $(BaseModelPath)"
 	python scripts/inference/inference_hf.py \
-		--base_model $(ModelPath) \
+		--base_model $(BaseModelPath) \
 		$(cpu) \
+		$(isLLaMaLikeModel) \
 		--with_prompt \
 		--interactive 
 
 
 lora:
-	@echo "Using model path: $(ModelPath)"
+	@echo "Using model path: $(BaseModelPath)"
 	python scripts/inference/inference_hf.py \
-				--base_model $(ModelPath) \
+				--base_model $(BaseModelPath) \
 				--lora_model $(LORAModelDIR) \
 				$(cpu) \
 				--with_prompt \
@@ -66,45 +126,45 @@ lora:
  # Training
 train:
 	# rm -rf cache/*
-	cd scripts/training && ./run_pt.sh $(ZHModelDIR) $(ZHTOkenModelDIR) $(GENE_DATA_DIR) $(CACEH_DATA_DIR) $(ModelOutputDIR) 
+	cd scripts/training && ./run_pt.sh $(BaseModelPath) $(BaseTokenPath) $(GENE_DATA_DIR) $(CACEH_DATA_DIR) $(ModelOutputDIR) 
 
 sft:
 	# rm -rf cache/*
-	cd scripts/training && run_sft.sh $(ChatPreTrainModelDIR) $(ChatPreTrainTokenDIR) $(CHAT_DATA_DIR) $(ModelOutputDIR) $(CHAT_VALIDATE_FILE)
+	cd scripts/training && run_sft.sh $(BaseModelPath) $(BaseTokenPath) $(CHAT_DATA_DIR) $(ModelOutputDIR) $(CHAT_VALIDATE_FILE)
 
 llama.cpp:
 	cd llama.cpp && make $(BUILD_FLAGS)
 
 quantize:
-	cd llama.cpp && python convert.py $(ChatModelDIR)
-	cd llama.cpp && ./quantize $(ChatModelDIR)/ggml-model-f16.gguf $(ChatModelDIR)/ggml-model-q4_0.gguf q4_0
+	cd llama.cpp && python convert.py $(BaseModelPath)
+	cd llama.cpp && ./quantize $(BaseModelPath)/ggml-model-f16.gguf $(BaseModelPath)/ggml-model-q4_0.gguf q4_0
 
 test:
-	cd llama.cpp && ./main -m "$(ChatModelDIR)/ggml-model-q4_0.gguf" \
+	cd llama.cpp && ./main -m "$(BaseModelPath)/ggml-model-q4_0.gguf" \
 	--color -i -c 4096 -t 8 --temp 0.5 --top_k 40 --top_p 0.9 --repeat_penalty 1.1 \
 	--in-prefix-bos --in-prefix ' [INST] ' --in-suffix ' [/INST]'
 
 deploy:
-	cd ../text-generation-webui && python server.py --model-dir $(ChatModelDIR) --loader llamacpp --model $(ChatModelDIR)/ggml-model-q4_0.gguf
+	cd ../text-generation-webui && python server.py --model-dir $(BaseModelPath) --loader llamacpp --model $(BaseModelPath)/ggml-model-q4_0.gguf
 
 dataset:
 	rm -rf cache
 	python scripts/training/dataset_handler.py \
-    --tokenizer_name_or_path $(ZHTOkenModelDIR) \
+    --tokenizer_name_or_path $(BaseTokenPath) \
     --dataset_dir $(GENE_DATA_DIR) \
     --data_cache_dir $(CACEH_DATA_DIR) \
     --block_size 512
 
 merge:
 	python scripts/merge_llama2_with_chinese_lora_low_mem.py \
-    --base_model $(ZHModelDIR) \
+    --base_model $(BaseModelPath) \
     --lora_model $(LORAModelDIR) \
     --output_type huggingface \
-    --output_dir $(TrainTargetDIR)
+    --output_dir $(MergeTargetDIR)
 
 ceval:
 	cd scripts/ceval && python eval.py \
-		--model_path ${ZHModelDIR} \
+		--model_path ${BaseModelPath} \
 		--cot False \
 		--few_shot False \
 		--with_prompt False \

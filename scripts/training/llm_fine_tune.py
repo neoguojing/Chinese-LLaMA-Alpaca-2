@@ -29,8 +29,8 @@ from transformers import (
 from sklearn.metrics import accuracy_score
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Any, Mapping
-from dataset_handler import DataTrainingArguments,create_tokenizer,TokenizerArguments,determine_block_size,preprocess_dataset
-from llm_model import ModelArguments,load_pretrained_model,determine_vocab_size,create_peft_model
+from dataset_handler import DataTrainingArguments,determine_block_size,preprocess_dataset
+from llm_model import ModelArguments,load_pretrained_model,determine_vocab_size,create_peft_model,create_tokenizer
 from optimizer import create_optimizer
 from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR
 import logging
@@ -144,20 +144,30 @@ if __name__ == "__main__":
     seed = np.random.randint(1, 65535)  
     set_seed(seed)
 
-    parser = HfArgumentParser((ModelArguments, DataTrainingArguments, MyTrainingArguments,TokenizerArguments))
+    parser = HfArgumentParser((ModelArguments, DataTrainingArguments, MyTrainingArguments))
     if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
         # If we pass only one argument to the script and it's the path to a json file,
         # let's parse it to get our arguments.
-        model_args, data_args, training_args,token_arg = parser.parse_json_file(json_file=os.path.abspath(sys.argv[1]))
+        model_args, data_args, training_args = parser.parse_json_file(json_file=os.path.abspath(sys.argv[1]))
     else:
-        model_args, data_args, training_args,token_arg = parser.parse_args_into_dataclasses()
+        model_args, data_args, training_args = parser.parse_args_into_dataclasses()
     print(training_args)
-    tokenizer = create_tokenizer(token_arg)
+
+    if model_args.q_lora:
+        training_args.fp16 = True
+        training_args.bf16 = False
+    else:
+        training_args.fp16 = False
+        training_args.bf16 = True
+    tokenizer = create_tokenizer(model_args)
     block_size = determine_block_size(data_args,tokenizer)
-    train_dataset,eval_dataset =  preprocess_dataset(data_args,block_size)
+    train_dataset,eval_dataset =  preprocess_dataset(data_args,block_size,tokenizer)
     model = load_pretrained_model(model_args)
     model = determine_vocab_size(model,len(tokenizer))
     model = create_peft_model(model,model_args)
+
+    if training_args.gradient_checkpointing:
+        model.enable_input_require_grads()
     # optm = create_optimizer(training_args,model)
     # Initialize our Trainer
     trainer = Trainer(

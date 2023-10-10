@@ -23,66 +23,10 @@ from transformers import (
     is_torch_tpu_available,
     set_seed,
 )
+from llm_model import create_tokenizer,ModelArguments
 import logging
 logger = logging.getLogger(__name__)
 block_size = 512
-tokenizer = None
-
-
-@dataclass
-class TokenizerArguments:
-    """
-    Arguments pertaining to which model/config/tokenizer we are going to fine-tune, or train from scratch.
-    """
-    tokenizer_name_or_path: Optional[str] = field(
-        default=None,
-        metadata={
-            "help": (
-                "The tokenizer for weights initialization.Don't set if you want to train a model from scratch."
-            )
-        },
-    )
-    tokenizer_name: Optional[str] = field(
-        default=None, metadata={"help": "Pretrained tokenizer name or path if not the same as model_name"}
-    )
-
-    use_fast_tokenizer: bool = field(
-        default=True,
-        metadata={"help": "Whether to use one of the fast tokenizer (backed by the tokenizers library) or not."},
-    )
-    
-
-def singleton(cls):
-    instances = {}
-
-    def wrapper(*args, **kwargs):
-        if cls not in instances:
-            instances[cls] = cls(*args, **kwargs)
-        return instances[cls]
-
-    return wrapper
-
-@singleton
-class TokenizerSingleton:
-    def __init__(self, token_args):
-        tokenizer_kwargs = {
-            "use_fast": token_args.use_fast_tokenizer,
-        }
-        if token_args.tokenizer_name:
-            self.tokenizer = AutoTokenizer.from_pretrained(token_args.tokenizer_name, **tokenizer_kwargs)
-        elif token_args.tokenizer_name_or_path:
-            self.tokenizer = LlamaTokenizer.from_pretrained(token_args.tokenizer_name_or_path, **tokenizer_kwargs)
-        else:
-            raise ValueError(
-                "You are instantiating a new tokenizer from scratch. This is not supported by this script."
-                "You can do it from another script, save it, and load it from here, using --tokenizer_name."
-            )
-        self.tokenizer.add_eos_token = True
-
-def create_tokenizer(token_args):
-    global tokenizer
-    tokenizer = TokenizerSingleton(token_args).tokenizer
-    return tokenizer
 
 @dataclass
 class DataTrainingArguments:
@@ -156,27 +100,29 @@ tok_logger = transformers.utils.logging.get_logger("transformers.tokenization_ut
 
 # 使用分词器对输入的文本进行分词
 count = 0
-def tokenize_function(examples):
-    # examples = {'text': []}
-    # 默认加载1000行,text对应的数组按照行加载
-    global count
-    if count == 0:
-        print("tokenize_function:examples----",len(examples["text"][101]))
-    with CaptureLogger(tok_logger) as cl:
-        # output = { "input_ids": [],attention_mask:[]}
-        output = tokenizer(examples["text"])
+def tokenize_function(tokenizer):
+    def do_tokenize(examples):
+        # examples = {'text': []}
+        # 默认加载1000行,text对应的数组按照行加载
+        global count
         if count == 0:
-            print("tokenize_function---tokenizer",len(output["input_ids"][101]),len(output["attention_mask"][101]))
-    # clm input could be much much longer than block_size
-    if "Token indices sequence length is longer than the" in cl.out:
-        tok_logger.warning(
-            "^^^^^^^^^^^^^^^^ Please ignore the warning above - this long input will be chunked into smaller bits"
-            " before being passed to the model."
-        )
-    
-    count += 1
-    # print("tokenize_function:count",count)
-    return output
+            print("tokenize_function:examples----",len(examples["text"][101]))
+        with CaptureLogger(tok_logger) as cl:
+            # output = { "input_ids": [],attention_mask:[]}
+            output = tokenizer(examples["text"])
+            if count == 0:
+                print("tokenize_function---tokenizer",len(output["input_ids"][101]),len(output["attention_mask"][101]))
+        # clm input could be much much longer than block_size
+        if "Token indices sequence length is longer than the" in cl.out:
+            tok_logger.warning(
+                "^^^^^^^^^^^^^^^^ Please ignore the warning above - this long input will be chunked into smaller bits"
+                " before being passed to the model."
+            )
+        
+        count += 1
+        # print("tokenize_function:count",count)
+        return output
+    return do_tokenize
 gcount = 0
 # 将token之后的数据,按blocksize组织
 def group_texts(examples):
@@ -244,7 +190,7 @@ def determine_block_size(data_args, tokenizer):
 #     features: ['input_ids', 'attention_mask', 'labels'],
 #     num_rows: 7532
 # })
-def preprocess_dataset(data_args,block_size):
+def preprocess_dataset(data_args,block_size,tokenize):
     
     lm_datasets = []
     path = Path(data_args.dataset_dir)
@@ -266,9 +212,10 @@ def preprocess_dataset(data_args,block_size):
             os.makedirs(cache_dir, exist_ok=True)
             raw_dataset = load_dataset("text", data_files=data_file, cache_dir=cache_dir, keep_in_memory=False)
             logger.info(f"{file} has been loaded")
+            do_tokenize = tokenize_function(tokenize)
             # 分词处理
             tokenized_dataset = raw_dataset.map(
-                tokenize_function,
+                do_tokenize,
                 batched=True,
                 num_proc=data_args.preprocessing_num_workers,
                 remove_columns="text",
@@ -304,7 +251,7 @@ def preprocess_dataset(data_args,block_size):
     return train_dataset,eval_dataset
 
 if __name__ == "__main__":
-    parser = HfArgumentParser((DataTrainingArguments,TokenizerArguments))
+    parser = HfArgumentParser((DataTrainingArguments,ModelArguments))
     if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
         # If we pass only one argument to the script and it's the path to a json file,
         # let's parse it to get our arguments.
@@ -312,6 +259,6 @@ if __name__ == "__main__":
     else:
         data_args,token_arg = parser.parse_args_into_dataclasses()
 
-    create_tokenizer(token_arg)
+    tokenizer = create_tokenizer(token_arg)
     determine_block_size(data_args,tokenizer)
-    preprocess_dataset(data_args,block_size)
+    preprocess_dataset(data_args,block_size,tokenizer)

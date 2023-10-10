@@ -18,7 +18,7 @@ output_dir=$5
 
 nproc_per_node=1
 
-deepspeed_config_file=ds_zero2_no_offload.json
+deepspeed_config_file=ds_config_zero2.json
 
 torchrun --nnodes 1 --nproc_per_node ${nproc_per_node} llm_fine_tune.py \
     --model_name_or_path ${pretrained_model} \
@@ -54,11 +54,13 @@ torchrun --nnodes 1 --nproc_per_node ${nproc_per_node} llm_fine_tune.py \
     --dataloader_num_workers 4 \
     --ddp_find_unused_parameters False \
     --deepspeed ${deepspeed_config_file}
+    # --llama \
+    # --qlota \
+    # --gptq \
     # --gradient_checkpointing True \
     # --modules_to_save ${modules_to_save} \
     # --optim adamw_bnb_8bit \
     # --flash_attn True \
-    # --quantization True \
     # --optim adafactor
     # --bf16 False
     # --torch_dtype auto
