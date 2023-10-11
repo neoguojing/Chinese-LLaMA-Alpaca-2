@@ -25,10 +25,10 @@ ZHChatModelDIR := $(MODEL_DIR)/chinese/chinese-alpaca-2-7b-hf
 ZHChatTokenDIR := $(MODEL_DIR)/chinese/chinese-alpaca-2-7b-hf/tokenizer.model
 
 # qwen
-QWenModelDIR := $(MODEL_DIR)/chinese/qwen/Qwen-7B
-QWenTokenModelDIR := $(MODEL_DIR)/chinese/qwen/Qwen-7B/qwen.tiktoken
-QWenChatModelDIR := $(MODEL_DIR)/chinese/qwen/Qwen-7B-Chat
-QWenChatTokenModelDIR := $(MODEL_DIR)/chinese/qwen/Qwen-7B-Chat/qwen.tiktoken
+QWenModelDIR := $(MODEL_DIR)/chinese/Qwen-7B/
+QWenTokenModelDIR := $(MODEL_DIR)/chinese/Qwen-7B/
+QWenChatModelDIR := $(MODEL_DIR)/chinese/Qwen-7B-Chat/
+QWenChatTokenModelDIR := $(MODEL_DIR)/chinese/Qwen-7B-Chat/
 
 # lora
 LORAModelDIR := $(MODEL_DIR)/pt_lora_model
@@ -108,6 +108,7 @@ run:
 	@echo "Using model path: $(BaseModelPath)"
 	python scripts/inference/inference_hf.py \
 		--base_model $(BaseModelPath) \
+		--tokenizer_path $(BaseTokenPath) \
 		$(cpu) \
 		$(isLLaMaLikeModel) \
 		--with_prompt \
