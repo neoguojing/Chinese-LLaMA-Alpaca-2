@@ -15,3 +15,5 @@ model/target/
 eval/
 scripts/ceval/__pycache__/
 scripts/ceval/data/
+model/chinese/Qwen-7B-Chat/
+model/chinese/Qwen-7B/
