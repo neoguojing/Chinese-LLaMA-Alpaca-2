@@ -91,7 +91,11 @@ else:
         repetition_penalty=1.1, #同top_p
         max_new_tokens=400 # 参数用于限制生成的文本中新增标记的数量。标记可以是单词、子词或字符，具体取决于所使用的模型和分词器，参数是相对于输入上下文而言的。如果输入上下文已经包含一些标记，那么生成的文本中新增标记的数量将计算为生成文本和输入上下文之间的差异
     )
-
+    
+if torch.cuda.is_available():
+    device = torch.device(0)
+else:
+    device = torch.device('cpu')
 
 def generate_prompt(instruction, system_prompt=DEFAULT_SYSTEM_PROMPT):
     return TEMPLATE.format_map({'instruction': instruction,'system_prompt': system_prompt})
@@ -105,7 +109,7 @@ def resize_model_vocab_size(base_model,tokenizer):
         print("Resize model embeddings to fit tokenizer")
         base_model.resize_token_embeddings(tokenizer_vocab_size)
 
-def load_model(args,device):
+def load_model(args):
     load_type = torch.float16
     if args.llama:
         tokenizer = LlamaTokenizer.from_pretrained(args.tokenizer_path, legacy=True)
@@ -157,7 +161,7 @@ def wrap_history(token_ids):
     model_input_ids = history_token_ids[:, -history_max_len:]
     return model_input_ids
 
-def do_generate(input_text,model,tokenizer,device):
+def do_generate(input_text,negative_text,model,tokenizer):
     if args.use_vllm:
         output = model.generate([input_text], SamplingParams(**generation_config), use_tqdm=False)
         response = output[0].outputs[0].text
@@ -204,7 +208,8 @@ def do_generate(input_text,model,tokenizer,device):
         response_ids = generation_output[:, model_input_ids_len:]
         wrap_history(response_ids)
         output = tokenizer.batch_decode(response_ids)
-
+        print(output)
+        print("\n")
         # 处理提示词
         if args.with_prompt:
             response = output.split("[/INST]")[-1].strip()
@@ -214,18 +219,13 @@ def do_generate(input_text,model,tokenizer,device):
     return response
 
 if __name__ == '__main__':
-    
-    if torch.cuda.is_available():
-        device = torch.device(0)
-    else:
-        device = torch.device('cpu')
 
     if args.tokenizer_path is None:
         args.tokenizer_path = args.lora_model
         if args.lora_model is None:
             args.tokenizer_path = args.base_model
 
-    model,tokenizer = load_model(args,device)
+    model,tokenizer = load_model(args)
     if device==torch.device('cpu'):
         model.float()
     model.eval()
@@ -247,48 +247,7 @@ if __name__ == '__main__':
                     input_text = raw_input_text
                     negative_text = args.negative_prompt
 
-                if args.use_vllm:
-                    output = model.generate([input_text], SamplingParams(**generation_config), use_tqdm=False)
-                    response = output[0].outputs[0].text
-                else:
-                    inputs = tokenizer(input_text,return_tensors="pt")  #add_special_tokens=False ?
-                    if args.guidance_scale ==1:
-                        generation_output = model.generate(
-                            input_ids = inputs["input_ids"].to(device),
-                            attention_mask = inputs['attention_mask'].to(device),
-                            eos_token_id=tokenizer.eos_token_id,
-                            pad_token_id=tokenizer.pad_token_id,
-                            generation_config = generation_config
-                        )
-                    else: # enable CFG sampling
-                        # CFG Scale ：
-                        # 参数越大，生成的图像与文本提示的相关性越高，但可能会失真。
-                        # 数值越小，相关性则越低，越有可能偏离提示或输入图像，但质量越好。
-                        if negative_text is None:
-                            negative_prompt_ids = None
-                            negative_prompt_attention_mask = None
-                        else:
-                            negative_inputs = tokenizer(negative_text,return_tensors="pt")
-                            negative_prompt_ids = negative_inputs["input_ids"].to(device)
-                            negative_prompt_attention_mask = negative_inputs["attention_mask"].to(device)
-                        generation_output = model.generate(
-                            input_ids = inputs["input_ids"].to(device),
-                            attention_mask = inputs['attention_mask'].to(device),
-                            eos_token_id=tokenizer.eos_token_id,
-                            pad_token_id=tokenizer.pad_token_id,
-                            generation_config = generation_config,
-                            guidance_scale = args.guidance_scale,
-                            negative_prompt_ids = negative_prompt_ids,
-                            negative_prompt_attention_mask = negative_prompt_attention_mask
-                        )
-                    s = generation_output[0]
-                    output = tokenizer.decode(s,skip_special_tokens=True)
-
-                    # 处理提示词
-                    if args.with_prompt:
-                        response = output.split("[/INST]")[-1].strip()
-                    else:
-                        response = output
+                response = do_generate(input_text,negative_text,model,tokenizer)
                 print("Response: ",response)
                 print("\n")
 
