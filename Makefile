@@ -13,16 +13,16 @@ CACEH_DATA_DIR := $(PWD)/cache
 
 # llama
 HFModelDIR := $(MODEL_DIR)/llama/llama-2-7b/hf
-HFTokenModelDIR := $(MODEL_DIR)/llama/llama-2-7b/tokenizer.model
+HFTokenModelDIR := $(MODEL_DIR)/llama/llama-2-7b/
 HFChatModelDIR := $(MODEL_DIR)/llama/llama-2-7b/hf
-HFChatTokenModelDIR := $(MODEL_DIR)/llama/llama-2-7b/tokenizer.model
+HFChatTokenModelDIR := $(MODEL_DIR)/llama/llama-2-7b/
 
 
 # chinise llama
 ZHModelDIR := $(MODEL_DIR)/chinese/chinese-llama-2-7b-hf
-ZHTokenModelDIR := $(MODEL_DIR)/chinese/chinese-llama-2-7b-hf/tokenizer.model
+ZHTokenModelDIR := $(MODEL_DIR)/chinese/chinese-llama-2-7b-hf/
 ZHChatModelDIR := $(MODEL_DIR)/chinese/chinese-alpaca-2-7b-hf
-ZHChatTokenDIR := $(MODEL_DIR)/chinese/chinese-alpaca-2-7b-hf/tokenizer.model
+ZHChatTokenDIR := $(MODEL_DIR)/chinese/chinese-alpaca-2-7b-hf/
 
 # qwen
 QWenModelDIR := $(MODEL_DIR)/chinese/Qwen-7B/
@@ -72,12 +72,12 @@ ifeq ($(chat), 0)
 	endif
 
 	ifeq ($(zh), 1)
-		BaseModelPath :=$(QWenModelDIR)
+		BaseModelPath :=$(ZHModelDIR)
 		BaseTokenPath := $(ZHTokenModelDIR)
 	endif
 
 	ifeq ($(llama), 1)
-		BaseModelPath :=$(QWenModelDIR)
+		BaseModelPath :=$(HFModelDIR)
 		BaseTokenPath := $(HFTokenModelDIR)
 	endif
 
@@ -106,12 +106,11 @@ endif
  # Inference
 run:
 	@echo "Using model path: $(BaseModelPath)"
-	python scripts/inference/inference_hf.py \
+	python scripts/inference/inference.py \
 		--base_model $(BaseModelPath) \
 		--tokenizer_path $(BaseTokenPath) \
 		$(cpu) \
 		$(isLLaMaLikeModel) \
-		--with_prompt \
 		--interactive 
 
 

@@ -1,5 +1,6 @@
 import argparse
 import json, os
+import torch
 
 DEFAULT_SYSTEM_PROMPT = """You are a helpful assistant. 你是一个乐于助人的助手。"""
 
@@ -27,16 +28,8 @@ parser.add_argument('--load_in_8bit', action='store_true', help="Load the LLM in
 parser.add_argument('--load_in_4bit', action='store_true', help="Load the LLM in the 4bit mode")
 parser.add_argument("--use_vllm", action='store_true', help="Use vLLM as back-end LLM service.")
 parser.add_argument('--system_prompt', type=str, default=DEFAULT_SYSTEM_PROMPT, help="The system prompt of the prompt template.")
-parser.add_argument('--negative_prompt', type=str, default=None, help="Negative prompt in CFG sampling.")
-parser.add_argument('--guidance_scale', type=float, default=1.0, help="The guidance scale for CFG sampling. CFG is enabled by setting `guidance_scale > 1`.")
 parser.add_argument('--llama',action='store_true', help="is llama like model")
 args = parser.parse_args()
-
-if args.guidance_scale > 1:
-    try:
-        from transformers.generation import UnbatchedClassifierFreeGuidanceLogitsProcessor
-    except ImportError:
-        raise ImportError("Please install the latest transformers (commit equal or later than d533465) to enable CFG sampling.")
 
 if args.use_vllm:
     if args.lora_model is not None:
@@ -45,9 +38,7 @@ if args.use_vllm:
         raise ValueError("vLLM currently does not support quantization, please use fp16 (default) or unuse --use_vllm.")
     if args.only_cpu:
         raise ValueError("vLLM requires GPUs with compute capability not less than 7.0. If you want to run only on CPU, please unuse --use_vllm.")
-    if args.guidance_scale > 1:
-        raise ValueError("guidance_scale > 1, but vLLM does not support CFG sampling. Please unset guidance_scale. ")
-    
+
 if args.load_in_8bit and args.load_in_4bit:
     raise ValueError("Only one quantization method can be chosen for inference. Please check your arguments")
 if args.only_cpu is True:
@@ -56,7 +47,7 @@ if args.only_cpu is True:
         raise ValueError("Quantization is unavailable on CPU.")
     
 os.environ["CUDA_VISIBLE_DEVICES"] = args.gpus
-import torch
+
 from transformers import LlamaForCausalLM, LlamaTokenizer,AutoConfig,AutoModelForCausalLM,AutoTokenizer
 from transformers import GenerationConfig
 from transformers import BitsAndBytesConfig
@@ -126,6 +117,9 @@ def load_model(args):
             )        
     else:
         tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_path, trust_remote_code=True)
+        if tokenizer.__class__.__name__ == 'QWenTokenizer':
+            load_type = torch.bfloat16
+
         base_model = AutoModelForCausalLM.from_pretrained(args.base_model, 
                                                             device_map="auto", 
                                                             trust_remote_code=True,
@@ -146,12 +140,6 @@ def load_model(args):
     else:
         model = base_model
 
-    # QWenTokenizer比较特殊，pad_token_id、bos_token_id、eos_token_id均为None。eod_id对应的token为<|endoftext|>
-    if tokenizer.__class__.__name__ == 'QWenTokenizer':
-        tokenizer.pad_token_id = tokenizer.eod_id
-        tokenizer.bos_token_id = tokenizer.eod_id
-        tokenizer.eos_token_id = tokenizer.eod_id
-
     return model.to(device),tokenizer
 
 # 包装输入，用于支持多轮对话
@@ -161,55 +149,29 @@ def wrap_history(token_ids):
     model_input_ids = history_token_ids[:, -history_max_len:]
     return model_input_ids
 
-def do_generate(input_text,negative_text,model,tokenizer):
+def do_generate(input_text,model,tokenizer):
     if args.use_vllm:
         output = model.generate([input_text], SamplingParams(**generation_config), use_tqdm=False)
         response = output[0].outputs[0].text
     else:
         input_ids = tokenizer(input_text, return_tensors="pt", add_special_tokens=False).input_ids
-        if tokenizer.__class__.__name__ == 'QWenTokenizer':
-            # 为了兼容qwen-7b，因为其对eos_token进行tokenize，无法得到对应的eos_token_id
-            eos_token_id = torch.tensor([[tokenizer.eos_token_id]], dtype=torch.long)
-            input_ids = torch.concat([input_ids, eos_token_id], dim=1)
 
-        input_ids = wrap_history(input_ids).to(device)
-        if args.guidance_scale ==1:
-            generation_output = model.generate(
-                input_ids = input_ids,
-                eos_token_id=tokenizer.eos_token_id,
-                pad_token_id=tokenizer.pad_token_id,
-                generation_config = generation_config
-            )
-        else: # enable CFG sampling
-            # CFG Scale ：
-            # 参数越大，生成的图像与文本提示的相关性越高，但可能会失真。
-            # 数值越小，相关性则越低，越有可能偏离提示或输入图像，但质量越好。
-            if negative_text is None:
-                negative_prompt_ids = None
-                negative_prompt_attention_mask = None
-            else:
-                negative_inputs = tokenizer(negative_text,return_tensors="pt")
-                negative_prompt_ids = negative_inputs["input_ids"].to(device)
-                negative_prompt_attention_mask = negative_inputs["attention_mask"].to(device)
-            generation_output = model.generate(
-                input_ids = input_ids,
-                eos_token_id=tokenizer.eos_token_id,
-                pad_token_id=tokenizer.pad_token_id,
-                generation_config = generation_config,
-                guidance_scale = args.guidance_scale,
-                negative_prompt_ids = negative_prompt_ids,
-                negative_prompt_attention_mask = negative_prompt_attention_mask
-            )
+        # input_ids = wrap_history(input_ids)
+        input_ids = input_ids.to(device)
+        generation_output = model.generate(
+            input_ids = input_ids,
+            # eos_token_id=tokenizer.eos_token_id,
+            # pad_token_id=tokenizer.pad_token_id,
+            generation_config = generation_config
+        )
 
-        # response_ids = generation_output[0]
-        model_input_ids_len = input_ids.size(1)
-        response_ids = generation_output[:, model_input_ids_len:]
-        wrap_history(response_ids)
-        output = tokenizer.decode(response_ids,skip_special_tokens=True)
-        print(output)
-        print("\n")
+        response_ids = generation_output[0]
+        # model_input_ids_len = input_ids.size(1)
+        # response_ids = generation_output[:, model_input_ids_len:]
+        # wrap_history(response_ids)
+        output = tokenizer.decode(response_ids.cpu(),skip_special_tokens=True)
         # 处理提示词
-        if args.with_prompt:
+        if args.with_prompt and args.llama:
             response = output.split("[/INST]")[-1].strip()
         else:
             response = output
@@ -217,7 +179,6 @@ def do_generate(input_text,negative_text,model,tokenizer):
     return response
 
 if __name__ == '__main__':
-
     if args.tokenizer_path is None:
         args.tokenizer_path = args.lora_model
         if args.lora_model is None:
@@ -229,23 +190,19 @@ if __name__ == '__main__':
     model.eval()
 
     with torch.no_grad():
-        if args.interactive:
-            print("Start inference")
-            while True:
-                # 用户输入
-                raw_input_text = input("Input:")
-                if len(raw_input_text.strip())==0:
-                    break
-                # 处理提示词
-                if args.with_prompt:
-                    input_text = generate_prompt(instruction=raw_input_text, system_prompt=args.system_prompt)
-                    negative_text = None if args.negative_prompt is None \
-                        else generate_prompt(instruction=raw_input_text, system_prompt=args.negative_prompt)
-                else:
-                    input_text = raw_input_text
-                    negative_text = args.negative_prompt
+        print("Start inference")
+        while True:
+            # 用户输入
+            raw_input_text = input("Input:")
+            if len(raw_input_text.strip())==0:
+                continue
+            # 处理提示词
+            if args.with_prompt:
+                input_text = generate_prompt(instruction=raw_input_text, system_prompt=args.system_prompt)
+            else:
+                input_text = raw_input_text
 
-                response = do_generate(input_text,negative_text,model,tokenizer)
-                print("Response: ",response)
-                print("\n")
+            response = do_generate(input_text,model,tokenizer)
+            print("Response: ",response)
+            print("\n")
 
