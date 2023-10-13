@@ -201,13 +201,11 @@ def do_generate(input_text,negative_text,model,tokenizer):
                 negative_prompt_attention_mask = negative_prompt_attention_mask
             )
 
-        # s = generation_output[0]
-        # output = tokenizer.decode(s,skip_special_tokens=True)
-
+        # response_ids = generation_output[0]
         model_input_ids_len = input_ids.size(1)
         response_ids = generation_output[:, model_input_ids_len:]
         wrap_history(response_ids)
-        output = tokenizer.batch_decode(response_ids)
+        output = tokenizer.decode(response_ids,skip_special_tokens=True)
         print(output)
         print("\n")
         # 处理提示词
