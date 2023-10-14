@@ -13,9 +13,9 @@ CACEH_DATA_DIR := $(PWD)/cache
 
 # llama
 HFModelDIR := $(MODEL_DIR)/llama/llama-2-7b/hf
-HFTokenModelDIR := $(MODEL_DIR)/llama/llama-2-7b/
+HFTokenModelDIR := $(MODEL_DIR)/llama/llama-2-7b/hf
 HFChatModelDIR := $(MODEL_DIR)/llama/llama-2-7b/hf
-HFChatTokenModelDIR := $(MODEL_DIR)/llama/llama-2-7b/
+HFChatTokenModelDIR := $(MODEL_DIR)/llama/llama-2-7b/hf
 
 
 # chinise llama
