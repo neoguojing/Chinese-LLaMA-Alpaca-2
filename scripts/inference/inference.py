@@ -1,6 +1,13 @@
 import argparse
 import json, os
 import torch
+from typing import Tuple, List, Union, Iterable,Optional
+
+# Types.
+HistoryType = List[Tuple[str, str]]
+TokensType = List[int]
+BatchTokensType = List[List[int]]
+
 
 DEFAULT_SYSTEM_PROMPT = """You are a helpful assistant. 你是一个乐于助人的助手。"""
 
@@ -49,7 +56,7 @@ if args.only_cpu is True:
 os.environ["CUDA_VISIBLE_DEVICES"] = args.gpus
 
 from transformers import LlamaForCausalLM, LlamaTokenizer,AutoConfig,AutoModelForCausalLM,AutoTokenizer
-from transformers import GenerationConfig
+from transformers import GenerationConfig,PreTrainedTokenizer
 from transformers import BitsAndBytesConfig
 from peft import  PeftModel
 if args.use_vllm:
@@ -142,12 +149,12 @@ def load_model(args):
 
     return model.to(device),tokenizer
 
-# 包装输入，用于支持多轮对话
-def wrap_history(token_ids):
-    global history_token_ids
-    history_token_ids = torch.concat((history_token_ids, token_ids.cpu()), dim=1)
-    model_input_ids = history_token_ids[:, -history_max_len:]
-    return model_input_ids
+
+history = None
+def qwen_chat(raw_text,model,tokenizer):
+    global history
+    response, history = model.chat(tokenizer, raw_text, history=history,generation_config = generation_config)
+    return response
 
 def do_generate(input_text,model,tokenizer):
     if args.use_vllm:
@@ -156,7 +163,6 @@ def do_generate(input_text,model,tokenizer):
     else:
         input_ids = tokenizer(input_text, return_tensors="pt", add_special_tokens=False).input_ids
 
-        # input_ids = wrap_history(input_ids)
         input_ids = input_ids.to(device)
         generation_output = model.generate(
             input_ids = input_ids,
@@ -166,9 +172,6 @@ def do_generate(input_text,model,tokenizer):
         )
 
         response_ids = generation_output[0]
-        # model_input_ids_len = input_ids.size(1)
-        # response_ids = generation_output[:, model_input_ids_len:]
-        # wrap_history(response_ids)
         output = tokenizer.decode(response_ids.cpu(),skip_special_tokens=True)
         # 处理提示词
         if args.with_prompt and args.llama:
@@ -177,6 +180,247 @@ def do_generate(input_text,model,tokenizer):
             response = output
 
     return response
+
+
+def make_context(
+    tokenizer: PreTrainedTokenizer,
+    query: str,
+    history: List[Tuple[str, str]] = None,
+    system: str = "",
+    max_window_size: int = 6144,
+    chat_format: str = "chatml",
+):
+    if history is None:
+        history = []
+
+    if chat_format == "chatml":
+        im_start, im_end = "<|im_start|>", "<|im_end|>"
+        im_start_tokens = [tokenizer.im_start_id]
+        im_end_tokens = [tokenizer.im_end_id]
+        nl_tokens = tokenizer.encode("\n")
+
+        def _tokenize_str(role, content):
+            return f"{role}\n{content}", tokenizer.encode(
+                role, allowed_special=set()
+            ) + nl_tokens + tokenizer.encode(content, allowed_special=set())
+
+        system_text, system_tokens_part = _tokenize_str("system", system)
+        system_tokens = im_start_tokens + system_tokens_part + im_end_tokens
+
+        raw_text = ""
+        context_tokens = []
+
+        for turn_query, turn_response in reversed(history):
+            query_text, query_tokens_part = _tokenize_str("user", turn_query)
+            query_tokens = im_start_tokens + query_tokens_part + im_end_tokens
+            response_text, response_tokens_part = _tokenize_str(
+                "assistant", turn_response
+            )
+            response_tokens = im_start_tokens + response_tokens_part + im_end_tokens
+
+            next_context_tokens = nl_tokens + query_tokens + nl_tokens + response_tokens
+            prev_chat = (
+                f"\n{im_start}{query_text}{im_end}\n{im_start}{response_text}{im_end}"
+            )
+
+            current_context_size = (
+                len(system_tokens) + len(next_context_tokens) + len(context_tokens)
+            )
+            if current_context_size < max_window_size:
+                context_tokens = next_context_tokens + context_tokens
+                raw_text = prev_chat + raw_text
+            else:
+                break
+
+        context_tokens = system_tokens + context_tokens
+        raw_text = f"{im_start}{system_text}{im_end}" + raw_text
+        context_tokens += (
+            nl_tokens
+            + im_start_tokens
+            + _tokenize_str("user", query)[1]
+            + im_end_tokens
+            + nl_tokens
+            + im_start_tokens
+            + tokenizer.encode("assistant")
+            + nl_tokens
+        )
+        raw_text += f"\n{im_start}user\n{query}{im_end}\n{im_start}assistant\n"
+
+    elif chat_format == "raw":
+        raw_text = query
+        context_tokens = tokenizer.encode(raw_text)
+    else:
+        raise NotImplementedError(f"Unknown chat format {chat_format!r}")
+
+    return raw_text, context_tokens
+
+
+def _decode_default(
+    tokens: List[int],
+    *,
+    stop_words: List[str],
+    eod_words: List[str],
+    tokenizer: PreTrainedTokenizer,
+    raw_text_len: int,
+    verbose: bool = False,
+    return_end_reason: bool = False,
+    errors: str='replace',
+):
+    trim_decode_tokens = tokenizer.decode(tokens, errors=errors)[raw_text_len:]
+    if verbose:
+        print("\nRaw Generate: ", trim_decode_tokens)
+
+    end_reason = f"Gen length {len(tokens)}"
+    for stop_word in stop_words:
+        trim_decode_tokens = trim_decode_tokens.replace(stop_word, "").strip()
+    for eod_word in eod_words:
+        if eod_word in trim_decode_tokens:
+            end_reason = f"Gen {eod_word!r}"
+        trim_decode_tokens = trim_decode_tokens.split(eod_word)[0]
+    trim_decode_tokens = trim_decode_tokens.strip()
+    if verbose:
+        print("\nEnd Reason:", end_reason)
+        print("\nGenerate: ", trim_decode_tokens)
+
+    if return_end_reason:
+        return trim_decode_tokens, end_reason
+    else:
+        return trim_decode_tokens
+
+def _decode_chatml(
+    tokens: List[int],
+    *,
+    stop_words: List[str],
+    eod_token_ids: List[int],
+    tokenizer: PreTrainedTokenizer,
+    raw_text_len: int,
+    context_length: int,
+    verbose: bool = False,
+    return_end_reason: bool = False,
+    errors: str='replace'
+):
+    end_reason = f"Gen length {len(tokens)}"
+    eod_token_idx = context_length
+    for eod_token_idx in range(context_length, len(tokens)):
+        if tokens[eod_token_idx] in eod_token_ids:
+            end_reason = f"Gen {tokenizer.decode([tokens[eod_token_idx]])!r}"
+            break
+
+    trim_decode_tokens = tokenizer.decode(tokens[:eod_token_idx], errors=errors)[raw_text_len:]
+    if verbose:
+        print("\nRaw Generate w/o EOD:", tokenizer.decode(tokens, errors=errors)[raw_text_len:])
+        print("\nRaw Generate:", trim_decode_tokens)
+        print("\nEnd Reason:", end_reason)
+    for stop_word in stop_words:
+        trim_decode_tokens = trim_decode_tokens.replace(stop_word, "").strip()
+    trim_decode_tokens = trim_decode_tokens.strip()
+    if verbose:
+        print("\nGenerate:", trim_decode_tokens)
+
+    if return_end_reason:
+        return trim_decode_tokens, end_reason
+    else:
+        return trim_decode_tokens
+
+def decode_tokens(
+    tokens: Union[torch.LongTensor, TokensType],
+    tokenizer: PreTrainedTokenizer,
+    raw_text_len: int,
+    context_length: int,
+    chat_format: str,
+    verbose: bool = False,
+    return_end_reason: bool = False,
+    errors: str="replace",
+) -> str:
+    if torch.is_tensor(tokens):
+        tokens = tokens.cpu().numpy().tolist()
+
+    if chat_format == "chatml":
+        return _decode_chatml(
+            tokens,
+            stop_words=[],
+            eod_token_ids=[tokenizer.im_start_id, tokenizer.im_end_id],
+            tokenizer=tokenizer,
+            raw_text_len=raw_text_len,
+            context_length=context_length,
+            verbose=verbose,
+            return_end_reason=return_end_reason,
+            errors=errors,
+        )
+    elif chat_format == "raw":
+        return _decode_default(
+            tokens,
+            stop_words=["<|endoftext|>"],
+            eod_words=["<|endoftext|>"],
+            tokenizer=tokenizer,
+            raw_text_len=raw_text_len,
+            verbose=verbose,
+            return_end_reason=return_end_reason,
+            errors=errors,
+        )
+    else:
+        raise NotImplementedError(f"Unknown chat format {chat_format!r}")
+
+
+def chat(
+        self,
+        tokenizer: PreTrainedTokenizer,
+        query: str,
+        history: Optional[HistoryType],
+        system: str = "You are a helpful assistant.",
+        append_history: bool = True,
+        stream: Optional[bool] = _SENTINEL,
+        stop_words_ids: Optional[List[List[int]]] = None,
+        generation_config: Optional[GenerationConfig] = None,
+        **kwargs,
+    ) -> Tuple[str, HistoryType]:
+        generation_config = generation_config if generation_config is not None else self.generation_config
+
+        assert stream is _SENTINEL, _ERROR_STREAM_IN_CHAT
+        assert generation_config.chat_format == 'chatml', _ERROR_BAD_CHAT_FORMAT
+        if history is None:
+            history = []
+        if stop_words_ids is None:
+            stop_words_ids = []
+
+        max_window_size = kwargs.get('max_window_size', None)
+        if max_window_size is None:
+            max_window_size = generation_config.max_window_size
+        raw_text, context_tokens = make_context(
+            tokenizer,
+            query,
+            history=history,
+            system=system,
+            max_window_size=max_window_size,
+            chat_format=generation_config.chat_format,
+        )
+
+        stop_words_ids.extend(get_stop_words_ids(
+            generation_config.chat_format, tokenizer
+        ))
+        input_ids = torch.tensor([context_tokens]).to(self.device)
+        outputs = self.generate(
+                    input_ids,
+                    stop_words_ids=stop_words_ids,
+                    return_dict_in_generate=False,
+                    generation_config=generation_config,
+                    **kwargs,
+                )
+
+        response = decode_tokens(
+            outputs[0],
+            tokenizer,
+            raw_text_len=len(raw_text),
+            context_length=len(context_tokens),
+            chat_format=generation_config.chat_format,
+            verbose=False,
+            errors='replace'
+        )
+
+        if append_history:
+            history.append((query, response))
+
+        return response, history
 
 if __name__ == '__main__':
     if args.tokenizer_path is None:
@@ -202,7 +446,11 @@ if __name__ == '__main__':
             else:
                 input_text = raw_input_text
 
-            response = do_generate(input_text,model,tokenizer)
+            if args.llama:
+                response = do_generate(input_text,model,tokenizer)
+            else:
+                response = qwen_chat(input_text,model,tokenizer)
+
             print("Response: ",response)
             print("\n")
 
