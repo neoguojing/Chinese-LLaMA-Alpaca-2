@@ -186,6 +186,7 @@ def make_context(
     else:
         raise NotImplementedError(f"Unknown chat format {chat_format!r}")
 
+    print("raw_text {}",raw_text)
     return raw_text, context_tokens
 
 

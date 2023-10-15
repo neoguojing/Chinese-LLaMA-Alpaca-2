@@ -182,12 +182,7 @@ def do_generate(input_text,model,tokenizer):
 
         response_ids = generation_output[0]
         output = tokenizer.decode(response_ids.cpu(),skip_special_tokens=True)
-        # 处理提示词
-        if args.with_prompt and args.llama:
-            response = output.split("[/INST]")[-1].strip()
-        else:
-            response = output
-
+        response = output
     return response
 
 def chat(
