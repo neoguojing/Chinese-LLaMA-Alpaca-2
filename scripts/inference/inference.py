@@ -2,7 +2,7 @@ import argparse
 import json, os
 import torch
 from typing import Tuple, List, Union, Iterable,Optional
-from .generation_utils import (
+from generation_utils import (
     HistoryType,
     make_context,
     decode_tokens,
@@ -14,13 +14,6 @@ from .generation_utils import (
 HistoryType = List[Tuple[str, str]]
 TokensType = List[int]
 BatchTokensType = List[List[int]]
-
-_ERROR_BAD_CHAT_FORMAT = """\
-We detect you are probably using the pretrained model (rather than chat model) for chatting, since the chat_format in generation_config is not "chatml".
-If you are directly using the model downloaded from Huggingface, please make sure you are using our "Qwen/Qwen-7B-Chat" Huggingface model (rather than "Qwen/Qwen-7B") when you call model.chat().
-我们检测到您可能在使用预训练模型（而非chat模型）进行多轮chat，因为您当前在generation_config指定的chat_format，并未设置为我们在对话中所支持的"chatml"格式。
-如果您在直接使用我们从Huggingface提供的模型，请确保您在调用model.chat()时，使用的是"Qwen/Qwen-7B-Chat"模型（而非"Qwen/Qwen-7B"预训练模型）。
-"""
 
 
 DEFAULT_SYSTEM_PROMPT = """You are a helpful assistant. 你是一个乐于助人的助手。"""
@@ -50,6 +43,7 @@ parser.add_argument('--load_in_4bit', action='store_true', help="Load the LLM in
 parser.add_argument("--use_vllm", action='store_true', help="Use vLLM as back-end LLM service.")
 parser.add_argument('--system_prompt', type=str, default=DEFAULT_SYSTEM_PROMPT, help="The system prompt of the prompt template.")
 parser.add_argument('--llama',action='store_true', help="is llama like model")
+parser.add_argument('--chat',action='store_true', help="is a chat model?")
 args = parser.parse_args()
 
 if args.use_vllm:
@@ -161,10 +155,11 @@ def load_model(args):
     else:
         model = base_model
 
+    print("generation_config {}",generation_config)
     return model.to(device),tokenizer
 
 
-history = None
+
 def qwen_chat(raw_text,model,tokenizer):
     global history
     response, history = model.chat(tokenizer, raw_text, history=history,generation_config = generation_config)
@@ -203,31 +198,28 @@ def chat(
         system: str = "You are a helpful assistant.",
         append_history: bool = True,
         stop_words_ids: Optional[List[List[int]]] = None,
-        generation_config: Optional[GenerationConfig] = None,
-        **kwargs,
+        # generation_config: Optional[GenerationConfig] = None,
+        # **kwargs,
     ) -> Tuple[str, HistoryType]:
-        generation_config = generation_config if generation_config is not None else self.generation_config
-        assert generation_config.chat_format == 'chatml', _ERROR_BAD_CHAT_FORMAT
-
         if history is None:
             history = []
         if stop_words_ids is None:
             stop_words_ids = []
 
-        max_window_size = kwargs.get('max_window_size', None)
-        if max_window_size is None:
-            max_window_size = generation_config.max_window_size
+        # max_window_size = kwargs.get('max_window_size', None)
+        # if max_window_size is None:
+        max_window_size = 6144
         raw_text, context_tokens = make_context(
             tokenizer,
             query,
             history=history,
             system=system,
             max_window_size=max_window_size,
-            chat_format=generation_config.chat_format,
+            chat_format="chatml"
         )
 
         stop_words_ids.extend(get_stop_words_ids(
-            generation_config.chat_format, tokenizer
+            "chatml", tokenizer
         ))
         input_ids = torch.tensor([context_tokens]).to(device)
         outputs = model.generate(
@@ -235,7 +227,7 @@ def chat(
                     stop_words_ids=stop_words_ids,
                     return_dict_in_generate=False,
                     generation_config=generation_config,
-                    **kwargs,
+                    # **kwargs,
                 )
 
         response = decode_tokens(
@@ -243,7 +235,7 @@ def chat(
             tokenizer,
             raw_text_len=len(raw_text),
             context_length=len(context_tokens),
-            chat_format=generation_config.chat_format,
+            chat_format="chatml",
             verbose=False,
             errors='replace'
         )
@@ -264,6 +256,7 @@ if __name__ == '__main__':
         model.float()
     model.eval()
 
+    history = None
     with torch.no_grad():
         print("Start inference")
         while True:
@@ -277,10 +270,10 @@ if __name__ == '__main__':
             else:
                 input_text = raw_input_text
 
-            if args.llama:
-                response = do_generate(input_text,model,tokenizer)
+            if args.chat:
+                response, history = chat(model,tokenizer,input_text,history)
             else:
-                response = qwen_chat(input_text,model,tokenizer)
+                response = do_generate(input_text,model,tokenizer)
 
             print("Response: ",response)
             print("\n")

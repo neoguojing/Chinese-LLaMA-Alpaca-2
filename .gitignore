@@ -18,3 +18,4 @@ scripts/ceval/data/
 model/chinese/Qwen-7B-Chat/
 model/chinese/Qwen-7B/
 model/llama/llama-2-7b/
+scripts/inference/__pycache__/

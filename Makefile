@@ -45,6 +45,7 @@ EvalPath := $(PWD)/eval
 
 cpu := --only_cpu
 isLLaMaLikeModel := --llama
+isChat := --chat
 
 export cuda?=1
 export chat?=1
@@ -69,16 +70,19 @@ ifeq ($(chat), 0)
 		BaseModelPath :=$(QWenModelDIR)
 		BaseTokenPath := $(QWenTokenModelDIR)
 		isLLaMaLikeModel :=
+		isChat :=
 	endif
 
 	ifeq ($(zh), 1)
 		BaseModelPath :=$(ZHModelDIR)
 		BaseTokenPath := $(ZHTokenModelDIR)
+		isChat :=
 	endif
 
 	ifeq ($(llama), 1)
 		BaseModelPath :=$(HFModelDIR)
 		BaseTokenPath := $(HFTokenModelDIR)
+		isChat :=
 	endif
 
 else
@@ -111,7 +115,7 @@ run:
 		--tokenizer_path $(BaseTokenPath) \
 		$(cpu) \
 		$(isLLaMaLikeModel) \
-		--interactive 
+		$(isChat)
 
 
 lora:
@@ -120,9 +124,9 @@ lora:
 				--base_model $(BaseModelPath) \
 				--lora_model $(LORAModelDIR) \
 				$(cpu) \
-				--with_prompt \
-				--interactive 
-
+				$(isLLaMaLikeModel) \
+				$(isChat) \
+				--with_prompt
  # Training
 train:
 	# rm -rf cache/*
