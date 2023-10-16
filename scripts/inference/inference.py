@@ -103,9 +103,6 @@ if torch.cuda.is_available():
 else:
     device = torch.device('cpu')
 
-def generate_prompt(instruction, system_prompt=DEFAULT_SYSTEM_PROMPT):
-    return TEMPLATE.format_map({'instruction': instruction,'system_prompt': system_prompt})
-
 def resize_model_vocab_size(base_model,tokenizer):
     model_vocab_size = base_model.get_input_embeddings().weight.size(0)
     tokenizer_vocab_size = len(tokenizer)
@@ -119,6 +116,8 @@ def load_model(args):
     load_type = torch.float16
     if args.llama:
         tokenizer = LlamaTokenizer.from_pretrained(args.tokenizer_path, legacy=True)
+        print("llama special token:bos",tokenizer.bos_token,tokenizer.encode(tokenizer.bos_token))
+        print("llama special token:eos",tokenizer.eos_token,tokenizer.encode(tokenizer.bos_token))
         base_model = LlamaForCausalLM.from_pretrained(
                 args.base_model,
                 torch_dtype=load_type,
@@ -129,7 +128,9 @@ def load_model(args):
                     load_in_8bit=args.load_in_8bit,
                     bnb_4bit_compute_dtype=load_type
                 )
-            )        
+            )      
+        print("llama special token:bos",base_model.config.bos_token_id)
+        print("llama special token:eos",base_model.config.eos_token_id)  
     else:
         tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_path, trust_remote_code=True)
         if tokenizer.__class__.__name__ == 'QWenTokenizer':
@@ -175,8 +176,6 @@ def do_generate(input_text,model,tokenizer):
         input_ids = input_ids.to(device)
         generation_output = model.generate(
             input_ids = input_ids,
-            # eos_token_id=tokenizer.eos_token_id,
-            # pad_token_id=tokenizer.pad_token_id,
             generation_config = generation_config
         )
 
@@ -190,8 +189,9 @@ def chat(
         tokenizer: PreTrainedTokenizer,
         query: str,
         history: Optional[HistoryType],
-        system: str = "You are a helpful assistant.",
+        system: str = "You are a helpful assistant.你是一个乐于助人的助手。",
         append_history: bool = True,
+        chat_format: str = "chatml",
         stop_words_ids: Optional[List[List[int]]] = None,
         # generation_config: Optional[GenerationConfig] = None,
         # **kwargs,
@@ -210,11 +210,11 @@ def chat(
             history=history,
             system=system,
             max_window_size=max_window_size,
-            chat_format="chatml"
+            chat_format=chat_format
         )
 
         stop_words_ids.extend(get_stop_words_ids(
-            "chatml", tokenizer
+            chat_format, tokenizer
         ))
         input_ids = torch.tensor([context_tokens]).to(device)
         outputs = model.generate(
@@ -230,7 +230,7 @@ def chat(
             tokenizer,
             raw_text_len=len(raw_text),
             context_length=len(context_tokens),
-            chat_format="chatml",
+            chat_format=chat_format,
             verbose=False,
             errors='replace'
         )
@@ -259,14 +259,13 @@ if __name__ == '__main__':
             raw_input_text = input("Input:")
             if len(raw_input_text.strip())==0:
                 continue
-            # 处理提示词
-            if args.with_prompt:
-                input_text = generate_prompt(instruction=raw_input_text, system_prompt=args.system_prompt)
-            else:
-                input_text = raw_input_text
+            
+            input_text = raw_input_text
 
             if args.chat:
-                response, history = chat(model,tokenizer,input_text,history)
+                if args.llama:
+                    chat_format = "llama"
+                response, history = chat(model,tokenizer,input_text,history,chat_format=chat_format)
             else:
                 response = do_generate(input_text,model,tokenizer)
 

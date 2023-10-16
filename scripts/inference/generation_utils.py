@@ -21,6 +21,13 @@ HistoryType = List[Tuple[str, str]]
 TokensType = List[int]
 BatchTokensType = List[List[int]]
 
+## LLAMA prompt
+B_SYS, E_SYS = "<<SYS>>\n", "\n<</SYS>>\n\n"
+B_INST, E_INST = "[INST]", "[/INST]"
+
+def llama_prompt(system_prompt,user_prompt):
+    prompt = f"{B_INST} {B_SYS}{system_prompt.strip()}{E_SYS}{user_prompt.strip()} {E_INST}\n\n"
+    return prompt
 
 def pad_batch(batch: BatchTokensType, pad_id: int, seq_length: int) -> BatchTokensType:
     for tokens in batch:
@@ -111,6 +118,8 @@ def get_stop_words_ids(chat_format, tokenizer):
         stop_words_ids = [tokenizer.encode("Human:"), [tokenizer.eod_id]]
     elif chat_format == "chatml":
         stop_words_ids = [[tokenizer.im_end_id], [tokenizer.im_start_id]]
+    elif chat_format == "llama":
+        stop_words_ids = [[tokenizer.eos_token_id], [tokenizer.bos_token_id]]
     else:
         raise NotImplementedError(f"Unknown chat format {chat_format!r}")
     return stop_words_ids
