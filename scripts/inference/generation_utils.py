@@ -21,13 +21,6 @@ HistoryType = List[Tuple[str, str]]
 TokensType = List[int]
 BatchTokensType = List[List[int]]
 
-## LLAMA prompt
-B_SYS, E_SYS = "<<SYS>>\n", "\n<</SYS>>\n\n"
-B_INST, E_INST = "[INST]", "[/INST]"
-
-def llama_prompt(system_prompt,user_prompt):
-    prompt = f"{B_INST} {B_SYS}{system_prompt.strip()}{E_SYS}{user_prompt.strip()} {E_INST}\n\n"
-    return prompt
 
 def pad_batch(batch: BatchTokensType, pad_id: int, seq_length: int) -> BatchTokensType:
     for tokens in batch:
@@ -192,6 +185,49 @@ def make_context(
     elif chat_format == "raw":
         raw_text = query
         context_tokens = tokenizer.encode(raw_text)
+    elif chat_format == "llama":
+        ## LLAMA prompt
+        B_SYS, E_SYS = "<<SYS>>\n", "\n<</SYS>>\n\n"
+        B_INST, E_INST = "[INST]", "[/INST]"
+        sys_start_tokens = tokenizer.encode(B_SYS)
+        sys_end_tokens = tokenizer.encode(E_SYS)
+        inst_start_tokens = tokenizer.encode(B_INST)
+        inst_end_tokens = tokenizer.encode(E_INST)
+
+        def _tokenize_str(query, response):
+            text = f"{B_INST} {query} {E_INST}{response}"
+            return text, tokenizer.encode(text, allowed_special=set())
+
+        def system_tokenize_str(system):
+            text = f"{B_INST} {B_SYS} {system} {E_SYS} {E_INST}"
+            return text, tokenizer.encode(text, allowed_special=set())
+        
+        system_text, system_tokens = system_tokenize_str(system)
+
+        raw_text = ""
+        context_tokens = []
+
+        for turn_query, turn_response in reversed(history):
+            hist_text, hist_tokens = _tokenize_str(turn_query, turn_response)
+            prev_chat = hist_text
+
+            current_context_size = (
+                len(system_tokens) + len(hist_tokens) + len(context_tokens)
+            )
+            if current_context_size < max_window_size:
+                context_tokens = hist_tokens + context_tokens
+                raw_text = prev_chat + raw_text
+            else:
+                break
+
+        context_tokens = system_tokens + context_tokens
+        raw_text = system_text + raw_text
+        context_tokens += (
+            + inst_start_tokens
+            + _tokenize_str(query, "")[1]
+            + inst_end_tokens
+        )
+        raw_text += f"{B_INST} {query} {E_INST}"
     else:
         raise NotImplementedError(f"Unknown chat format {chat_format!r}")
 
