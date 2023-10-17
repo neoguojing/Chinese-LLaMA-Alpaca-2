@@ -196,12 +196,12 @@ def make_context(
         # nl_tokens = tokenizer.encode("\n")
 
         def _tokenize_str(query, response):
-            text = f"{B_INST}{query.strip()}{E_INST}\n{response.strip()}\n"
-            return text, tokenizer.encode(text, allowed_special=set())
+            text = f"{B_INST}{query.strip()}{E_INST}{response.strip()}\n"
+            return text, tokenizer.encode(text,add_special_tokens=False)
 
         def system_tokenize_str(system):
             text = f"{B_INST}{B_SYS}{system.strip()}{E_SYS}{E_INST}"
-            return text, tokenizer.encode(text, allowed_special=set())
+            return text, tokenizer.encode(text,add_special_tokens=False)
         
         system_text, system_tokens = system_tokenize_str(system)
 
@@ -210,6 +210,7 @@ def make_context(
 
         for turn_query, turn_response in reversed(history):
             hist_text, hist_tokens = _tokenize_str(turn_query, turn_response)
+            print("hist_text:",hist_text)
             prev_chat = hist_text
 
             current_context_size = (
@@ -230,7 +231,6 @@ def make_context(
     else:
         raise NotImplementedError(f"Unknown chat format {chat_format!r}")
 
-    print("raw_text {}",raw_text)
     return raw_text, context_tokens
 
 
@@ -313,29 +313,9 @@ def _decode_llama(
     verbose: bool = False,
     return_end_reason: bool = False,
 ):
-    end_reason = f"Gen length {len(tokens)}"
-    eod_token_idx = context_length
-    for eod_token_idx in range(context_length, len(tokens)):
-        eos_token = tokenizer.decode([tokens[eod_token_idx]])
-        if eos_token in eod_tokens:
-            end_reason = f"Gen {eos_token!r}"
-            break
-
-    trim_decode_tokens = tokenizer.decode(tokens[:eod_token_idx])[raw_text_len:]
-    if verbose:
-        print("\nRaw Generate w/o EOD:", tokenizer.decode(tokens)[raw_text_len:])
-        print("\nRaw Generate:", trim_decode_tokens)
-        print("\nEnd Reason:", end_reason)
-    for stop_word in stop_words:
-        trim_decode_tokens = trim_decode_tokens.replace(stop_word, "").strip()
-    trim_decode_tokens = trim_decode_tokens.strip()
-    if verbose:
-        print("\nGenerate:", trim_decode_tokens)
-
-    if return_end_reason:
-        return trim_decode_tokens, end_reason
-    else:
-        return trim_decode_tokens
+    full_return = tokenizer.decode(tokens,skip_special_tokens=True)
+    response = full_return.split("[/INST]")[-1].strip()
+    return response
     
 def decode_tokens(
     tokens: Union[torch.LongTensor, TokensType],
@@ -383,7 +363,6 @@ def decode_tokens(
             context_length=context_length,
             verbose=verbose,
             return_end_reason=return_end_reason,
-            errors=errors,
         )
     else:
         raise NotImplementedError(f"Unknown chat format {chat_format!r}")

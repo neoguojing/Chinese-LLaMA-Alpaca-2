@@ -210,14 +210,13 @@ def chat(
             max_window_size=max_window_size,
             chat_format=chat_format
         )
-
         stop_words_ids.extend(get_stop_words_ids(
             chat_format, tokenizer
         ))
         input_ids = torch.tensor([context_tokens]).to(device)
         outputs = model.generate(
                     input_ids,
-                    stop_words_ids=stop_words_ids,
+                    # stop_words_ids=stop_words_ids,
                     return_dict_in_generate=False,
                     generation_config=generation_config,
                     # **kwargs,
@@ -270,7 +269,7 @@ if __name__ == '__main__':
                 response, history = chat(model,tokenizer,input_text,history,chat_format=chat_format,max_window_size=max_window_size)
             else:
                 response = do_generate(input_text,model,tokenizer)
-
+            
             print("Response: ",response)
             print("\n")
 
