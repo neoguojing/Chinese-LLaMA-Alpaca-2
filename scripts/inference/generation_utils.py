@@ -189,17 +189,18 @@ def make_context(
         ## LLAMA prompt
         B_SYS, E_SYS = "<<SYS>>\n", "\n<</SYS>>\n\n"
         B_INST, E_INST = "[INST]", "[/INST]"
-        sys_start_tokens = tokenizer.encode(B_SYS)
-        sys_end_tokens = tokenizer.encode(E_SYS)
-        inst_start_tokens = tokenizer.encode(B_INST)
-        inst_end_tokens = tokenizer.encode(E_INST)
+        # sys_start_tokens = tokenizer.encode(B_SYS)
+        # sys_end_tokens = tokenizer.encode(E_SYS)
+        # inst_start_tokens = tokenizer.encode(B_INST)
+        # inst_end_tokens = tokenizer.encode(E_INST)
+        # nl_tokens = tokenizer.encode("\n")
 
         def _tokenize_str(query, response):
-            text = f"{B_INST} {query} {E_INST}{response}"
+            text = f"{B_INST}{query.strip()}{E_INST}\n{response.strip()}\n"
             return text, tokenizer.encode(text, allowed_special=set())
 
         def system_tokenize_str(system):
-            text = f"{B_INST} {B_SYS} {system} {E_SYS} {E_INST}"
+            text = f"{B_INST}{B_SYS}{system.strip()}{E_SYS}{E_INST}"
             return text, tokenizer.encode(text, allowed_special=set())
         
         system_text, system_tokens = system_tokenize_str(system)
@@ -222,12 +223,10 @@ def make_context(
 
         context_tokens = system_tokens + context_tokens
         raw_text = system_text + raw_text
-        context_tokens += (
-            + inst_start_tokens
-            + _tokenize_str(query, "")[1]
-            + inst_end_tokens
-        )
-        raw_text += f"{B_INST} {query} {E_INST}"
+
+        query_text, query_tokens = _tokenize_str(query, "")
+        context_tokens += query_tokens
+        raw_text += query_text
     else:
         raise NotImplementedError(f"Unknown chat format {chat_format!r}")
 
@@ -303,7 +302,41 @@ def _decode_chatml(
     else:
         return trim_decode_tokens
 
+def _decode_llama(
+    tokens: List[int],
+    *,
+    stop_words: List[str],
+    eod_tokens: List[str],
+    tokenizer: PreTrainedTokenizer,
+    raw_text_len: int,
+    context_length: int,
+    verbose: bool = False,
+    return_end_reason: bool = False,
+):
+    end_reason = f"Gen length {len(tokens)}"
+    eod_token_idx = context_length
+    for eod_token_idx in range(context_length, len(tokens)):
+        eos_token = tokenizer.decode([tokens[eod_token_idx]])
+        if eos_token in eod_tokens:
+            end_reason = f"Gen {eos_token!r}"
+            break
 
+    trim_decode_tokens = tokenizer.decode(tokens[:eod_token_idx])[raw_text_len:]
+    if verbose:
+        print("\nRaw Generate w/o EOD:", tokenizer.decode(tokens)[raw_text_len:])
+        print("\nRaw Generate:", trim_decode_tokens)
+        print("\nEnd Reason:", end_reason)
+    for stop_word in stop_words:
+        trim_decode_tokens = trim_decode_tokens.replace(stop_word, "").strip()
+    trim_decode_tokens = trim_decode_tokens.strip()
+    if verbose:
+        print("\nGenerate:", trim_decode_tokens)
+
+    if return_end_reason:
+        return trim_decode_tokens, end_reason
+    else:
+        return trim_decode_tokens
+    
 def decode_tokens(
     tokens: Union[torch.LongTensor, TokensType],
     tokenizer: PreTrainedTokenizer,
@@ -336,6 +369,18 @@ def decode_tokens(
             eod_words=["<|endoftext|>"],
             tokenizer=tokenizer,
             raw_text_len=raw_text_len,
+            verbose=verbose,
+            return_end_reason=return_end_reason,
+            errors=errors,
+        )
+    elif chat_format == "llama":
+        return _decode_llama(
+            tokens,
+            stop_words=[],
+            eod_tokens=["<s>","</s>"],
+            tokenizer=tokenizer,
+            raw_text_len=raw_text_len,
+            context_length=context_length,
             verbose=verbose,
             return_end_reason=return_end_reason,
             errors=errors,

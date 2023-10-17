@@ -193,6 +193,7 @@ def chat(
         append_history: bool = True,
         chat_format: str = "chatml",
         stop_words_ids: Optional[List[List[int]]] = None,
+        max_window_size: int = 6144
         # generation_config: Optional[GenerationConfig] = None,
         # **kwargs,
     ) -> Tuple[str, HistoryType]:
@@ -201,9 +202,6 @@ def chat(
         if stop_words_ids is None:
             stop_words_ids = []
 
-        # max_window_size = kwargs.get('max_window_size', None)
-        # if max_window_size is None:
-        max_window_size = 6144
         raw_text, context_tokens = make_context(
             tokenizer,
             query,
@@ -265,7 +263,11 @@ if __name__ == '__main__':
             if args.chat:
                 if args.llama:
                     chat_format = "llama"
-                response, history = chat(model,tokenizer,input_text,history,chat_format=chat_format)
+                    max_window_size = 3096
+                else:
+                    chat_format = "chatml"
+                    max_window_size = 6144
+                response, history = chat(model,tokenizer,input_text,history,chat_format=chat_format,max_window_size=max_window_size)
             else:
                 response = do_generate(input_text,model,tokenizer)
 
