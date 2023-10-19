@@ -16,3 +16,6 @@ modelscope
 tiktoken
 xformers
 langchain
+openai 
+chromadb 
+langchainhub
