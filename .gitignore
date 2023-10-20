@@ -7,7 +7,7 @@ model/chinese/chinese-llama-2-7b-hf
 model/checkpoint-*
 model/pt_lora_model/
 model/*.json
-dataset/generate/walkinsnowwithnigh.txt
+dataset/generate/
 scripts/__pycache__/
 scripts/training/__pycache__/
 cache/*
