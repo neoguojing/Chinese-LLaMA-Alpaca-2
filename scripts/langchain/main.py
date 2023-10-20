@@ -1,7 +1,8 @@
 
 import os
 
-os.environ['OPENAI_API_KEY'] = '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 '
+os.environ["CUDA_VISIBLE_DEVICES"] = 0
+os.environ['OPENAI_API_KEY'] = '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'
 from langchain.llms import OpenAI
 from langchain.chains.summarize import load_summarize_chain
 from langchain.chains import AnalyzeDocumentChain
