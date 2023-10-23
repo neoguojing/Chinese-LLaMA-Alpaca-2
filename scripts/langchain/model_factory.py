@@ -4,7 +4,7 @@ import torch
 import os
 from transformers import GenerationConfig
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-os.environ['OPENAI_API_KEY'] = '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 '
+os.environ['OPENAI_API_KEY'] = ''
 
 generation_config = GenerationConfig(
         temperature=0.2, #控制采样的温度参数。较高的温度值会增加生成的随机性，较低的温度值会增加生成的确定性。通常在 (0, 1] 范围内设置
