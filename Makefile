@@ -49,9 +49,9 @@ isChat := --chat
 
 export cuda?=1
 export chat?=1
-export qwen?=0
+export qwen?=1
 export test?=0
-export zh?=1
+export zh?=0
 export llama?=0
 
 BUILD_FLAGS:=LLAMA_OPENBLAS=1

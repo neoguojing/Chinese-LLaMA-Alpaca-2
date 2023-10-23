@@ -112,47 +112,56 @@ def resize_model_vocab_size(base_model,tokenizer):
         print("Resize model embeddings to fit tokenizer")
         base_model.resize_token_embeddings(tokenizer_vocab_size)
 
-def load_model(args):
+def load_model(model_path,tokenizer_path=None,llama=False,lora_model=False,
+               load_in_4bit=False,
+               load_in_8bit=False,
+               use_vllm=False,
+               gpus=""):
+    if tokenizer_path == None:
+        tokenizer_path = model_path
+
     load_type = torch.float16
-    if args.llama:
-        tokenizer = LlamaTokenizer.from_pretrained(args.tokenizer_path, legacy=True)
+    if llama:
+        tokenizer = LlamaTokenizer.from_pretrained(tokenizer_path, legacy=True)
         print("llama special token:bos",tokenizer.bos_token,tokenizer.encode(tokenizer.bos_token))
         print("llama special token:eos",tokenizer.eos_token,tokenizer.encode(tokenizer.bos_token))
         base_model = LlamaForCausalLM.from_pretrained(
-                args.base_model,
+                model_path,
                 torch_dtype=load_type,
                 low_cpu_mem_usage=True,
                 device_map='auto',
                 quantization_config=BitsAndBytesConfig(
-                    load_in_4bit=args.load_in_4bit,
-                    load_in_8bit=args.load_in_8bit,
+                    load_in_4bit=load_in_4bit,
+                    load_in_8bit=load_in_8bit,
                     bnb_4bit_compute_dtype=load_type
                 )
             )      
         print("llama special token:bos",base_model.config.bos_token_id)
         print("llama special token:eos",base_model.config.eos_token_id)  
     else:
-        tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_path, trust_remote_code=True)
+        tokenizer = AutoTokenizer.from_pretrained(tokenizer_path, trust_remote_code=True)
         if tokenizer.__class__.__name__ == 'QWenTokenizer':
             load_type = torch.bfloat16
 
-        base_model = AutoModelForCausalLM.from_pretrained(args.base_model, 
+        base_model = AutoModelForCausalLM.from_pretrained(model_path, 
                                                             device_map="auto", 
                                                             trust_remote_code=True,
                                                             low_cpu_mem_usage=True,
                                                             torch_dtype=load_type)
         global generation_config
-        generation_config = GenerationConfig.from_pretrained(args.base_model, trust_remote_code=True)
+        generation_config = GenerationConfig.from_pretrained(model_path, 
+                                                             trust_remote_code=True)
 
-    if args.lora_model is not None:
+    if lora_model:
         print("loading peft model")
-        model = PeftModel.from_pretrained(base_model, args.lora_model,torch_dtype=load_type,device_map='auto',).half()
-    elif args.use_vllm:
+        model = PeftModel.from_pretrained(model_path, lora_model,
+                                          torch_dtype=load_type,device_map='auto',).half()
+    elif use_vllm:
         print("loading vllm model")
-        model = LLM(model=args.base_model,
-            tokenizer=args.tokenizer_path,
+        model = LLM(model=base_model,
+            tokenizer=tokenizer_path,
             tokenizer_mode='slow',
-            tensor_parallel_size=len(args.gpus.split(',')))
+            tensor_parallel_size=len(gpus.split(',')))
     else:
         model = base_model
 
@@ -166,8 +175,8 @@ def qwen_chat(raw_text,model,tokenizer):
     response, history = model.chat(tokenizer, raw_text, history=history,generation_config = generation_config)
     return response
 
-def do_generate(input_text,model,tokenizer):
-    if args.use_vllm:
+def do_generate(input_text,model,tokenizer,use_vllm=False):
+    if use_vllm:
         output = model.generate([input_text], SamplingParams(**generation_config), use_tqdm=False)
         response = output[0].outputs[0].text
     else:
@@ -236,14 +245,16 @@ def chat(
             history.append((query, response))
 
         return response, history
-
+    
 if __name__ == '__main__':
     if args.tokenizer_path is None:
         args.tokenizer_path = args.lora_model
         if args.lora_model is None:
             args.tokenizer_path = args.base_model
 
-    model,tokenizer = load_model(args)
+    model,tokenizer = load_model(args.base_model,args.tokenizer_path,args.llama,
+                                 args.lora_model,args.load_in_4bit,args.load_in_8bit,
+                                 args.use_vllm,args.gpus)
     if device==torch.device('cpu'):
         model.float()
     model.eval()
@@ -268,7 +279,7 @@ if __name__ == '__main__':
                     max_window_size = 6144
                 response, history = chat(model,tokenizer,input_text,history,chat_format=chat_format,max_window_size=max_window_size)
             else:
-                response = do_generate(input_text,model,tokenizer)
+                response = do_generate(input_text,model,tokenizer,args.use_vllm)
             
             print("Response: ",response)
             print("\n")
