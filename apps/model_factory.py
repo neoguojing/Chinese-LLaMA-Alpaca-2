@@ -7,8 +7,9 @@ from apps.inference import load_model,chat
 from pydantic import  Field, root_validator
 import torch
 import os
+from langchain.chat_models import ChatAnthropic
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-os.environ['OPENAI_API_KEY'] = ''
+os.environ['OPENAI_API_KEY'] = 'sk-oug4VMGXJMULQjNu19A488592cF640E1B3DcF0549fC4AcFa'
 
 class LLamaLLM(LLM):
     model_path: str = Field(None, alias='model_path')
@@ -85,6 +86,8 @@ class ModelFactory:
     def get_model(model_name,model_path=""):
         if model_name == "openai":
             return OpenAI()
+        elif model_name == "claude":
+            return ChatAnthropic()
         elif model_name == "qwen": 
             model_path = "../model/chinese/Qwen-7B-Chat"
             return QwenLLM(model_path=model_path)

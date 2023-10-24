@@ -32,7 +32,8 @@ if __name__ == '__main__':
     # print("**************",docs[0])
     
     # llm = ModelFactory().get_model("openai")
-    llm = ModelFactory().get_model("qwen")
+    llm = ModelFactory().get_model("claude")
+    # llm = ModelFactory().get_model("qwen")
     
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=500, chunk_overlap=0
