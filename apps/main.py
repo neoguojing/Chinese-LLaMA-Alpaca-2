@@ -1,7 +1,7 @@
 
 import os
 import sys
-from .parser import QA
+from parser import QAPackage
 # 获取当前脚本所在的目录路径
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -12,22 +12,22 @@ top_package_path = os.path.abspath(os.path.join(current_dir, ".."))
 sys.path.insert(0, top_package_path)
 from langchain.chains.summarize import load_summarize_chain
 from langchain.chains import AnalyzeDocumentChain
-from langchain.prompts import PromptTemplate
+from langchain.prompts import PromptTemplate,ChatPromptTemplate, HumanMessagePromptTemplate
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.document_loaders import DirectoryLoader,TextLoader
 from langchain.chains.question_answering import load_qa_chain
-from langchain.output_parsers import PydanticOutputParser
+from langchain.output_parsers import PydanticOutputParser,OutputFixingParser
 from apps.model_factory import ModelFactory
 import textwrap
 verbose = True
 if __name__ == '__main__':
  
-    prompt_str = """
-        将如下文字转化为问答,以json数组格式输出： 
-        {text}
-    """
-    prompt = PromptTemplate.from_template(prompt_str)
-
+    # prompt_str = """
+    #     将如下文字转化为问答,参考{format_instructions}：\n
+    #     {text}
+    # """
+    # prompt = PromptTemplate.from_template(prompt_str)
+    
     # loader = DirectoryLoader('../../dataset/generate/', glob="**/*.txt",loader_cls=TextLoader)
     loader = TextLoader("./doc.txt")
     docs = loader.load()
@@ -46,11 +46,25 @@ if __name__ == '__main__':
         text = doc.page_content
         texts += text_splitter.create_documents([text])
 
-    qaParser = PydanticOutputParser(pydantic_object=QA)
+    qaParser = PydanticOutputParser(pydantic_object=QAPackage)
 
-    chain = prompt | llm | qaParser
+    prompt = ChatPromptTemplate(
+        messages=[
+            HumanMessagePromptTemplate.from_template(
+                "将\n{text}转换中文问答对，格式如下：\n{format_instructions}"
+            )
+        ],
+        input_variables=["text"],
+        partial_variables={
+            "format_instructions": qaParser.get_format_instructions(),
+        },
+    )
+
+    fixParser = OutputFixingParser.from_llm(parser=qaParser, llm=llm)
+
+    chain = prompt | llm | fixParser
     
     for text in texts:
         print(text)
-        answer = chain.invoke({"text": text})
-        print(f"Output: {textwrap.fill(answer, width=100)}")
+        answer = chain.invoke({"text": text,"format_instructions":qaParser.get_format_instructions()})
+        print(f"Output: {answer}")
