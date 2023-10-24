@@ -1,6 +1,7 @@
 
 import os
 import sys
+from .parser import QA
 # 获取当前脚本所在的目录路径
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -32,8 +33,8 @@ if __name__ == '__main__':
     # print("**************",docs[0])
     
     # llm = ModelFactory().get_model("openai")
-    llm = ModelFactory().get_model("claude")
-    # llm = ModelFactory().get_model("qwen")
+    # llm = ModelFactory().get_model("claude")
+    llm = ModelFactory().get_model("qwen")
     
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=500, chunk_overlap=0
@@ -44,7 +45,9 @@ if __name__ == '__main__':
         text = doc.page_content
         texts += text_splitter.create_documents([text])
 
-    chain = prompt | llm 
+    qaParser = QA()
+
+    chain = prompt | llm | qaParser
     
     for text in texts:
         print(text)

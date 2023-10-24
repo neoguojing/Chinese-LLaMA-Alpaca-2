@@ -66,6 +66,6 @@ if __name__ == "__main__":
         raw_input_text = input("Input:")
         if len(raw_input_text.strip())==0:
             continue
-        resp = claude_chat_by_slack_svc(ClaudeChatReqDto(raw_input_text))
+        resp = claude_chat_by_slack_svc(ClaudeChatReqDto(prompt=raw_input_text))
         print("Response:",resp.data)
         print("\n")
