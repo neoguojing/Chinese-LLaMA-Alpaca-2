@@ -16,6 +16,7 @@ from langchain.prompts import PromptTemplate
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.document_loaders import DirectoryLoader,TextLoader
 from langchain.chains.question_answering import load_qa_chain
+from langchain.output_parsers import PydanticOutputParser
 from apps.model_factory import ModelFactory
 import textwrap
 verbose = True
@@ -45,7 +46,7 @@ if __name__ == '__main__':
         text = doc.page_content
         texts += text_splitter.create_documents([text])
 
-    qaParser = QA()
+    qaParser = PydanticOutputParser(pydantic_object=QA)
 
     chain = prompt | llm | qaParser
     
