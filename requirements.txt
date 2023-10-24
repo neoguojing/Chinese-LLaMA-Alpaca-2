@@ -20,3 +20,4 @@ openai
 chromadb 
 langchainhub
 pypdf
+slack_sdk
