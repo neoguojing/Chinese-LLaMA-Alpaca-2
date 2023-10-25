@@ -2,8 +2,8 @@ from typing import Any, List, Mapping, Optional,Dict
 from pydantic import  Field, BaseModel,validator
 import json
 from pathlib import Path
-from langchain.schema import AgentAction, AgentFinish
-from langchain.schema.output_parser import AgentOutputParser
+from langchain.schema.agent import AgentAction, AgentFinish
+from langchain.agents.agent import AgentOutputParser
 
 class QAItem(BaseModel):
     question: str = Field(description="question")
