@@ -1,7 +1,7 @@
 
 import os
 import sys
-from parser import QAPackage
+from parser import QAPackage,JsonOutputParser
 # 获取当前脚本所在的目录路径
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -17,7 +17,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.document_loaders import DirectoryLoader,TextLoader
 from langchain.chains.question_answering import load_qa_chain
 from langchain.output_parsers import PydanticOutputParser,OutputFixingParser
-from langchain.output_parsers.openai_functions import JsonOutputFunctionsParser
+from langchain.chains import create_extraction_chain
 from apps.model_factory import ModelFactory
 
 import textwrap
@@ -64,8 +64,8 @@ if __name__ == '__main__':
     )
 
     fixParser = OutputFixingParser.from_llm(parser=qaParser, llm=llm)
-
-    chain = prompt | llm | JsonOutputFunctionsParser()
+    jsonParser = JsonOutputParser()
+    chain = prompt | llm | jsonParser
     
     for text in texts:
         print(text)

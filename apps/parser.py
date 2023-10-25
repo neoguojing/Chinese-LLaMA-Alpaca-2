@@ -1,6 +1,9 @@
-from typing import Any, List, Mapping, Optional
+from typing import Any, List, Mapping, Optional,Dict
 from pydantic import  Field, BaseModel,validator
-
+import json
+from pathlib import Path
+from langchain.schema import AgentAction, AgentFinish
+from langchain.schema.output_parser import AgentOutputParser
 
 class QAItem(BaseModel):
     question: str = Field(description="question")
@@ -22,3 +25,29 @@ class QwenItem(BaseModel):
 
 class QwenPackage(BaseModel):
     data: List[QwenItem] = Field(..., description="问题答案列表")
+
+
+
+class JsonOutputParser(AgentOutputParser):
+    def __init__(self, file_path: Path):
+        self.file_path = file_path
+
+    def parse(self, llm_output: str) -> Dict[str, Any]:
+        
+        # Check if the output contains valid JSON
+        try:
+            data = json.loads(llm_output)
+        except json.JSONDecodeError as e:
+            raise ValueError("Invalid JSON in LLM output {e}\n{llm_output}")
+        
+        # Parse the JSON into a dictionary
+        output = {}
+        if isinstance(data, dict):
+            output = data
+        elif isinstance(data, list):
+            output = {"data": data}
+
+        with open(self.file_path, 'w') as f:
+            json.dump(output, f, indent=2)
+            
+        return AgentFinish(return_values=output)
