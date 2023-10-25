@@ -20,22 +20,17 @@ from langchain.chains.question_answering import load_qa_chain
 from langchain.output_parsers import PydanticOutputParser,OutputFixingParser
 from langchain.chains import create_extraction_chain
 from apps.model_factory import ModelFactory
+from apps.persist import Persister
 
 import textwrap
 verbose = True
 if __name__ == '__main__':
- 
-    # prompt_str = """
-    #     将如下文字转化为问答,参考{format_instructions}：\n
-    #     {text}
-    # """
-    # prompt = PromptTemplate.from_template(prompt_str)
+
     
     # loader = DirectoryLoader('../../dataset/generate/', glob="**/*.txt",loader_cls=TextLoader)
     loader = TextLoader("./doc.txt")
     docs = loader.load()
-    # print("**************",docs[0])
-    
+
     # llm = ModelFactory().get_model("openai")
     # llm = ModelFactory().get_model("claude")
     # llm = ModelFactory().get_model("qwen")
@@ -44,12 +39,7 @@ if __name__ == '__main__':
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=500, chunk_overlap=0
     )
-    texts = []
-    for doc in docs:
-        # print(doc.page_content)
-        text = doc.page_content
-        texts += text_splitter.create_documents([text])
-
+    
     qaParser = PydanticOutputParser(pydantic_object=QAPackage)
 
     prompt = ChatPromptTemplate(
@@ -66,10 +56,16 @@ if __name__ == '__main__':
 
     fixParser = OutputFixingParser.from_llm(parser=qaParser, llm=llm)
     jsonParser = JsonOutputParser()
-    chain = prompt | llm | jsonParser
+    persist = Persister()
+    chain = prompt | llm | jsonParser | persist
     
-    for text in texts:
-        print(text)
-        answer = chain.invoke({"text": text,"format_instructions":qaParser.get_format_instructions()})
-        print(f"Output: {answer}")
-        time.sleep(1)
+    texts = []
+    for doc in docs:
+        text = doc.page_content
+        texts += text_splitter.create_documents([text])
+        for text in texts:
+            print(text)
+            answer = chain.invoke({"text": text,"format_instructions":qaParser.get_format_instructions()})
+            print(f"Output: {answer}")
+            time.sleep(1)
+        persist.dump(doc.meta)
