@@ -17,7 +17,9 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.document_loaders import DirectoryLoader,TextLoader
 from langchain.chains.question_answering import load_qa_chain
 from langchain.output_parsers import PydanticOutputParser,OutputFixingParser
+from langchain.output_parsers.openai_functions import JsonOutputFunctionsParser
 from apps.model_factory import ModelFactory
+
 import textwrap
 verbose = True
 if __name__ == '__main__':
@@ -63,7 +65,7 @@ if __name__ == '__main__':
 
     fixParser = OutputFixingParser.from_llm(parser=qaParser, llm=llm)
 
-    chain = prompt | llm | fixParser
+    chain = prompt | llm | JsonOutputFunctionsParser()
     
     for text in texts:
         print(text)
