@@ -39,9 +39,12 @@ class JsonOutputParser(AgentOutputParser):
         # Check if the output contains valid JSON
         try:
             # llm_output = llm_output.replace('```json', '').replace('```', '')
-            llm_output = self.pattern.search(llm_output)
-            print("llm_output:",llm_output)
-            data = json.loads(llm_output)
+            action_match = self.pattern.search(llm_output)
+            if action_match is not None:
+                response = action_match.group(1).strip()
+                response = json.loads(response, strict=False)
+                print("llm_output:",response)
+                data = response
         except json.JSONDecodeError:
             raise ValueError("Invalid JSON in LLM output")
         

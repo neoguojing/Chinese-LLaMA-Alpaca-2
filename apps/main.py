@@ -1,6 +1,7 @@
 
 import os
 import sys
+import time
 from parser import QAPackage,JsonOutputParser
 # 获取当前脚本所在的目录路径
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -71,3 +72,4 @@ if __name__ == '__main__':
         print(text)
         answer = chain.invoke({"text": text,"format_instructions":qaParser.get_format_instructions()})
         print(f"Output: {answer}")
+        time.sleep(1)
