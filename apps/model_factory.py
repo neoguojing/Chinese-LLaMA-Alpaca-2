@@ -7,9 +7,13 @@ from apps.inference import load_model,chat
 from pydantic import  Field, root_validator
 import torch
 import os
-from langchain.chat_models import ChatAnthropic
+from langchain.chat_models import ChatAnthropic,QianfanChatEndpoint
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-os.environ['OPENAI_API_KEY'] = 'sk-oug4VMGXJMULQjNu19A488592cF640E1B3DcF0549fC4AcFa'
+# openai
+os.environ['OPENAI_API_KEY'] = ''
+# qianfan
+os.environ["QIANFAN_AK"] = "your_ak"
+os.environ["QIANFAN_SK"] = "your_sk"
 
 class LLamaLLM(LLM):
     model_path: str = Field(None, alias='model_path')
@@ -91,7 +95,8 @@ class ModelFactory:
         elif model_name == "qwen": 
             model_path = "../model/chinese/Qwen-7B-Chat"
             return QwenLLM(model_path=model_path)
-
+        elif model_name == "qianfan": 
+            return QianfanChatEndpoint(streaming=True, model="ERNIE-Bot-4")
         elif model_name == "llama": 
             model_path = "../model/chinese/chinese-alpaca-2-7b-hf"
             return LLamaLLM(model_path=model_path)
