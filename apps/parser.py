@@ -1,7 +1,8 @@
-from typing import Any, List, Mapping, Optional,Dict
+from typing import Any, List, Mapping, Optional,Dict,Union
 from pydantic import  Field, BaseModel,validator
 import json
 from pathlib import Path
+import re
 from langchain.schema.agent import AgentAction, AgentFinish
 from langchain.agents.agent import AgentOutputParser
 
@@ -29,16 +30,20 @@ class QwenPackage(BaseModel):
 
 
 class JsonOutputParser(AgentOutputParser):
-    def __init__(self, file_path: Path):
-        self.file_path = file_path
+    pattern = re.compile(r"```(?:json)?\n(.*?)```", re.DOTALL)
+    # def __init__(self, file_path: Path):
+    #     self.file_path = file_path
 
-    def parse(self, llm_output: str) -> Dict[str, Any]:
+    def parse(self, llm_output: str) -> Union[AgentAction, AgentFinish]:
         
         # Check if the output contains valid JSON
         try:
+            # llm_output = llm_output.replace('```json', '').replace('```', '')
+            llm_output = self.pattern.search(llm_output)
+            print("llm_output:",llm_output)
             data = json.loads(llm_output)
-        except json.JSONDecodeError as e:
-            raise ValueError("Invalid JSON in LLM output {e}\n{llm_output}")
+        except json.JSONDecodeError:
+            raise ValueError("Invalid JSON in LLM output")
         
         # Parse the JSON into a dictionary
         output = {}
@@ -47,7 +52,7 @@ class JsonOutputParser(AgentOutputParser):
         elif isinstance(data, list):
             output = {"data": data}
 
-        with open(self.file_path, 'w') as f:
-            json.dump(output, f, indent=2)
+        # with open(self.file_path, 'w') as f:
+        #     json.dump(output, f, indent=2)
             
-        return AgentFinish(return_values=output)
+        return AgentFinish(return_values=output,log=llm_output)
