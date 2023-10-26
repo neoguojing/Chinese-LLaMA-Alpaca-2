@@ -35,12 +35,17 @@ class QwenItem(BaseModel):
     def merge_data(self, other: 'QwenItem'):
         self.conversations.extend(other.conversations)
 
+    def length(self):
+        return len(self.conversations)
 
 class QwenPackage(BaseModel):
     data: List[QwenItem] = Field(..., description="问题答案列表")
 
     def merge_data(self, other: 'QwenPackage'):
         self.data.extend(other.data)
+
+    def length(self):
+        return len(self.data)
 
     
 class JsonOutputParser(AgentOutputParser):
@@ -74,8 +79,10 @@ class JsonOutputParser(AgentOutputParser):
     
     def dump(self, path: str):
         print("final:",self.qaList.length())
-        with open(path, 'w') as f:
-            json.dumps(self.qaList.dict(),f, ensure_ascii=False, indent=4)
+        with open(path, 'w', encoding='utf-8') as f:
+            package_json = json.dumps(self.qaList.dict(), ensure_ascii=False, indent=4)
+            f.write(package_json)
+
             
     def load(self, path: str) -> Optional[dict]:
         try:
