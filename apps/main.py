@@ -62,10 +62,11 @@ if __name__ == '__main__':
     texts = []
     for doc in docs:
         text = doc.page_content
+        print(doc.metadata)
         texts += text_splitter.create_documents([text])
         for text in texts:
             print(text)
             answer = chain.invoke({"text": text,"format_instructions":qaParser.get_format_instructions()})
             print(f"Output: {answer}")
             time.sleep(1)
-        persist.dump(doc.meta)
+        persist.dump("doc.json")
