@@ -20,6 +20,9 @@ class QAPackage(BaseModel):
     def merge_data(self, other: 'QAPackage'):
         self.data.extend(other.data)
 
+    def length(self):
+        return len(self.data)
+
 class QwenConversationItem(BaseModel):
     from_: str = Field(..., alias="from", description="发送方")
     value: str = Field(..., description="消息内容")
@@ -64,13 +67,13 @@ class JsonOutputParser(AgentOutputParser):
         elif isinstance(data, list):
             output = {"data": data}
             tmp = QAPackage(data=data)
-            print("step qa num:",len(tmp.data))
+            print("step qa num:",tmp.length())
             self.qaList.merge_data(tmp)
-            print("total:",len(self.qaList))
+            print("total:",self.qaList.length())
         return AgentFinish(return_values=output,log=llm_output)
     
     def dump(self, path: str):
-        print("final:",len(self.qaList))
+        print("final:",self.qaList.length())
         with open(path, 'w') as f:
             json.dumps(self.qaList.dict(),f, ensure_ascii=False, indent=4)
             
