@@ -50,7 +50,7 @@ if __name__ == '__main__':
     for doc in docs:
         text = doc.page_content
         print(doc.metadata)
-        jsonParser = JsonOutputParser(source=doc.metadata.source)
+        jsonParser = JsonOutputParser(source=doc.metadata["source"])
         chain = prompt | llm | jsonParser 
 
         texts += text_splitter.create_documents([text])
@@ -60,4 +60,4 @@ if __name__ == '__main__':
             print(f"Output: {answer}")
             time.sleep(5)
         
-        jsonParser.dump(os.path.splitext(doc.metadata.source)[0])
+        jsonParser.dump(os.path.splitext(doc.metadata["source"])[0])
