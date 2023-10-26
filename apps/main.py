@@ -2,7 +2,6 @@
 import os
 import sys
 import time
-from parser import QAPackage,JsonOutputParser
 # 获取当前脚本所在的目录路径
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -20,7 +19,7 @@ from langchain.chains.question_answering import load_qa_chain
 from langchain.output_parsers import PydanticOutputParser,OutputFixingParser
 from langchain.chains import create_extraction_chain
 from apps.model_factory import ModelFactory
-from apps.persist import Persister
+from apps.parser import JsonOutputParser,QAPackage
 
 import textwrap
 verbose = True
@@ -56,8 +55,7 @@ if __name__ == '__main__':
 
     fixParser = OutputFixingParser.from_llm(parser=qaParser, llm=llm)
     jsonParser = JsonOutputParser()
-    persist = Persister()
-    chain = prompt | llm | jsonParser | persist
+    chain = prompt | llm | jsonParser 
     
     texts = []
     for doc in docs:
@@ -69,4 +67,4 @@ if __name__ == '__main__':
             answer = chain.invoke({"text": text,"format_instructions":qaParser.get_format_instructions()})
             print(f"Output: {answer}")
             time.sleep(1)
-        persist.dump("doc.json")
+        jsonParser.dump("doc.json")
