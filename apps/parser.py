@@ -15,7 +15,7 @@ class QAItem(BaseModel):
 
     
 class QAPackage(BaseModel):
-    source: str = Field(..., description="文本来源")
+    source: Optional[str]
     data: List[QAItem] = Field(..., description="问题答案列表")
 
     def merge_data(self, other: 'QAPackage'):
@@ -71,12 +71,7 @@ class QwenPackage(BaseModel):
     
 class JsonOutputParser(AgentOutputParser):
     pattern = re.compile(r"```(?:json)?\n(.*?)```", re.DOTALL)
-    source: str
-    qaList: QAPackage
-
-    def __init__(self, source: str):
-        self.source = source
-        self.qaList = QAPackage(data=[], source=self.source)
+    qaList: QAPackage = Field(..., description="问答列表")
 
     def parse(self, llm_output: str) -> Union[AgentAction, AgentFinish]:
         
@@ -104,6 +99,7 @@ class JsonOutputParser(AgentOutputParser):
     
     def dump(self, path: str):
         print("final:",self.qaList.length())
+        self.qaList.source = path
         with open(path+".json", 'w', encoding='utf-8') as f:
             package_json = self.qaList.dump()
             f.write(package_json)
