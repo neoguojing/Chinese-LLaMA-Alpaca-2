@@ -26,14 +26,16 @@ class QAPackage(BaseModel):
     
     def dump(self):
         dict_obj = self.dict()
-        return json.dumps(dict_obj.data, ensure_ascii=False, indent=4)
+        return json.dumps(dict_obj["data"], ensure_ascii=False, indent=4)
     
     def toQwen(self):
-        qwen_package = QwenPackage()
+        qwen_package = QwenPackage(data=[])
         for qa in self.data:
             qwen_item = QwenItem(id=self.source,conversations=[])
-            q = QwenConversationItem(from_="user",value=qa.question)
-            a = QwenConversationItem(from_="assistant",value=qa.answer)
+            data_input = {"from": "user", "value": qa.question}
+            q = QwenConversationItem(**data_input)
+            data_input = {"from": "assistant", "value": qa.answer}
+            a = QwenConversationItem(**data_input)
             qwen_item.conversations.append([q,a])
             qwen_package.data.append(qwen_item)
         return qwen_package.dump()
@@ -66,7 +68,7 @@ class QwenPackage(BaseModel):
     
     def dump(self):
         dict_obj = self.dict()
-        return json.dumps(dict_obj.data, ensure_ascii=False, indent=4)
+        return json.dumps(dict_obj["data"], ensure_ascii=False, indent=4)
 
     
 class JsonOutputParser(AgentOutputParser):
