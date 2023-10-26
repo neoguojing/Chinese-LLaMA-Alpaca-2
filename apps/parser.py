@@ -71,7 +71,12 @@ class QwenPackage(BaseModel):
     
 class JsonOutputParser(AgentOutputParser):
     pattern = re.compile(r"```(?:json)?\n(.*?)```", re.DOTALL)
-    qaList = QAPackage(data=[])
+    source: str
+    qaList: QAPackage
+
+    def __init__(self, source: str):
+        self.source = source
+        self.qaList = QAPackage(data=[], source=self.source)
 
     def parse(self, llm_output: str) -> Union[AgentAction, AgentFinish]:
         
