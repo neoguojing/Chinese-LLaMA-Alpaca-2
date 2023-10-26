@@ -64,13 +64,15 @@ class JsonOutputParser(AgentOutputParser):
         elif isinstance(data, list):
             output = {"data": data}
             tmp = QAPackage(data=data)
+            print("step qa num:",len(tmp.data))
             self.qaList.merge_data(tmp)
-            
+            print("total:",len(self.qaList))
         return AgentFinish(return_values=output,log=llm_output)
     
     def dump(self, path: str):
+        print("final:",len(self.qaList))
         with open(path, 'w') as f:
-            json.dump(self.qaList, f)
+            json.dumps(self.qaList.dict(),f, ensure_ascii=False, indent=4)
             
     def load(self, path: str) -> Optional[dict]:
         try:
