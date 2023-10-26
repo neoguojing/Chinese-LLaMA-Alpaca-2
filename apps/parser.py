@@ -15,6 +15,7 @@ class QAItem(BaseModel):
 
     
 class QAPackage(BaseModel):
+    source: str = Field(..., description="文本来源")
     data: List[QAItem] = Field(..., description="问题答案列表")
 
     def merge_data(self, other: 'QAPackage'):
@@ -22,6 +23,22 @@ class QAPackage(BaseModel):
 
     def length(self):
         return len(self.data)
+    
+    def dump(self):
+        dict_obj = self.dict()
+        return json.dumps(dict_obj.data, ensure_ascii=False, indent=4)
+    
+    def toQwen(self):
+        qwen_package = QwenPackage()
+        for qa in self.data:
+            qwen_item = QwenItem(id=self.source,conversations=[])
+            q = QwenConversationItem(from_="user",value=qa.question)
+            a = QwenConversationItem(from_="assistant",value=qa.answer)
+            qwen_item.conversations.append([q,a])
+            qwen_package.data.append(qwen_item)
+        return qwen_package.dump()
+        
+
 
 class QwenConversationItem(BaseModel):
     from_: str = Field(..., alias="from", description="发送方")
@@ -46,6 +63,10 @@ class QwenPackage(BaseModel):
 
     def length(self):
         return len(self.data)
+    
+    def dump(self):
+        dict_obj = self.dict()
+        return json.dumps(dict_obj.data, ensure_ascii=False, indent=4)
 
     
 class JsonOutputParser(AgentOutputParser):
@@ -60,7 +81,6 @@ class JsonOutputParser(AgentOutputParser):
             if action_match is not None:
                 response = action_match.group(1).strip()
                 response = json.loads(response, strict=False)
-                print("llm_output:",response)
                 data = response
         except json.JSONDecodeError:
             raise ValueError("Invalid JSON in LLM output")
@@ -79,10 +99,12 @@ class JsonOutputParser(AgentOutputParser):
     
     def dump(self, path: str):
         print("final:",self.qaList.length())
-        with open(path, 'w', encoding='utf-8') as f:
-            package_json = json.dumps(self.qaList.dict(), ensure_ascii=False, indent=4)
+        with open(path+".json", 'w', encoding='utf-8') as f:
+            package_json = self.qaList.dump()
             f.write(package_json)
-
+        with open(path+".qwen", 'w', encoding='utf-8') as f:
+            package_json = self.qaList.toQwen()
+            f.write(package_json)
             
     def load(self, path: str) -> Optional[dict]:
         try:
@@ -90,3 +112,4 @@ class JsonOutputParser(AgentOutputParser):
                 return json.load(f)
         except FileNotFoundError:
             return None
+    

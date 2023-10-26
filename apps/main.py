@@ -20,6 +20,7 @@ from langchain.output_parsers import PydanticOutputParser,OutputFixingParser
 from langchain.chains import create_extraction_chain
 from apps.model_factory import ModelFactory
 from apps.parser import JsonOutputParser,QAPackage
+from apps.prompt import PromptFactory
 
 import textwrap
 verbose = True
@@ -41,30 +42,22 @@ if __name__ == '__main__':
     
     qaParser = PydanticOutputParser(pydantic_object=QAPackage)
 
-    prompt = ChatPromptTemplate(
-        messages=[
-            HumanMessagePromptTemplate.from_template(
-                "将\n{text}转换中文问答对，格式如下：\n{format_instructions}"
-            )
-        ],
-        input_variables=["text"],
-        partial_variables={
-            "format_instructions": qaParser.get_format_instructions(),
-        },
-    )
+    prompt = PromptFactory.qa_data_generate_prompt(qaParser.get_format_instructions())
 
     fixParser = OutputFixingParser.from_llm(parser=qaParser, llm=llm)
-    jsonParser = JsonOutputParser()
-    chain = prompt | llm | jsonParser 
     
     texts = []
     for doc in docs:
         text = doc.page_content
         print(doc.metadata)
+        jsonParser = JsonOutputParser()
+        chain = prompt | llm | jsonParser 
+
         texts += text_splitter.create_documents([text])
         for text in texts:
             print(text)
             answer = chain.invoke({"text": text,"format_instructions":qaParser.get_format_instructions()})
             print(f"Output: {answer}")
-            time.sleep(1)
-        jsonParser.dump("doc.json")
+            time.sleep(5)
+        
+        jsonParser.dump(os.path.splitext(doc.metadata.source)[0])
