@@ -15,7 +15,7 @@ class QAItem(BaseModel):
 
     
 class QAPackage(BaseModel):
-    List[QAItem] = Field(..., description="问题答案列表")
+    data: List[QAItem] = Field(..., description="问题答案列表")
 
     def merge_data(self, other: 'QAPackage'):
         self.data.extend(other.data)
