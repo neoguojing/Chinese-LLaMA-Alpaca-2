@@ -27,8 +27,8 @@ verbose = True
 if __name__ == '__main__':
 
     
-    # loader = DirectoryLoader('../../dataset/generate/', glob="**/*.txt",loader_cls=TextLoader)
-    loader = TextLoader("./doc.txt")
+    loader = DirectoryLoader('.', glob="**/*.txt",loader_cls=TextLoader)
+    # loader = TextLoader("./doc.txt")
     docs = loader.load()
 
     # llm = ModelFactory().get_model("openai")
