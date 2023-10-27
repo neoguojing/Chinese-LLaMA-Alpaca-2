@@ -57,8 +57,13 @@ if __name__ == '__main__':
         texts += text_splitter.create_documents([text])
         for text in texts:
             print(text)
-            answer = chain.invoke({"text": text,"format_instructions":qaParser.get_format_instructions()})
+            try:
+                answer = chain.invoke({"text": text,"format_instructions":qaParser.get_format_instructions()})
+            except Exception as e:
+                print("",str(e))
+                continue
+            
             print(f"Output: {answer}")
-            time.sleep(5)
+            time.sleep(1)
         
         jsonParser.dump(os.path.splitext(doc.metadata["source"])[0])
