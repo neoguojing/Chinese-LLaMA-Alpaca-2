@@ -15,7 +15,7 @@ class QAItem(BaseModel):
 
     
 class QAPackage(BaseModel):
-    data: List[QAItem] = Field(..., description="问题答案列表")
+    List[QAItem] = Field(..., description="问题答案列表")
 
     def merge_data(self, other: 'QAPackage'):
         self.data.extend(other.data)
@@ -94,6 +94,10 @@ class JsonOutputParser(AgentOutputParser):
         output = {}
         if isinstance(data, dict):
             output = data
+            tmp = QAPackage(data=data["data"])
+            print("step qa num:",tmp.length())
+            self.qaList.merge_data(tmp)
+            print("total:",self.qaList.length())
         elif isinstance(data, list):
             output = {"data": data}
             tmp = QAPackage(data=data)
