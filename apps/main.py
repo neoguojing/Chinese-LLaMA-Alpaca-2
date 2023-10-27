@@ -43,7 +43,7 @@ if __name__ == '__main__':
     
     qaParser = PydanticOutputParser(pydantic_object=QAPackage)
 
-    prompt = PromptFactory.qa_data_generate_prompt(qaParser.get_format_instructions())
+    prompt = PromptFactory.caibao_analyse_prompt(qaParser.get_format_instructions())
 
     fixParser = OutputFixingParser.from_llm(parser=qaParser, llm=llm)
     
