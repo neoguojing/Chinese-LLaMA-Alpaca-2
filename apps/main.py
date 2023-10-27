@@ -41,7 +41,7 @@ if __name__ == '__main__':
         chunk_size=500, chunk_overlap=0
     )
     
-    qaParser = PydanticOutputParser(pydantic_object=List[QAItem])
+    qaParser = PydanticOutputParser(pydantic_object=QAPackage)
 
     prompt = PromptFactory.caibao_analyse_prompt(qaParser.get_format_instructions())
 
