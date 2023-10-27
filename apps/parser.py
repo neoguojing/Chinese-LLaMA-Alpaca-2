@@ -82,8 +82,10 @@ class JsonOutputParser(AgentOutputParser):
             action_match = self.pattern.search(llm_output)
             if action_match is not None:
                 response = action_match.group(1).strip()
-                response = json.loads(response, strict=False)
-                data = response
+            else:
+                response = llm_output
+            response = json.loads(response, strict=False)
+            data = response
         except json.JSONDecodeError:
             print("***********Invalid JSON in LLM output")
         
