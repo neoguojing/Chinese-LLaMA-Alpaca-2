@@ -76,7 +76,7 @@ class JsonOutputParser(AgentOutputParser):
     qaList: QAPackage = QAPackage(data=[])
 
     def parse(self, llm_output: str) -> Union[AgentAction, AgentFinish]:
-        
+        data = None
         # Check if the output contains valid JSON
         try:
             action_match = self.pattern.search(llm_output)

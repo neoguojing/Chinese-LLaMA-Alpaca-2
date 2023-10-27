@@ -22,3 +22,4 @@ langchainhub
 pypdf
 slack_sdk
 qianfan
+dashscope

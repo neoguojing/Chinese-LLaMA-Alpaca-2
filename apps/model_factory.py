@@ -1,4 +1,4 @@
-from langchain.llms import OpenAI
+from langchain.llms import OpenAI,Tongyi
 from langchain.llms import HuggingFacePipeline
 from typing import Any, List, Mapping, Optional
 from langchain.callbacks.manager import CallbackManagerForLLMRun
@@ -14,7 +14,8 @@ os.environ['OPENAI_API_KEY'] = ''
 # qianfan
 os.environ["QIANFAN_AK"] = "your_ak"
 os.environ["QIANFAN_SK"] = "your_sk"
-
+# tongyi
+os.environ["DASHSCOPE_API_KEY"] = ""
 class LLamaLLM(LLM):
     model_path: str = Field(None, alias='model_path')
 
@@ -97,6 +98,8 @@ class ModelFactory:
             return QwenLLM(model_path=model_path)
         elif model_name == "qianfan": 
             return QianfanChatEndpoint(streaming=True, model="ERNIE-Bot-4")
+        elif model_name == "tongyi": 
+            return Tongyi()
         elif model_name == "llama": 
             model_path = "../model/chinese/chinese-alpaca-2-7b-hf"
             return LLamaLLM(model_path=model_path)
