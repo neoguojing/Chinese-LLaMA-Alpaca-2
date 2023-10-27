@@ -15,7 +15,6 @@ class QAItem(BaseModel):
 
     
 class QAPackage(BaseModel):
-    source: Optional[str]
     data: List[QAItem] = Field(..., description="问题答案列表")
 
     def merge_data(self, other: 'QAPackage'):
@@ -28,10 +27,10 @@ class QAPackage(BaseModel):
         dict_obj = self.dict()
         return json.dumps(dict_obj["data"], ensure_ascii=False, indent=4)
     
-    def toQwen(self):
+    def toQwen(self,source:str):
         qwen_package = QwenPackage(data=[])
         for qa in self.data:
-            qwen_item = QwenItem(id=self.source,conversations=[])
+            qwen_item = QwenItem(id=source,conversations=[])
             data_input = {"from": "user", "value": qa.question}
             q = QwenConversationItem(**data_input)
             data_input = {"from": "assistant", "value": qa.answer}
@@ -103,12 +102,11 @@ class JsonOutputParser(AgentOutputParser):
     
     def dump(self, path: str):
         print("final:",self.qaList.length())
-        self.qaList.source = path
         with open(path+".json", 'w', encoding='utf-8') as f:
             package_json = self.qaList.dump()
             f.write(package_json)
         with open(path+".qwen", 'w', encoding='utf-8') as f:
-            package_json = self.qaList.toQwen()
+            package_json = self.qaList.toQwen(path)
             f.write(package_json)
             
     def load(self, path: str) -> Optional[dict]:
