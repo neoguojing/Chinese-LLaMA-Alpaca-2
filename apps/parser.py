@@ -76,6 +76,7 @@ class JsonOutputParser(AgentOutputParser):
     qaList: QAPackage = QAPackage(data=[])
 
     def parse(self, llm_output: str) -> Union[AgentAction, AgentFinish]:
+        print("llm_output--------",llm_output)
         data = None
         # Check if the output contains valid JSON
         try:
@@ -88,7 +89,7 @@ class JsonOutputParser(AgentOutputParser):
             print("***********Invalid JSON in LLM output")
         
         # Parse the JSON into a dictionary
-        print("-----",data)
+        print("data-----",data)
         output = {}
         if isinstance(data, dict):
             output = data
