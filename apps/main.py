@@ -19,9 +19,9 @@ from langchain.chains.question_answering import load_qa_chain
 from langchain.output_parsers import PydanticOutputParser,OutputFixingParser
 from langchain.chains import create_extraction_chain
 from apps.model_factory import ModelFactory
-from apps.parser import JsonOutputParser,QAPackage
+from apps.parser import JsonOutputParser,QAPackage,QAItem
 from apps.prompt import PromptFactory
-
+from typing import Any, List
 import textwrap
 verbose = True
 if __name__ == '__main__':
@@ -41,7 +41,7 @@ if __name__ == '__main__':
         chunk_size=500, chunk_overlap=0
     )
     
-    qaParser = PydanticOutputParser(pydantic_object=QAPackage)
+    qaParser = PydanticOutputParser(pydantic_object=List[QAItem])
 
     prompt = PromptFactory.caibao_analyse_prompt(qaParser.get_format_instructions())
 
@@ -51,7 +51,7 @@ if __name__ == '__main__':
     for doc in docs:
         text = doc.page_content
         print(doc.metadata)
-        jsonParser = JsonOutputParser(source=doc.metadata["source"])
+        jsonParser = JsonOutputParser()
         chain = prompt | llm | jsonParser 
 
         texts += text_splitter.create_documents([text])
