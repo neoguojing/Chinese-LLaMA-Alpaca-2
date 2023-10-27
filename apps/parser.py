@@ -88,6 +88,7 @@ class JsonOutputParser(AgentOutputParser):
             print("***********Invalid JSON in LLM output")
         
         # Parse the JSON into a dictionary
+        print("-----",data)
         output = {}
         if isinstance(data, dict):
             output = data
