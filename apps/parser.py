@@ -85,7 +85,7 @@ class JsonOutputParser(AgentOutputParser):
                 response = json.loads(response, strict=False)
                 data = response
         except json.JSONDecodeError:
-            raise ValueError("Invalid JSON in LLM output")
+            print("***********Invalid JSON in LLM output")
         
         # Parse the JSON into a dictionary
         output = {}
