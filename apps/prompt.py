@@ -18,7 +18,7 @@ class PromptFactory:
 
     @staticmethod
     def caibao_analyse_prompt(format_instructions):
-        template="您是一个专业的财务报表分析师,能够通过用户输入的财报片段，分析有价值的信息，并将分析结果转换为问答形式，输出{format_instructions}格式;请使用中文"
+        template="您是一个专业的财务报表分析师,能够通过用户输入的文本信息，分析有价值的信息，并将分析结果转换为问答形式，输出{format_instructions}格式;请使用中文"
         system_message_prompt = SystemMessagePromptTemplate.from_template(template)
 
         return ChatPromptTemplate(
