@@ -13,6 +13,8 @@ from datasets import (
 from itertools import chain
 from pathlib import Path
 from typing import Optional, List, Dict, Any, Mapping,Union
+import torch
+from transformers.trainer_pt_utils import LabelSmoother
 
 @dataclass
 class NLPExample:
@@ -25,14 +27,102 @@ class NLPTrainData:
     attention_mask: List[List[int]]
     labels: List[int]
 
+IGNORE_TOKEN_ID = LabelSmoother.ignore_index
+IGNORE_INDEX = -100
+PROMPT_TEMPLATE = (
+        "[INST] <<SYS>>\n"
+        "You are a helpful assistant. 你是一个乐于助人的助手。\n"
+        "<</SYS>>\n\n{instruction} [/INST]"
+    )
 def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
-                           data_format:str="text"):
+                           max_seq_length: int,
+                           data_format:str="text",):
     if data_format == "text":
         return lambda examples: tokenizer(examples["text"])
-    elif data_format == "json":
-        return lambda examples: tokenizer(examples["text"])
+    
+    elif data_format == "llama":
+        def tokenization(examples):
+            sources = []
+            targets = []
+            prompt = PROMPT_TEMPLATE
+            for instruction, input, output in zip(examples['instruction'],examples['input'],examples['output']):
+                if input is not None and input !="":
+                    instruction = instruction+'\n'+input
+                source = prompt.format_map({'instruction':instruction})
+                target = f"{output}{tokenizer.eos_token}"
+
+                sources.append(source)
+                targets.append(target)
+
+            tokenized_sources = tokenizer(sources,return_attention_mask=False)
+            tokenized_targets = tokenizer(targets,return_attention_mask=False,add_special_tokens=False)
+
+            all_input_ids = []
+            all_labels = []
+            for s,t in zip(tokenized_sources['input_ids'],tokenized_targets['input_ids']):
+                input_ids = torch.LongTensor(s + t)[:max_seq_length]
+                labels = torch.LongTensor([IGNORE_INDEX] * len(s) + t)[:max_seq_length]
+                assert len(input_ids) == len(labels)
+                all_input_ids.append(input_ids)
+                all_labels.append(labels)
+
+            results = {
+                'input_ids':all_input_ids,
+                'labels': all_labels,
+                'attention_mask': all_input_ids.ne(tokenizer.pad_token_id)
+            }
+            return results
+        return tokenization
     elif data_format == "qwen":
-        return lambda examples: tokenizer(examples["text"])
+        system_message = "You are a helpful assistant."
+        def tokenization(examples):
+            roles = {"user": "<|im_start|>user", "assistant": "<|im_start|>assistant"}
+            im_start = tokenizer.im_start_id
+            im_end = tokenizer.im_end_id
+            nl_tokens = tokenizer('\n').input_ids
+            _system = tokenizer('system').input_ids + nl_tokens
+            _user = tokenizer('user').input_ids + nl_tokens
+            _assistant = tokenizer('assistant').input_ids + nl_tokens
+
+            # Apply prompt templates
+            sources = examples["conversations"]
+            input_ids, targets = [], []
+            for i, source in enumerate(sources):
+                if roles[source[0]["from"]] != roles["user"]:
+                    source = source[1:]
+
+                input_id, target = [], []
+                system = [im_start] + _system + tokenizer(system_message).input_ids + [im_end] + nl_tokens
+                input_id += system
+                target += [im_start] + [IGNORE_TOKEN_ID] * (len(system)-3) + [im_end] + nl_tokens
+                assert len(input_id) == len(target)
+                for j, sentence in enumerate(source):
+                    role = roles[sentence["from"]]
+                    _input_id = tokenizer(role).input_ids + nl_tokens + \
+                        tokenizer(sentence["value"]).input_ids + [im_end] + nl_tokens
+                    input_id += _input_id
+                    if role == '<|im_start|>user':
+                        _target = [im_start] + [IGNORE_TOKEN_ID] * (len(_input_id)-3) + [im_end] + nl_tokens
+                    elif role == '<|im_start|>assistant':
+                        _target = [im_start] + [IGNORE_TOKEN_ID] * len(tokenizer(role).input_ids) + \
+                            _input_id[len(tokenizer(role).input_ids)+1:-2] + [im_end] + nl_tokens
+                    else:
+                        raise NotImplementedError
+                    target += _target
+                assert len(input_id) == len(target)
+                input_id += [tokenizer.pad_token_id] * (max_seq_length - len(input_id))
+                target += [IGNORE_TOKEN_ID] * (max_seq_length - len(target))
+                input_ids.append(input_id[:max_seq_length])
+                targets.append(target[:max_seq_length])
+            input_ids = torch.tensor(input_ids, dtype=torch.int)
+            targets = torch.tensor(targets, dtype=torch.int)
+
+            return dict(
+                input_ids=input_ids,
+                labels=targets,
+                attention_mask=input_ids.ne(tokenizer.pad_token_id),
+            )
+        return tokenization
     
 block_size = 512
 def group_texts(examples):
