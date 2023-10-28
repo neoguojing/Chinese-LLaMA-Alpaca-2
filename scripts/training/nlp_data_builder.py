@@ -1,8 +1,18 @@
+import os
 from torch.utils.data import Dataset, DataLoader
-from transformers import AutoTokenizer
+from transformers import PreTrainedTokenizer
 from typing import List
 from dataclasses import dataclass, field
-from datasets import load_dataset, concatenate_datasets
+from datasets import (
+    load_dataset,
+    load_from_disk,
+    concatenate_datasets,
+    Dataset, 
+    DatasetDict
+)
+from itertools import chain
+from pathlib import Path
+from typing import Optional, List, Dict, Any, Mapping,Union
 
 @dataclass
 class NLPExample:
@@ -15,29 +25,94 @@ class NLPTrainData:
     attention_mask: List[List[int]]
     labels: List[int]
 
+def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
+                           data_format:str="text"):
+    if data_format == "text":
+        return lambda examples: tokenizer(examples["text"])
+    elif data_format == "json":
+        return lambda examples: tokenizer(examples["text"])
+    elif data_format == "qwen":
+        return lambda examples: tokenizer(examples["text"])
+    
+block_size = 512
+def group_texts(examples):
+        # Concatenate all texts.
+        concatenated_examples = {k: list(chain(*examples[k])) for k in examples.keys()}
+        total_length = len(concatenated_examples[list(examples.keys())[0]])
+        # We drop the small remainder, we could add padding if the model supported it instead of this drop, you can
+        # customize this part to your needs.
+        if total_length >= block_size:
+            total_length = (total_length // block_size) * block_size
+        # Split by chunks of max_len.
+        result = {
+            k: [t[i : i + block_size] for i in range(0, total_length, block_size)]
+            for k, t in concatenated_examples.items()
+        }
+        result["labels"] = result["input_ids"].copy()
+        return result
+
 class NLPDataBuilder:
-    def __init__(self, file_paths: List[str], tokenizer_name: str, max_length: int):
-        self.file_paths = file_paths
-        self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
-        self.max_length = max_length
+    def __init__(self, dataset_dir: str, tokenizer: PreTrainedTokenizer,
+                 block_size: int = 512,
+                 cache_dir: str = None,data_format: str = "json",
+                 json_field: str = "data",num_of_procs:int = 8,
+                 validation_split_percentage: float=0.05):
+        self.dataset_dir = dataset_dir
+        self.block_size = block_size
+        self.cache_dir = cache_dir
+        self.tokenizer =tokenizer
+        self.data_format = data_format
+        self.json_field = json_field
 
-    def build_dataset(self, train_ratio: float, test_ratio: float, val_ratio: float, batch_size: int) -> DataLoader:
-        dataset = self._load_data()
-        dataset = self._preprocess_data(dataset)
-        dataset = self._tokenize_data(dataset)
-        train_data, test_data, val_data = self._split_data(dataset, train_ratio, test_ratio, val_ratio)
-        train_dataloader = self._create_dataloader(train_data, batch_size)
-        test_dataloader = self._create_dataloader(test_data, batch_size)
-        val_dataloader = self._create_dataloader(val_data, batch_size)
-        return train_dataloader, test_dataloader, val_dataloader
+    def build_dataset(self, train_ratio: float, test_ratio: float, 
+                      val_ratio: float, batch_size: int) -> DataLoader:
+        path = Path(self.dataset_dir)
+        suffix = "json"
+        if self.data_format == "text":
+            suffix = "txt"
+        pattern = "*."+suffix
 
-    def _load_data(self) -> List[NLPExample]:
-        data = []
-        for file_path in self.file_paths:
-            # Load data from file
-            # Create NLPExample objects and append to data
-            pass
-        return data
+        files = [file.name for file in path.glob(pattern)]
+        for idx, file in enumerate(files):
+            if self.cache_dir != None:
+                tokenized_dataset = self._load_tokenized_data_from_cache(file)
+            if tokenized_dataset == None:
+                raw_dataset = self._load_raw_data(file)
+                tokenized_dataset = self._tokenize_data(raw_dataset)
+                tokenized_dataset = self._split_data(tokenized_dataset)
+                self._save_tokenized_data_to_cache(file,tokenized_dataset)
+            train_dataset,eval_dataset = self._group_data(tokenized_dataset)
+
+        return train_dataset, eval_dataset
+    
+    def _load_raw_data(self,file:str) -> Union[Dataset, DatasetDict]:
+        path = Path(self.dataset_dir)
+        data_file = os.path.join(path, file)
+        filename = ''.join(file.split(".")[:-1])
+        cache_dir = os.path.join(self.cache_dir, filename+f"_text_{self.block_size}")
+        os.makedirs(cache_dir, exist_ok=True)
+        raw_dataset = load_dataset(self.data_format, data_files=data_file, 
+                                   cache_dir=cache_dir, keep_in_memory=False,
+                                   field=self.json_field)
+        return raw_dataset
+
+    def _load_tokenized_data_from_cache(self,file: str) -> Union[Dataset, DatasetDict]:
+        filename = ''.join(file.split(".")[:-1])
+        cache_path = os.path.join(self.cache_dir, filename+f"_{self.block_size}")
+        os.makedirs(cache_path, exist_ok=True)
+        try:
+            tokenized_dataset = load_from_disk(cache_path, keep_in_memory=False)
+        except Exception:
+            return None
+        return tokenized_dataset
+    
+    def _save_tokenized_data_to_cache(self, file: str,
+                                      tokenized_dataset: Union[Dataset, DatasetDict]):
+        filename = ''.join(file.split(".")[:-1])
+        cache_path = os.path.join(self.cache_dir, filename+f"_{self.block_size}")
+        os.makedirs(cache_path, exist_ok=True)
+        tokenized_dataset.save_to_disk(cache_path)
+      
 
     def _preprocess_data(self, data: List[NLPExample]) -> List[NLPExample]:
         processed_data = []
@@ -47,21 +122,41 @@ class NLPDataBuilder:
             pass
         return processed_data
 
-    def _tokenize_data(self, data: List[NLPExample]) -> NLPTrainData:
-        input_ids = []
-        attention_mask = []
-        labels = []
-        for example in data:
-            # Tokenize text using tokenizer
-            # Convert tokens to input_ids and attention_mask
-            # Append input_ids, attention_mask, and label to respective lists
-            pass
-        return NLPTrainData(input_ids, attention_mask, labels)
+    def _tokenize_data(self, raw_dataset: Union[Dataset, DatasetDict]) -> Union[Dataset, DatasetDict]:
+        do_tokenize = generate_tokenize_func(self.tokenizer,self.data_format)
+        tokenized_dataset = raw_dataset.map(
+                do_tokenize,
+                batched=True,
+                num_proc=self.num_of_procs,
+                remove_columns="",
+                load_from_cache_file=True,
+                keep_in_memory=False,
+                cache_file_names = {k: os.path.join(self.cache_dir, 'tokenized.arrow') for k in raw_dataset},
+                desc="Running tokenizer on dataset",
+            )
+        return tokenized_dataset
 
-    def _split_data(self, data: NLPTrainData, train_ratio: float, test_ratio: float, val_ratio: float) -> tuple:
-        # Split data into train, test, and validation sets based on the given ratios
-        # Return train_data, test_data, and val_data
-        pass
+    def _split_data(self, tokenized_dataset: Union[Dataset, DatasetDict],
+                    ) -> Union[Dataset, DatasetDict]:
+        grouped_datasets = tokenized_dataset.map(
+            group_texts,
+            batched=True,
+            num_proc=self.num_of_procs,
+            load_from_cache_file=True,
+            keep_in_memory=False,
+            cache_file_names = {k: os.path.join(self.cache_dir, 'grouped.arrow') for k in tokenized_dataset},
+            desc=f"Grouping texts in chunks of {self.block_size}",
+        )
+        return grouped_datasets
+    
+    def _group_data(self, tokenized_dataset: Union[Dataset, DatasetDict],
+                    ):
+        lm_datasets = tokenized_dataset.train_test_split(test_size = self.validation_split_percentage)
+        train_dataset = lm_datasets['train']
+        eval_dataset = lm_datasets["test"]
+        print("train_dataset---",train_dataset)
+        print("eval_dataset---",eval_dataset)
+        return train_dataset,eval_dataset
 
     def _create_dataloader(self, data: NLPTrainData, batch_size: int) -> DataLoader:
         dataset = NLPDataset(data.input_ids, data.attention_mask, data.labels)
