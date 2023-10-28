@@ -151,7 +151,8 @@ class NLPDataBuilder:
     
     def _group_data(self, tokenized_dataset: Union[Dataset, DatasetDict],
                     ):
-        lm_datasets = tokenized_dataset.train_test_split(test_size = self.validation_split_percentage)
+        lm_datasets = tokenized_dataset['train']
+        lm_datasets = lm_datasets.train_test_split(test_size = self.validation_split_percentage)
         train_dataset = lm_datasets['train']
         eval_dataset = lm_datasets["test"]
         print("train_dataset---",train_dataset)
