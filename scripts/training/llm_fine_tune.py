@@ -159,7 +159,7 @@ if __name__ == "__main__":
     else:
         training_args.fp16 = False
         training_args.bf16 = True
-    tokenizer = create_tokenizer(model_args)
+    tokenizer = create_tokenizer(model_args.tokenizer_name_or_path,model_args.model_max_length,model_args.llama)
     block_size = determine_block_size(data_args,tokenizer)
     train_dataset,eval_dataset =  preprocess_dataset(data_args,block_size,tokenizer)
     model = load_pretrained_model(model_args)

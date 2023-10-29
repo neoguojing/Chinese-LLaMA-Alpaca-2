@@ -255,10 +255,10 @@ if __name__ == "__main__":
     if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
         # If we pass only one argument to the script and it's the path to a json file,
         # let's parse it to get our arguments.
-        data_args,token_arg = parser.parse_json_file(json_file=os.path.abspath(sys.argv[1]))
+        data_args,model_args = parser.parse_json_file(json_file=os.path.abspath(sys.argv[1]))
     else:
-        data_args,token_arg = parser.parse_args_into_dataclasses()
+        data_args,model_args = parser.parse_args_into_dataclasses()
 
-    tokenizer = create_tokenizer(token_arg)
+    tokenizer = create_tokenizer(model_args.tokenizer_name_or_path,model_args.model_max_length,model_args.llama)
     determine_block_size(data_args,tokenizer)
     preprocess_dataset(data_args,block_size,tokenizer)

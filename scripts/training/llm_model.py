@@ -176,26 +176,26 @@ def singleton(cls):
 
 @singleton
 class TokenizerSingleton:
-    def __init__(self, model_args):
-        if model_args.llama:
+    def __init__(self, tokenizer_name_or_path:str,model_max_length:int=None,llama: bool=False,):
+        if llama:
             self.tokenizer = LlamaTokenizer.from_pretrained(
-                model_args.tokenizer_name_or_path,
+                tokenizer_name_or_path,
                 use_fast=False,
                 trust_remote_code=True)
             # 强制添加句子结束标志
             self.tokenizer.add_eos_token = True  
         else:
             self.tokenizer = AutoTokenizer.from_pretrained(
-                model_args.tokenizer_name_or_path,
-                model_max_length=model_args.model_max_length,
+                tokenizer_name_or_path,
+                model_max_length=model_max_length,
                 padding_side="right",
                 use_fast=False,
                 trust_remote_code=True)
             # pad标记等同于文档结束标志
             self.tokenizer.pad_token_id = self.tokenizer.eod_id
 
-def create_tokenizer(model_args):
-    tokenizer = TokenizerSingleton(model_args).tokenizer
+def create_tokenizer(tokenizer_name_or_path:str,model_max_length:int=None,llama: bool=False):
+    tokenizer = TokenizerSingleton(tokenizer_name_or_path,model_max_length,llama).tokenizer
     return tokenizer
 
 def get_model_config(model_args):

@@ -123,9 +123,9 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
                 attention_mask=input_ids.ne(tokenizer.pad_token_id),
             )
         return tokenization
-    
-block_size = 512
-def group_texts(examples):
+
+def generate_group_func(block_size: int= 512):
+    def group_texts(examples):
         # Concatenate all texts.
         concatenated_examples = {k: list(chain(*examples[k])) for k in examples.keys()}
         total_length = len(concatenated_examples[list(examples.keys())[0]])
@@ -140,12 +140,13 @@ def group_texts(examples):
         }
         result["labels"] = result["input_ids"].copy()
         return result
+    return group_texts
 
 class NLPDataBuilder:
     def __init__(self, dataset_dir: str, tokenizer: PreTrainedTokenizer,
                  block_size: int = 512,
-                 cache_dir: str = None,data_format: str = "json",
-                 json_field: str = "data",num_of_procs:int = 8,
+                 cache_dir: str = None,data_format: str = "qwen",
+                 json_field:str = "data",num_of_procs:int = 8,
                  validation_split_percentage: float=0.05):
         self.dataset_dir = dataset_dir
         self.block_size = block_size
@@ -154,22 +155,26 @@ class NLPDataBuilder:
         self.data_format = data_format
         self.json_field = json_field
 
-    def build_dataset(self, train_ratio: float, test_ratio: float, 
-                      val_ratio: float, batch_size: int) -> DataLoader:
+    def build_dataset(self):
         path = Path(self.dataset_dir)
         suffix = "json"
         if self.data_format == "text":
             suffix = "txt"
+        elif self.data_format == "qwen":
+            self.data_format = "json"
+            suffix = "qwen"
         pattern = "*."+suffix
 
         files = [file.name for file in path.glob(pattern)]
+        print(files)
         for idx, file in enumerate(files):
             if self.cache_dir != None:
                 tokenized_dataset = self._load_tokenized_data_from_cache(file)
             if tokenized_dataset == None:
                 raw_dataset = self._load_raw_data(file)
                 tokenized_dataset = self._tokenize_data(raw_dataset)
-                tokenized_dataset = self._split_data(tokenized_dataset)
+                if self.data_format == "text":
+                    tokenized_dataset = self._split_data(tokenized_dataset)
                 self._save_tokenized_data_to_cache(file,tokenized_dataset)
             train_dataset,eval_dataset = self._group_data(tokenized_dataset)
 
@@ -181,6 +186,7 @@ class NLPDataBuilder:
         filename = ''.join(file.split(".")[:-1])
         cache_dir = os.path.join(self.cache_dir, filename+f"_text_{self.block_size}")
         os.makedirs(cache_dir, exist_ok=True)
+        print("_load_raw_data",data_file)
         raw_dataset = load_dataset(self.data_format, data_files=data_file, 
                                    cache_dir=cache_dir, keep_in_memory=False,
                                    field=self.json_field)
@@ -228,6 +234,7 @@ class NLPDataBuilder:
 
     def _split_data(self, tokenized_dataset: Union[Dataset, DatasetDict],
                     ) -> Union[Dataset, DatasetDict]:
+        group_texts = generate_group_func(self.block_size)
         grouped_datasets = tokenized_dataset.map(
             group_texts,
             batched=True,
@@ -269,15 +276,9 @@ class NLPDataset(Dataset):
         label = self.labels[index]
         return input_id, attention_mask, label
 
-# Example usage
-file_paths = ['data/train.txt', 'data/test.txt', 'data/val.txt']
-tokenizer_name = 'bert-base-uncased'
-max_length = 128
-batch_size = 32
-
-data_builder = NLPDataBuilder(file_paths, tokenizer_name, max_length)
-train_dataloader, test_dataloader, val_dataloader = data_builder.build_dataset(0.8, 0.1, 0.1, batch_size)
-
-for batch in train_dataloader:
-    input_ids, attention_mask, labels = batch
-    # Process and train the batch
+if __name__ == "__main__":
+    from llm_model import create_tokenizer
+    tokenizer = create_tokenizer("../../model/chinese/Qwen-7B-Chat/",8192)
+    builder = NLPDataBuilder("../../dataset/chat/",tokenizer,cache_dir=".")
+    builder.build_dataset()
+    
