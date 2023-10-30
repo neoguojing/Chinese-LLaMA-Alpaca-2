@@ -30,7 +30,8 @@ class QAPackage(BaseModel):
     def load(self, path: str) -> Optional[dict]:
         try:
             with open(path) as f:
-                return json.load(f)
+                qa_arr = json.load(f)
+                self.data = qa_arr
         except FileNotFoundError:
             return None
         
@@ -133,4 +134,11 @@ class JsonOutputParser(AgentOutputParser):
                 return json.load(f)
         except FileNotFoundError:
             return None
+        
+if __name__ == '__main__':
+    qas = QAPackage(data=[])
+    qas.load("./ir2023_ashare.json")
+    output = qas.toQwen("ir2023_ashare.qw")
+    with open("ir2023_ashare.qw", 'w', encoding='utf-8') as f:
+        f.write(output)
     
