@@ -101,6 +101,8 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
             # sources = examples["conversations"]
             input_ids, targets = [], []
             for _from, _value in zip(examples['from'],examples['value']):
+                print("from:",_from)
+                print("value:",_value)
             #     if roles[source[0]["from"]] != roles["user"]:
             #         source = source[1:]
 
