@@ -206,8 +206,8 @@ class NLPDataBuilder:
         os.makedirs(cache_dir, exist_ok=True)
         print("_load_raw_data",data_file)
         if self.data_format == "qwen":
-            raw_dataset = load_dataset(self.load_format, data_files=data_file, 
-                                    cache_dir=cache_dir, keep_in_memory=False,field="conversations")
+            raw_dataset = load_dataset(self.load_format, data_files=data_file, field="conversations",
+                                       cache_dir=cache_dir, keep_in_memory=False)
         else:
             raw_dataset = load_dataset(self.load_format, data_files=data_file, 
                                     cache_dir=cache_dir, keep_in_memory=False)
