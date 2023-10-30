@@ -28,7 +28,6 @@ class NLPTrainData:
     labels: List[int]
 
 IGNORE_TOKEN_ID = LabelSmoother.ignore_index
-IGNORE_INDEX = -100
 PROMPT_TEMPLATE = (
         "[INST] <<SYS>>\n"
         "You are a helpful assistant. 你是一个乐于助人的助手。\n"
@@ -72,10 +71,13 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
             all_labels = []
             for s,t in zip(tokenized_sources['input_ids'],tokenized_targets['input_ids']):
                 input_ids = torch.LongTensor(s + t)[:max_seq_length]
-                labels = torch.LongTensor([IGNORE_INDEX] * len(s) + t)[:max_seq_length]
+                labels = torch.LongTensor([IGNORE_TOKEN_ID] * len(s) + t)[:max_seq_length]
                 assert len(input_ids) == len(labels)
                 all_input_ids.append(input_ids)
                 all_labels.append(labels)
+
+            all_input_ids = torch.LongTensor(all_input_ids)
+            all_labels = torch.LongTensor(all_labels)
 
             results = {
                 'input_ids':all_input_ids,
@@ -88,7 +90,7 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
         system_message = "You are a helpful assistant."
         def tokenization(examples):
             pdb.set_trace()
-            print("qwen:",examples)
+            print("qwen:",len(examples['from']),len(examples['value']),len(examples))
             roles = {"user": "<|im_start|>user", "assistant": "<|im_start|>assistant"}
             im_start = tokenizer.im_start_id #151644
             im_end = tokenizer.im_end_id #151645
@@ -100,11 +102,11 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
             # Apply prompt templates
             # sources = examples["conversations"]
             input_ids, targets = [], []
-
-            input_id, target = [], []
+            # [151644, 8948, 198, 2610, 525, 264, 10950, 17847, 13, 151645, 198]
             system = [im_start] + _system + tokenizer(system_message).input_ids + [im_end] + nl_tokens
-            input_id += system
-            target += [im_start] + [IGNORE_TOKEN_ID] * (len(system)-3) + [im_end] + nl_tokens
+
+            input_id, target = system, [im_start] + [IGNORE_TOKEN_ID] * (len(system) - 3) + [im_end] + nl_tokens
+
             assert len(input_id) == len(target)
             for idx, (_from, _value) in enumerate(zip(examples['from'],examples['value'])):
                 print(f"From: {_from}, Value: {_value}")
@@ -114,9 +116,22 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
 
                 role = roles[_from]
                 
+                # tokenizer(role)将角色标记转换为ID序列
+                # nl_tokens是句子结尾标记
+                # tokenizer(_value)将内容转换为ID序列
+                # 添加开始/结束标记 
                 _input_id = tokenizer(role).input_ids + nl_tokens + \
                     tokenizer(_value).input_ids + [im_end] + nl_tokens
+                
+                if (len(input_id) + len(_input_id)) > max_seq_length:
+                    input_ids.append(input_id + [tokenizer.pad_token_id] * (max_seq_length - len(input_id)))
+                    targets.append(target + [IGNORE_TOKEN_ID] * (max_seq_length - len(target)))
+                    input_id, target = system, [im_start] + [IGNORE_TOKEN_ID] * (len(system) - 3) + [im_end] + nl_tokens
+
                 input_id += _input_id
+                # 对用户来说,除begin/end外全是屏蔽符号
+                # 对助手来说,屏蔽掉角色部分,内容部分是输入对应部分
+                # 其他情况抛出异常
                 if role == '<|im_start|>user':
                     _target = [im_start] + [IGNORE_TOKEN_ID] * (len(_input_id)-3) + [im_end] + nl_tokens
                 elif role == '<|im_start|>assistant':
@@ -127,11 +142,11 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
                 target += _target
 
 
+
             assert len(input_id) == len(target)
-            input_id += [tokenizer.pad_token_id] * (max_seq_length - len(input_id))
-            target += [IGNORE_TOKEN_ID] * (max_seq_length - len(target))
-            input_ids.append(input_id[:max_seq_length])
-            targets.append(target[:max_seq_length])
+
+            input_ids.append(input_id + [tokenizer.pad_token_id] * (max_seq_length - len(input_id)))
+            targets.append(target + [IGNORE_TOKEN_ID] * (max_seq_length - len(target)))
 
             input_ids = torch.tensor(input_ids, dtype=torch.int)
             targets = torch.tensor(targets, dtype=torch.int)
@@ -266,6 +281,7 @@ class NLPDataBuilder:
         grouped_datasets = tokenized_dataset.map(
             group_texts,
             batched=True,
+            batch_size=500,
             num_proc=self.num_of_procs,
             load_from_cache_file=True,
             keep_in_memory=False,
