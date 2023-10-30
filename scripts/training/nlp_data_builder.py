@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Optional, List, Dict, Any, Mapping,Union
 import torch
 from transformers.trainer_pt_utils import LabelSmoother
-
+import pdb
 @dataclass
 class NLPExample:
     text: str
@@ -37,6 +37,16 @@ PROMPT_TEMPLATE = (
 def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
                            max_seq_length: int,
                            data_format:str="text",):
+    '''
+    qwen:
+    DatasetDict({
+        train: Dataset({
+            features: ['conversations', 'id'],
+            num_rows: 822
+        })
+    })
+
+    '''
     if data_format == "text":
         return lambda examples: tokenizer(examples["text"])
     
@@ -76,6 +86,7 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
     elif data_format == "qwen":
         system_message = "You are a helpful assistant."
         def tokenization(examples):
+            pdb.set_trace()
             roles = {"user": "<|im_start|>user", "assistant": "<|im_start|>assistant"}
             im_start = tokenizer.im_start_id
             im_end = tokenizer.im_end_id
@@ -146,14 +157,15 @@ class NLPDataBuilder:
     def __init__(self, dataset_dir: str, tokenizer: PreTrainedTokenizer,
                  block_size: int = 512,
                  cache_dir: str = None,data_format: str = "qwen",
-                 json_field:str = "data",num_of_procs:int = 8,
+                 num_of_procs:int = 8,
                  validation_split_percentage: float=0.05):
         self.dataset_dir = dataset_dir
         self.block_size = block_size
         self.cache_dir = cache_dir
         self.tokenizer =tokenizer
         self.data_format = data_format
-        self.json_field = json_field
+        self.num_of_procs = num_of_procs
+        self.validation_split_percentage = validation_split_percentage
 
     def build_dataset(self):
         path = Path(self.dataset_dir)
@@ -168,6 +180,7 @@ class NLPDataBuilder:
         files = [file.name for file in path.glob(pattern)]
         print(files)
         for idx, file in enumerate(files):
+            pdb.set_trace()
             if self.cache_dir != None:
                 tokenized_dataset = self._load_tokenized_data_from_cache(file)
             if tokenized_dataset == None:
@@ -188,8 +201,7 @@ class NLPDataBuilder:
         os.makedirs(cache_dir, exist_ok=True)
         print("_load_raw_data",data_file)
         raw_dataset = load_dataset(self.data_format, data_files=data_file, 
-                                   cache_dir=cache_dir, keep_in_memory=False,
-                                   field=self.json_field)
+                                   cache_dir=cache_dir, keep_in_memory=False)
         return raw_dataset
 
     def _load_tokenized_data_from_cache(self,file: str) -> Union[Dataset, DatasetDict]:
