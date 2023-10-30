@@ -35,8 +35,8 @@ PROMPT_TEMPLATE = (
         "<</SYS>>\n\n{instruction} [/INST]"
     )
 def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
-                           max_seq_length: int,
-                           data_format:str="text",):
+                           max_seq_length: int = None,
+                           data_format:str="text"):
     '''
     qwen:
     DatasetDict({
@@ -231,12 +231,12 @@ class NLPDataBuilder:
         return processed_data
 
     def _tokenize_data(self, raw_dataset: Union[Dataset, DatasetDict]) -> Union[Dataset, DatasetDict]:
-        do_tokenize = generate_tokenize_func(self.tokenizer,self.data_format)
+        do_tokenize = generate_tokenize_func(self.tokenizer,data_format=self.data_format)
         tokenized_dataset = raw_dataset.map(
                 do_tokenize,
                 batched=True,
                 num_proc=self.num_of_procs,
-                remove_columns="",
+                # remove_columns="",
                 load_from_cache_file=True,
                 keep_in_memory=False,
                 cache_file_names = {k: os.path.join(self.cache_dir, 'tokenized.arrow') for k in raw_dataset},
