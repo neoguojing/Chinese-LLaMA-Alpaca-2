@@ -38,12 +38,12 @@ class QAPackage(BaseModel):
         
     def toQwen(self,source:str):
         qwen_package = QwenPackage(data=[])
+        qwen_item = QwenItem(id=source,conversations=[])
         for qa in self.data:
-            qwen_item = QwenItem(id=source,conversations=[])
-            data_input = {"from": "user", "value": qa.question}
-            q = QwenConversationItem(**data_input)
             if qa.answer == "":
                 continue
+            data_input = {"from": "user", "value": qa.question}
+            q = QwenConversationItem(**data_input)
             data_input = {"from": "assistant", "value": qa.answer}
             a = QwenConversationItem(**data_input)
             qwen_item.conversations.append([q,a])
