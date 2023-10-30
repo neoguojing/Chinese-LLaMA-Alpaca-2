@@ -37,7 +37,7 @@ class QAPackage(BaseModel):
             return None
         
     def toQwen(self,source:str):
-        qwen_package = QwenPackage(data={})
+        # qwen_package = QwenPackage(data={})
         qwen_item = QwenItem(id=source,conversations=[])
         for qa in self.data:
             if qa.answer == "":
@@ -49,8 +49,8 @@ class QAPackage(BaseModel):
             a = QwenConversationItem(**data_input)
             qwen_item.conversations.append(a)
 
-        qwen_package.data = qwen_item
-        return qwen_package.dump()
+        # qwen_package.data = qwen_item
+        return qwen_item.dump()
         
 
 
@@ -68,21 +68,26 @@ class QwenItem(BaseModel):
 
     def length(self):
         return len(self.conversations)
-
-class QwenPackage(BaseModel):
-    # load_dataset 不支持qwen固有格式
-    # data: List[QwenItem] = Field(..., description="问题答案列表") 
-    data: QwenItem = Field(..., description="问题答案列表") 
-
-    def merge_data(self, other: 'QwenPackage'):
-        self.data.extend(other.data)
-
-    def length(self):
-        return len(self.data)
     
     def dump(self):
         dict_obj = self.dict()
-        return json.dumps(dict_obj["data"], ensure_ascii=False, indent=2)
+        return json.dumps(dict_obj, ensure_ascii=False, indent=2)
+
+
+# class QwenPackage(BaseModel):
+#     # load_dataset 不支持qwen固有格式
+#     # data: List[QwenItem] = Field(..., description="问题答案列表") 
+#     data: QwenItem = Field(..., description="问题答案列表") 
+
+#     def merge_data(self, other: 'QwenPackage'):
+#         self.data.extend(other.data)
+
+#     def length(self):
+#         return len(self.data)
+    
+#     def dump(self):
+#         dict_obj = self.dict()
+#         return json.dumps(dict_obj["data"], ensure_ascii=False, indent=2)
 
     
 class JsonOutputParser(AgentOutputParser):
