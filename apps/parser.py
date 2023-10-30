@@ -30,8 +30,9 @@ class QAPackage(BaseModel):
     def load(self, path: str) -> Optional[dict]:
         try:
             with open(path) as f:
-                qa_arr = json.load(f)
-                self.data = qa_arr
+                json_data = json.load(f)
+                qa_items = [QAItem(**item) for item in json_data]
+                self.data=qa_items
         except FileNotFoundError:
             return None
         
