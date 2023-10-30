@@ -44,9 +44,10 @@ class QAPackage(BaseModel):
                 continue
             data_input = {"from": "user", "value": qa.question}
             q = QwenConversationItem(**data_input)
+            qwen_item.conversations.append(q)
             data_input = {"from": "assistant", "value": qa.answer}
             a = QwenConversationItem(**data_input)
-            qwen_item.conversations.append([q,a])
+            qwen_item.conversations.append(a)
 
         qwen_package.data.append(qwen_item)
         return qwen_package.dump()
