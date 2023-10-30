@@ -98,37 +98,37 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
             _assistant = tokenizer('assistant').input_ids + nl_tokens
 
             # Apply prompt templates
-            sources = examples["conversations"]
+            # sources = examples["conversations"]
             input_ids, targets = [], []
-            for i, source in enumerate(sources):
-                if roles[source[0]["from"]] != roles["user"]:
-                    source = source[1:]
+            for _from, _value in zip(examples['from'],examples['value']):
+            #     if roles[source[0]["from"]] != roles["user"]:
+            #         source = source[1:]
 
-                input_id, target = [], []
-                system = [im_start] + _system + tokenizer(system_message).input_ids + [im_end] + nl_tokens
-                input_id += system
-                target += [im_start] + [IGNORE_TOKEN_ID] * (len(system)-3) + [im_end] + nl_tokens
-                assert len(input_id) == len(target)
-                for j, sentence in enumerate(source):
-                    role = roles[sentence["from"]]
-                    _input_id = tokenizer(role).input_ids + nl_tokens + \
-                        tokenizer(sentence["value"]).input_ids + [im_end] + nl_tokens
-                    input_id += _input_id
-                    if role == '<|im_start|>user':
-                        _target = [im_start] + [IGNORE_TOKEN_ID] * (len(_input_id)-3) + [im_end] + nl_tokens
-                    elif role == '<|im_start|>assistant':
-                        _target = [im_start] + [IGNORE_TOKEN_ID] * len(tokenizer(role).input_ids) + \
-                            _input_id[len(tokenizer(role).input_ids)+1:-2] + [im_end] + nl_tokens
-                    else:
-                        raise NotImplementedError
-                    target += _target
-                assert len(input_id) == len(target)
-                input_id += [tokenizer.pad_token_id] * (max_seq_length - len(input_id))
-                target += [IGNORE_TOKEN_ID] * (max_seq_length - len(target))
-                input_ids.append(input_id[:max_seq_length])
-                targets.append(target[:max_seq_length])
-            input_ids = torch.tensor(input_ids, dtype=torch.int)
-            targets = torch.tensor(targets, dtype=torch.int)
+            #     input_id, target = [], []
+            #     system = [im_start] + _system + tokenizer(system_message).input_ids + [im_end] + nl_tokens
+            #     input_id += system
+            #     target += [im_start] + [IGNORE_TOKEN_ID] * (len(system)-3) + [im_end] + nl_tokens
+            #     assert len(input_id) == len(target)
+            #     for j, sentence in enumerate(source):
+            #         role = roles[sentence["from"]]
+            #         _input_id = tokenizer(role).input_ids + nl_tokens + \
+            #             tokenizer(sentence["value"]).input_ids + [im_end] + nl_tokens
+            #         input_id += _input_id
+            #         if role == '<|im_start|>user':
+            #             _target = [im_start] + [IGNORE_TOKEN_ID] * (len(_input_id)-3) + [im_end] + nl_tokens
+            #         elif role == '<|im_start|>assistant':
+            #             _target = [im_start] + [IGNORE_TOKEN_ID] * len(tokenizer(role).input_ids) + \
+            #                 _input_id[len(tokenizer(role).input_ids)+1:-2] + [im_end] + nl_tokens
+            #         else:
+            #             raise NotImplementedError
+            #         target += _target
+            #     assert len(input_id) == len(target)
+            #     input_id += [tokenizer.pad_token_id] * (max_seq_length - len(input_id))
+            #     target += [IGNORE_TOKEN_ID] * (max_seq_length - len(target))
+            #     input_ids.append(input_id[:max_seq_length])
+            #     targets.append(target[:max_seq_length])
+            # input_ids = torch.tensor(input_ids, dtype=torch.int)
+            # targets = torch.tensor(targets, dtype=torch.int)
 
             return dict(
                 input_ids=input_ids,
