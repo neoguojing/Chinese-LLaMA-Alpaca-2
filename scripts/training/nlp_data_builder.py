@@ -205,8 +205,12 @@ class NLPDataBuilder:
         cache_dir = os.path.join(self.cache_dir, filename+f"_text_{self.block_size}")
         os.makedirs(cache_dir, exist_ok=True)
         print("_load_raw_data",data_file)
-        raw_dataset = load_dataset(self.load_format, data_files=data_file, 
-                                   cache_dir=cache_dir, keep_in_memory=False)
+        if self.data_format == "qwen":
+            raw_dataset = load_dataset(self.load_format, data_files=data_file, 
+                                    cache_dir=cache_dir, keep_in_memory=False,field="conversations")
+        else:
+            raw_dataset = load_dataset(self.load_format, data_files=data_file, 
+                                    cache_dir=cache_dir, keep_in_memory=False)
         return raw_dataset
 
     def _load_tokenized_data_from_cache(self,file: str) -> Union[Dataset, DatasetDict]:
