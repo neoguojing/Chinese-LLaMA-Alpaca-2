@@ -87,6 +87,7 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
     elif data_format == "qwen":
         system_message = "You are a helpful assistant."
         def tokenization(examples):
+            pdb.set_trace()
             print("qwen:",examples)
             roles = {"user": "<|im_start|>user", "assistant": "<|im_start|>assistant"}
             im_start = tokenizer.im_start_id
@@ -158,7 +159,7 @@ class NLPDataBuilder:
     def __init__(self, dataset_dir: str, tokenizer: PreTrainedTokenizer,
                  block_size: int = 512,max_seq_length: int = 8192,
                  cache_dir: str = None,data_format: str = "qwen",
-                 num_of_procs:int = 8,
+                 num_of_procs:int = 1,
                  validation_split_percentage: float=0.05):
         self.dataset_dir = dataset_dir
         self.block_size = block_size
