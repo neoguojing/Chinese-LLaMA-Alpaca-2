@@ -27,6 +27,13 @@ class QAPackage(BaseModel):
         dict_obj = self.dict()
         return json.dumps(dict_obj["data"], ensure_ascii=False, indent=4)
     
+    def load(self, path: str) -> Optional[dict]:
+        try:
+            with open(path) as f:
+                return json.load(f)
+        except FileNotFoundError:
+            return None
+        
     def toQwen(self,source:str):
         qwen_package = QwenPackage(data=[])
         for qa in self.data:
@@ -38,7 +45,8 @@ class QAPackage(BaseModel):
             data_input = {"from": "assistant", "value": qa.answer}
             a = QwenConversationItem(**data_input)
             qwen_item.conversations.append([q,a])
-            qwen_package.data.append(qwen_item)
+
+        qwen_package.data.append(qwen_item)
         return qwen_package.dump()
         
 
@@ -116,6 +124,8 @@ class JsonOutputParser(AgentOutputParser):
         with open(path+".qwen", 'w', encoding='utf-8') as f:
             package_json = self.qaList.toQwen(path)
             f.write(package_json)
+
+        self.qaList = QAPackage(data=[])
             
     def load(self, path: str) -> Optional[dict]:
         try:
