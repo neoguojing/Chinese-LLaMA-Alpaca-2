@@ -172,10 +172,12 @@ class NLPDataBuilder:
     def build_dataset(self):
         path = Path(self.dataset_dir)
         suffix = "json"
+        self.load_format = "json"
         if self.data_format == "text":
             suffix = "txt"
+            self.load_format = "text"
         elif self.data_format == "qwen":
-            self.data_format = "json"
+            self.load_format = "json"
             suffix = "qwen"
         pattern = "*."+suffix
 
@@ -202,7 +204,7 @@ class NLPDataBuilder:
         cache_dir = os.path.join(self.cache_dir, filename+f"_text_{self.block_size}")
         os.makedirs(cache_dir, exist_ok=True)
         print("_load_raw_data",data_file)
-        raw_dataset = load_dataset(self.data_format, data_files=data_file, 
+        raw_dataset = load_dataset(self.load_format, data_files=data_file, 
                                    cache_dir=cache_dir, keep_in_memory=False)
         return raw_dataset
 
