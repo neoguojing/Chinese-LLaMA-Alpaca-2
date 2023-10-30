@@ -48,10 +48,11 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
 
     '''
     if data_format == "text":
-        return lambda examples: tokenizer(examples["text"])
+        return lambda examples: (print("llama:",examples),tokenizer(examples["text"]))
     
     elif data_format == "llama":
         def tokenization(examples):
+            print("llama:",examples)
             sources = []
             targets = []
             prompt = PROMPT_TEMPLATE
@@ -86,7 +87,7 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
     elif data_format == "qwen":
         system_message = "You are a helpful assistant."
         def tokenization(examples):
-            pdb.set_trace()
+            print("qwen:",examples)
             roles = {"user": "<|im_start|>user", "assistant": "<|im_start|>assistant"}
             im_start = tokenizer.im_start_id
             im_end = tokenizer.im_end_id
@@ -155,7 +156,7 @@ def generate_group_func(block_size: int= 512):
 
 class NLPDataBuilder:
     def __init__(self, dataset_dir: str, tokenizer: PreTrainedTokenizer,
-                 block_size: int = 512,
+                 block_size: int = 512,max_seq_length: int = 8192,
                  cache_dir: str = None,data_format: str = "qwen",
                  num_of_procs:int = 8,
                  validation_split_percentage: float=0.05):
@@ -164,6 +165,7 @@ class NLPDataBuilder:
         self.cache_dir = cache_dir
         self.tokenizer =tokenizer
         self.data_format = data_format
+        self.max_seq_length = max_seq_length
         self.num_of_procs = num_of_procs
         self.validation_split_percentage = validation_split_percentage
 
@@ -231,7 +233,8 @@ class NLPDataBuilder:
         return processed_data
 
     def _tokenize_data(self, raw_dataset: Union[Dataset, DatasetDict]) -> Union[Dataset, DatasetDict]:
-        do_tokenize = generate_tokenize_func(self.tokenizer,data_format=self.data_format)
+        do_tokenize = generate_tokenize_func(self.tokenizer,data_format=self.data_format,
+                                             max_seq_length=self.max_seq_length)
         tokenized_dataset = raw_dataset.map(
                 do_tokenize,
                 batched=True,
