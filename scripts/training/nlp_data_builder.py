@@ -138,7 +138,7 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
                     input_ids.append(input_id)
                     print("input_ids dim:",len(input_ids),len(input_ids[0]))
                     targets.append(target)
-
+                    input_id, target = [],[]
                     input_id, target = system, [im_start] + [IGNORE_TOKEN_ID] * (len(system) - 3) + [im_end] + nl_tokens
 
                 input_id += _input_id
