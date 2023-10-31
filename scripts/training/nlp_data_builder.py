@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Optional, List, Dict, Any, Mapping,Union
 import torch
 from transformers.trainer_pt_utils import LabelSmoother
+import numpy as np
 import pdb
 @dataclass
 class NLPExample:
@@ -109,8 +110,7 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
 
             assert len(input_id) == len(target)
             for idx, (_from, _value) in enumerate(zip(examples['from'],examples['value'])):
-                print(f"From: {_from}, Value: {_value}")
-                
+                # print(f"From: {_from}, Value: {_value}")
                 if idx == 0 and roles[_from] != roles["user"]:
                     continue
 
@@ -126,8 +126,8 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
                 if (len(input_id) + len(_input_id)) > max_seq_length:
                     input_ids.append(input_id + [tokenizer.pad_token_id] * (max_seq_length - len(input_id)))
                     targets.append(target + [IGNORE_TOKEN_ID] * (max_seq_length - len(target)))
-                    print("Input IDs shape:", input_ids.shape)
-                    print("Input IDs shape:", targets.shape)
+                    print("Input IDs shape:", np.array(input_ids).shape)
+                    print("Target IDs shape:", np.array(targets).shape)
                     input_id, target = system, [im_start] + [IGNORE_TOKEN_ID] * (len(system) - 3) + [im_end] + nl_tokens
 
                 input_id += _input_id
@@ -155,8 +155,8 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
                 target += [IGNORE_TOKEN_ID] * (max_seq_length - len(target))
             input_ids.append(input_id)
             targets.append(target)
-            print("Input IDs shape:", input_ids.shape)
-            print("Input IDs shape:", targets.shape)
+            print("Input IDs shape:", np.array(input_ids).shape)
+            print("Target IDs shape:", np.array(targets).shape)
 
             input_ids = torch.tensor(input_ids, dtype=torch.int)
             targets = torch.tensor(targets, dtype=torch.int)
