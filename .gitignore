@@ -21,3 +21,6 @@ model/llama/llama-2-7b/
 scripts/inference/__pycache__/
 scripts/langchain/__pycache__/
 apps/__pycache__/model_factory.cpython-310.pyc
+scripts/training/ir2023_ashare_512/
+scripts/training/ir2023_ashare_text_512/
+scripts/training/tokenized.arrow
