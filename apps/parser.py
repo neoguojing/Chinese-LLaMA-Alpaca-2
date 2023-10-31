@@ -37,7 +37,6 @@ class QAPackage(BaseModel):
             return None
         
     def toQwen(self,source:str):
-        # qwen_package = QwenPackage(data={})
         qwen_item = QwenItem(id=source,conversations=[])
         for qa in self.data:
             if qa.answer == "":
@@ -49,9 +48,29 @@ class QAPackage(BaseModel):
             a = QwenConversationItem(**data_input)
             qwen_item.conversations.append(a)
 
-        # qwen_package.data = qwen_item
         return qwen_item.dump()
+    
+    def toLLama(self,path,source:str):
+        with open(path+source+"_llama"+".json", 'w', encoding='utf-8') as f:
+            for qa in self.data:
+                if qa.answer == "":
+                    continue
+                data_input = {"instruction": "", "input": qa.question,"output":qa.answer}
+                q = LlamaItem(**data_input)
+                json_str = q.dump()
+                f.write(json_str+"\n")
+
+
         
+
+class LlamaItem(BaseModel):
+    instruction: str = Field(...,  description="指令")
+    input: str = Field(..., description="输入")
+    output: str = Field(..., description="输出")
+
+    def dump(self):
+        dict_obj = self.dict()
+        return json.dumps(dict_obj, ensure_ascii=False, indent=2)
 
 
 class QwenConversationItem(BaseModel):
@@ -73,23 +92,6 @@ class QwenItem(BaseModel):
         dict_obj = self.dict()
         return json.dumps(dict_obj, ensure_ascii=False, indent=2)
 
-
-# class QwenPackage(BaseModel):
-#     # load_dataset 不支持qwen固有格式
-#     # data: List[QwenItem] = Field(..., description="问题答案列表") 
-#     data: QwenItem = Field(..., description="问题答案列表") 
-
-#     def merge_data(self, other: 'QwenPackage'):
-#         self.data.extend(other.data)
-
-#     def length(self):
-#         return len(self.data)
-    
-#     def dump(self):
-#         dict_obj = self.dict()
-#         return json.dumps(dict_obj["data"], ensure_ascii=False, indent=2)
-
-    
 class JsonOutputParser(AgentOutputParser):
     pattern = re.compile(r"```(?:json)?\n(.*?)```", re.DOTALL)
     qaList: QAPackage = QAPackage(data=[])
@@ -147,7 +149,8 @@ class JsonOutputParser(AgentOutputParser):
 if __name__ == '__main__':
     qas = QAPackage(data=[])
     qas.load("./ir2023_ashare.json")
-    output = qas.toQwen("ir2023_ashare.qw")
-    with open("ir2023_ashare.qw", 'w', encoding='utf-8') as f:
-        f.write(output)
+    qas.toLLama(".","ir2023_ashare")
+    # output = qas.toQwen("ir2023_ashare.qw")
+    # with open("ir2023_ashare.qw", 'w', encoding='utf-8') as f:
+    #     f.write(output)
     

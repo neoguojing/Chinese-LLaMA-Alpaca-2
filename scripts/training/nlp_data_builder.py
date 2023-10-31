@@ -41,7 +41,7 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
     qwen:
     DatasetDict({
         train: Dataset({
-            features: ['conversations', 'id'],
+            features: ['from', 'value'],
             num_rows: 822
         })
     })
@@ -52,7 +52,8 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
     
     elif data_format == "llama":
         def tokenization(examples):
-            print("llama:",examples)
+            print("llama:",len(examples['input']),len(examples['output']),len(examples))
+            pdb.set_trace()
             sources = []
             targets = []
             prompt = PROMPT_TEMPLATE
@@ -61,7 +62,7 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
                     instruction = instruction+'\n'+input
                 source = prompt.format_map({'instruction':instruction})
                 target = f"{output}{tokenizer.eos_token}"
-
+                # 字符串数组，每个元素对应一段输入
                 sources.append(source)
                 targets.append(target)
 
@@ -90,7 +91,6 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
     elif data_format == "qwen":
         system_message = "You are a helpful assistant."
         def tokenization(examples):
-            pdb.set_trace()
             print("qwen:",len(examples['from']),len(examples['value']),len(examples))
             roles = {"user": "<|im_start|>user", "assistant": "<|im_start|>assistant"}
             im_start = tokenizer.im_start_id #151644
@@ -99,9 +99,6 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
             _system = tokenizer('system').input_ids + nl_tokens #[8948, 198]
             _user = tokenizer('user').input_ids + nl_tokens #[872, 198]
             _assistant = tokenizer('assistant').input_ids + nl_tokens #[77091, 198]
-
-            # Apply prompt templates
-            # sources = examples["conversations"]
             
             # [151644, 8948, 198, 2610, 525, 264, 10950, 17847, 13, 151645, 198]
             system = [im_start] + _system + tokenizer(system_message).input_ids + [im_end] + nl_tokens
@@ -269,15 +266,6 @@ class NLPDataBuilder:
         cache_path = os.path.join(self.cache_dir, filename+f"_{self.block_size}")
         os.makedirs(cache_path, exist_ok=True)
         tokenized_dataset.save_to_disk(cache_path)
-      
-
-    def _preprocess_data(self, data: List[NLPExample]) -> List[NLPExample]:
-        processed_data = []
-        for example in data:
-            # Preprocess data (e.g., data cleaning, normalization, etc.)
-            # Append preprocessed example to processed_data
-            pass
-        return processed_data
 
     def _tokenize_data(self, raw_dataset: Union[Dataset, DatasetDict]) -> Union[Dataset, DatasetDict]:
         do_tokenize = generate_tokenize_func(self.tokenizer,data_format=self.data_format,
@@ -304,7 +292,6 @@ class NLPDataBuilder:
         grouped_datasets = tokenized_dataset.map(
             group_texts,
             batched=True,
-            batch_size=500,
             num_proc=self.num_of_procs,
             load_from_cache_file=True,
             keep_in_memory=False,
@@ -322,11 +309,6 @@ class NLPDataBuilder:
         print("train_dataset---",train_dataset)
         print("eval_dataset---",eval_dataset)
         return train_dataset,eval_dataset
-
-    def _create_dataloader(self, data: NLPTrainData, batch_size: int) -> DataLoader:
-        dataset = NLPDataset(data.input_ids, data.attention_mask, data.labels)
-        dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
-        return dataloader
 
 @dataclass
 class NLPDataset(Dataset):
