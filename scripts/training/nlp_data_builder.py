@@ -107,12 +107,14 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
             system = [im_start] + _system + tokenizer(system_message).input_ids + [im_end] + nl_tokens
 
             def patch_tokens(input_id,target):
+                pdb.set_trace()
                 if len(input_id) >= max_seq_length:
                     input_id = input_id[:max_seq_length]
                     target = target[:max_seq_length]
                 else:
                     input_id += [tokenizer.pad_token_id] * (max_seq_length - len(input_id))
                     target += [IGNORE_TOKEN_ID] * (max_seq_length - len(target))
+                return input_id,target
 
             input_id, target = system, [im_start] + [IGNORE_TOKEN_ID] * (len(system) - 3) + [im_end] + nl_tokens
 
