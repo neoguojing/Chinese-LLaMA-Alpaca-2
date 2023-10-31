@@ -327,7 +327,7 @@ class NLPDataset(Dataset):
 
 if __name__ == "__main__":
     from llm_model import create_tokenizer
-    tokenizer = create_tokenizer("../../model/chinese/Qwen-7B-Chat/",8192)
-    builder = NLPDataBuilder("../../dataset/chat/",tokenizer,cache_dir=".")
+    tokenizer = create_tokenizer("../../model/chinese/chinese-alpaca-2-7b-hf/",8192,llama=True)
+    builder = NLPDataBuilder("../../dataset/chat/",tokenizer,cache_dir=".",data_format="llama")
     builder.build_dataset()
     
