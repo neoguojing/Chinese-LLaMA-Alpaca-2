@@ -162,7 +162,6 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
             print("input_id len:",np.array(input_id).shape)
             input_ids.append(input_id)
             targets.append(target)
-            print("input_ids len:",np.array(input_ids).shape)
 
             input_ids = torch.tensor(input_ids, dtype=torch.int)
             targets = torch.tensor(targets, dtype=torch.int)
@@ -222,7 +221,7 @@ class NLPDataBuilder:
         files = [file.name for file in path.glob(pattern)]
         print(files)
         for idx, file in enumerate(files):
-            pdb.set_trace()
+            # pdb.set_trace()
             if self.cache_dir != None:
                 tokenized_dataset = self._load_tokenized_data_from_cache(file)
             if tokenized_dataset == None:
