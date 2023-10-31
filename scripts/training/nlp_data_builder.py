@@ -126,6 +126,8 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
                 if (len(input_id) + len(_input_id)) > max_seq_length:
                     input_ids.append(input_id + [tokenizer.pad_token_id] * (max_seq_length - len(input_id)))
                     targets.append(target + [IGNORE_TOKEN_ID] * (max_seq_length - len(target)))
+                    print("Input IDs shape:", input_ids.shape)
+                    print("Input IDs shape:", targets.shape)
                     input_id, target = system, [im_start] + [IGNORE_TOKEN_ID] * (len(system) - 3) + [im_end] + nl_tokens
 
                 input_id += _input_id
@@ -145,8 +147,16 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
 
             assert len(input_id) == len(target)
 
-            input_ids.append(input_id + [tokenizer.pad_token_id] * (max_seq_length - len(input_id)))
-            targets.append(target + [IGNORE_TOKEN_ID] * (max_seq_length - len(target)))
+            if len(input_id) >= max_seq_length:
+                input_id = input_id[:max_seq_length]
+                target = target[:max_seq_length]
+            else:
+                input_id += [tokenizer.pad_token_id] * (max_seq_length - len(input_id))
+                target += [IGNORE_TOKEN_ID] * (max_seq_length - len(target))
+            input_ids.append(input_id)
+            targets.append(target)
+            print("Input IDs shape:", input_ids.shape)
+            print("Input IDs shape:", targets.shape)
 
             input_ids = torch.tensor(input_ids, dtype=torch.int)
             targets = torch.tensor(targets, dtype=torch.int)
