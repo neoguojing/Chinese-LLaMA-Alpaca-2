@@ -91,6 +91,14 @@ class QwenItem(BaseModel):
     def dump(self):
         dict_obj = self.dict()
         return json.dumps(dict_obj, ensure_ascii=False, indent=2)
+    
+    def toLLama(self,path,source:str):
+        with open(path+source+"_llama"+".json", 'w', encoding='utf-8') as f:
+            for i in range(0, len(self.conversations), 2):
+                data_input = {"instruction": "", "input": self.conversations[i].value,"output":self.conversations[i+1].value}
+                q = LlamaItem(**data_input)
+                json_str = q.dump()
+                f.write(json_str+"\n")
 
 class JsonOutputParser(AgentOutputParser):
     pattern = re.compile(r"```(?:json)?\n(.*?)```", re.DOTALL)
@@ -147,10 +155,14 @@ class JsonOutputParser(AgentOutputParser):
             return None
         
 if __name__ == '__main__':
-    qas = QAPackage(data=[])
-    qas.load("./ir2023_ashare.json")
-    qas.toLLama(".","ir2023_ashare")
+    # qas = QAPackage(data=[])
+    # qas.load("./ir2023_ashare.json")
+    # qas.toLLama(".","ir2023_ashare")
     # output = qas.toQwen("ir2023_ashare.qw")
     # with open("ir2023_ashare.qw", 'w', encoding='utf-8') as f:
     #     f.write(output)
+    with open("../dataset/chat/ir2023_ashare.qwen") as f:
+        data = f.read()
+        qw = QwenItem.parse_raw(data) 
+        qw.toLLama("./","ir2023_ashare")
     
