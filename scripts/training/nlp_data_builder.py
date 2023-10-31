@@ -102,7 +102,7 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
 
             # Apply prompt templates
             # sources = examples["conversations"]
-            input_ids, targets = [], []
+            
             # [151644, 8948, 198, 2610, 525, 264, 10950, 17847, 13, 151645, 198]
             system = [im_start] + _system + tokenizer(system_message).input_ids + [im_end] + nl_tokens
 
@@ -116,7 +116,7 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
                 return input_id,target
 
             input_id, target = system, [im_start] + [IGNORE_TOKEN_ID] * (len(system) - 3) + [im_end] + nl_tokens
-
+            input_ids, targets = [], []
             assert len(input_id) == len(target)
             for idx, (_from, _value) in enumerate(zip(examples['from'],examples['value'])):
                 # print(f"From: {_from}, Value: {_value}")
@@ -135,9 +135,9 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
                 if (len(input_id) + len(_input_id)) >= max_seq_length:
                     input_id,target = patch_tokens(input_id,target)
                     print("input_id len:",np.array(input_id).shape)
-                    input_ids.append(torch.tensor(input_id))
+                    input_ids.append(torch.tensor(input_id,dtype=torch.int))
                     print("input_ids dim:",len(input_ids),len(input_ids[0]))
-                    targets.append(torch.tensor(target))
+                    targets.append(torch.tensor(target,dtype=torch.int))
                     input_id, target = [],[]
                     input_id, target = system, [im_start] + [IGNORE_TOKEN_ID] * (len(system) - 3) + [im_end] + nl_tokens
 
@@ -160,8 +160,8 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
 
             input_id,target = patch_tokens(input_id,target)
             print("input_id len:",np.array(input_id).shape)
-            input_ids.append(torch.tensor(input_id))
-            targets.append(torch.tensor(target))
+            input_ids.append(torch.tensor(input_id,dtype=torch.int))
+            targets.append(torch.tensor(target,dtype=torch.int))
             print("input_ids dim:",len(input_ids),len(input_ids[0]))
             input_ids = torch.tensor(input_ids, dtype=torch.int)
             targets = torch.tensor(targets, dtype=torch.int)
