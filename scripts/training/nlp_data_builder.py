@@ -163,8 +163,8 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
             input_ids.append(torch.tensor(input_id,dtype=torch.int))
             targets.append(torch.tensor(target,dtype=torch.int))
             print("input_ids dim:",len(input_ids),len(input_ids[0]))
-            input_ids = torch.tensor(input_ids, dtype=torch.int)
-            targets = torch.tensor(targets, dtype=torch.int)
+            input_ids = torch.LongTensor(input_ids)
+            targets = torch.LongTensor(targets)
             
 
             return dict(
