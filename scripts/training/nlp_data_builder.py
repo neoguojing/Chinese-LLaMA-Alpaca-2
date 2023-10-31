@@ -135,10 +135,10 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
                 if (len(input_id) + len(_input_id)) >= max_seq_length:
                     input_id,target = patch_tokens(input_id,target)
                     print("input_id len:",np.array(input_id).shape)
-                    input_ids.append(torch.tensor(input_id,dtype=torch.int))
+                    # [:max_seq_length] 的意义在于确保纬度
+                    input_ids.append(input_id[:max_seq_length])
                     print("input_ids dim:",len(input_ids),len(input_ids[0]))
-                    targets.append(torch.tensor(target,dtype=torch.int))
-                    input_id, target = [],[]
+                    targets.append(target[:max_seq_length])
                     input_id, target = system, [im_start] + [IGNORE_TOKEN_ID] * (len(system) - 3) + [im_end] + nl_tokens
 
                 input_id += _input_id
@@ -160,11 +160,11 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
 
             input_id,target = patch_tokens(input_id,target)
             print("input_id len:",np.array(input_id).shape)
-            input_ids.append(torch.tensor(input_id,dtype=torch.int))
-            targets.append(torch.tensor(target,dtype=torch.int))
+            input_ids.append(input_id[:max_seq_length])
+            targets.append(target[:max_seq_length])
             print("input_ids dim:",len(input_ids),len(input_ids[0]))
-            input_ids = torch.LongTensor(input_ids)
-            targets = torch.LongTensor(targets)
+            input_ids = torch.tensor(input_ids,dtype=torch.int)
+            targets = torch.tensor(targets,dtype=torch.int)
             
 
             return dict(
