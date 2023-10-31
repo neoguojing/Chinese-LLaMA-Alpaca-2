@@ -107,10 +107,10 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
             system = [im_start] + _system + tokenizer(system_message).input_ids + [im_end] + nl_tokens
 
             def patch_tokens(input_id,target):
-                if len(input_id) >= max_seq_length:
+                if len(input_id) > max_seq_length:
                     input_id = input_id[:max_seq_length]
                     target = target[:max_seq_length]
-                else:
+                elif len(input_id) < max_seq_length:
                     input_id += [tokenizer.pad_token_id] * (max_seq_length - len(input_id))
                     target += [IGNORE_TOKEN_ID] * (max_seq_length - len(target))
                 return input_id,target
@@ -136,7 +136,7 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
                     input_id,target = patch_tokens(input_id,target)
                     print("input_id len:",np.array(input_id).shape)
                     input_ids.append(input_id)
-                    print("input_ids len:",np.array(input_ids).shape)
+                    # print("input_ids len:",np.array(input_ids).shape)
                     targets.append(target)
 
                     input_id, target = system, [im_start] + [IGNORE_TOKEN_ID] * (len(system) - 3) + [im_end] + nl_tokens
