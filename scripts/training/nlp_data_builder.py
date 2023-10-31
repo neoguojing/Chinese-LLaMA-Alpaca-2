@@ -217,6 +217,9 @@ class NLPDataBuilder:
         elif self.data_format == "qwen":
             self.load_format = "json"
             suffix = "qwen"
+        elif self.data_format == "llama":
+            self.load_format = "json"
+            suffix = "json"
         pattern = "*."+suffix
 
         files = [file.name for file in path.glob(pattern)]
@@ -279,11 +282,15 @@ class NLPDataBuilder:
     def _tokenize_data(self, raw_dataset: Union[Dataset, DatasetDict]) -> Union[Dataset, DatasetDict]:
         do_tokenize = generate_tokenize_func(self.tokenizer,data_format=self.data_format,
                                              max_seq_length=self.max_seq_length)
+        if self.data_format == "qwen":
+            remove_columns=["from","value"]
+        elif self.data_format == "llama":
+            remove_columns=["instruction","input","output"]
         tokenized_dataset = raw_dataset.map(
                 do_tokenize,
                 batched=True,
                 num_proc=self.num_of_procs,
-                # remove_columns="",
+                remove_columns=remove_columns,
                 load_from_cache_file=True,
                 keep_in_memory=False,
                 cache_file_names = {k: os.path.join(self.cache_dir, 'tokenized.arrow') for k in raw_dataset},
