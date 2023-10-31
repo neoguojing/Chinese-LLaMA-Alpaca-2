@@ -106,6 +106,14 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
             # [151644, 8948, 198, 2610, 525, 264, 10950, 17847, 13, 151645, 198]
             system = [im_start] + _system + tokenizer(system_message).input_ids + [im_end] + nl_tokens
 
+            def patch_tokens(input_id,target):
+                if len(input_id) >= max_seq_length:
+                    input_id = input_id[:max_seq_length]
+                    target = target[:max_seq_length]
+                else:
+                    input_id += [tokenizer.pad_token_id] * (max_seq_length - len(input_id))
+                    target += [IGNORE_TOKEN_ID] * (max_seq_length - len(target))
+
             input_id, target = system, [im_start] + [IGNORE_TOKEN_ID] * (len(system) - 3) + [im_end] + nl_tokens
 
             assert len(input_id) == len(target)
@@ -124,10 +132,11 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
                     tokenizer(_value).input_ids + [im_end] + nl_tokens
                 
                 if (len(input_id) + len(_input_id)) > max_seq_length:
-                    input_ids.append(input_id + [tokenizer.pad_token_id] * (max_seq_length - len(input_id)))
-                    targets.append(target + [IGNORE_TOKEN_ID] * (max_seq_length - len(target)))
-                    # print("Input IDs shape:", np.array(input_ids).shape)
-                    # print("Target IDs shape:", np.array(targets).shape)
+                    input_id,target = patch_tokens(input_id,target)
+                    print("input_id len:",len(input_id))
+                    input_ids.append(input_id)
+                    targets.append(target)
+
                     input_id, target = system, [im_start] + [IGNORE_TOKEN_ID] * (len(system) - 3) + [im_end] + nl_tokens
 
                 input_id += _input_id
@@ -147,12 +156,8 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
 
             assert len(input_id) == len(target)
 
-            if len(input_id) >= max_seq_length:
-                input_id = input_id[:max_seq_length]
-                target = target[:max_seq_length]
-            else:
-                input_id += [tokenizer.pad_token_id] * (max_seq_length - len(input_id))
-                target += [IGNORE_TOKEN_ID] * (max_seq_length - len(target))
+            input_id,target = patch_tokens(input_id,target)
+            print("input_id len:",len(input_id))
             input_ids.append(input_id)
             targets.append(target)
             # print("Input IDs shape:", np.array(input_ids).shape)
