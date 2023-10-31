@@ -134,8 +134,9 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
                 
                 if (len(input_id) + len(_input_id)) >= max_seq_length:
                     input_id,target = patch_tokens(input_id,target)
-                    print("input_id len:",len(input_id))
+                    print("input_id len:",np.array(input_id).shape)
                     input_ids.append(input_id)
+                    print("input_ids len:",np.array(input_ids).shape)
                     targets.append(target)
 
                     input_id, target = system, [im_start] + [IGNORE_TOKEN_ID] * (len(system) - 3) + [im_end] + nl_tokens
@@ -158,11 +159,10 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
             assert len(input_id) == len(target)
 
             input_id,target = patch_tokens(input_id,target)
-            print("input_id len:",len(input_id))
+            print("input_id len:",np.array(input_id).shape)
             input_ids.append(input_id)
             targets.append(target)
-            # print("Input IDs shape:", np.array(input_ids).shape)
-            # print("Target IDs shape:", np.array(targets).shape)
+            print("input_ids len:",np.array(input_ids).shape)
 
             input_ids = torch.tensor(input_ids, dtype=torch.int)
             targets = torch.tensor(targets, dtype=torch.int)
