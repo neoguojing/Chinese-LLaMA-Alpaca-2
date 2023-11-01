@@ -184,6 +184,7 @@ class TokenizerSingleton:
                 trust_remote_code=True)
             # 强制添加句子结束标志
             self.tokenizer.add_eos_token = True  
+            self.tokenizer.pad_token = self.tokenizer.eos_token
         else:
             self.tokenizer = AutoTokenizer.from_pretrained(
                 tokenizer_name_or_path,

@@ -57,6 +57,18 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
             sources = []
             targets = []
             prompt = PROMPT_TEMPLATE
+
+            def patch_tokens(source_id,target_id):
+                input_id = source_id + target_id
+                label = [IGNORE_TOKEN_ID] * len(source_id) + target_id
+                if len(input_id) > max_seq_length:
+                    input_id = input_id[:max_seq_length]
+                    label = label[:max_seq_length]
+                elif len(input_id) < max_seq_length:
+                    input_id += [tokenizer.pad_token_id] * (max_seq_length - len(input_id))
+                    label += [IGNORE_TOKEN_ID] * (max_seq_length - len(label))
+                return input_id,label
+            
             for instruction, input, output in zip(examples['instruction'],examples['input'],examples['output']):
                 if input is not None and input !="":
                     instruction = instruction+'\n'+input
@@ -65,16 +77,17 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
                 # 字符串数组，每个元素对应一段输入
                 sources.append(source)
                 targets.append(target)
-
+            pdb.set_trace()
             tokenized_sources = tokenizer(sources,return_attention_mask=False)
             tokenized_targets = tokenizer(targets,return_attention_mask=False,add_special_tokens=False)
-
+            print("tokenized_sources len:",np.array(tokenized_sources).shape)
             all_input_ids = []
             all_labels = []
             for s,t in zip(tokenized_sources['input_ids'],tokenized_targets['input_ids']):
-                input_ids = torch.LongTensor(s + t)[:max_seq_length]
-                labels = torch.LongTensor([IGNORE_TOKEN_ID] * len(s) + t)[:max_seq_length]
+                input_ids,labels = patch_tokens(s,t)
                 assert len(input_ids) == len(labels)
+                input_ids = input_ids[:max_seq_length]
+                labels = labels[:max_seq_length]
                 all_input_ids.append(input_ids)
                 all_labels.append(labels)
 
@@ -332,9 +345,9 @@ class NLPDataset(Dataset):
         label = self.labels[index]
         return input_id, attention_mask, label
 
-# if __name__ == "__main__":
-#     from llm_model import create_tokenizer
-#     tokenizer = create_tokenizer("../../model/chinese/chinese-alpaca-2-7b-hf/",8192,llama=True)
-#     builder = NLPDataBuilder("../../dataset/chat/",tokenizer,cache_dir=".",data_format="llama")
-#     builder.build_dataset()
+if __name__ == "__main__":
+    from llm_model import create_tokenizer
+    tokenizer = create_tokenizer("../../model/chinese/chinese-alpaca-2-7b-hf/",512,llama=True)
+    builder = NLPDataBuilder("../../dataset/chat/",tokenizer,cache_dir=".",data_format="llama")
+    builder.build_dataset()
     
