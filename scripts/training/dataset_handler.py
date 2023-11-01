@@ -63,6 +63,14 @@ class DataTrainingArguments:
             )
         },
     )
+    max_seq_length: Optional[int] = field(
+        default=512,
+        metadata={
+            "help": (
+                "max_seq_length"
+            )
+        },
+    )
     streaming: bool = field(default=False, metadata={"help": "Enable streaming mode"})
     block_size: Optional[int] = field(
         default=None,

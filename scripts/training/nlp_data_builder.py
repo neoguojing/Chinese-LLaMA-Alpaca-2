@@ -332,9 +332,9 @@ class NLPDataset(Dataset):
         label = self.labels[index]
         return input_id, attention_mask, label
 
-if __name__ == "__main__":
-    from llm_model import create_tokenizer
-    tokenizer = create_tokenizer("../../model/chinese/chinese-alpaca-2-7b-hf/",8192,llama=True)
-    builder = NLPDataBuilder("../../dataset/chat/",tokenizer,cache_dir=".",data_format="llama")
-    builder.build_dataset()
+# if __name__ == "__main__":
+#     from llm_model import create_tokenizer
+#     tokenizer = create_tokenizer("../../model/chinese/chinese-alpaca-2-7b-hf/",8192,llama=True)
+#     builder = NLPDataBuilder("../../dataset/chat/",tokenizer,cache_dir=".",data_format="llama")
+#     builder.build_dataset()
     

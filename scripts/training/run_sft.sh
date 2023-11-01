@@ -17,9 +17,9 @@ max_seq_length=512
 output_dir=$4
 validation_file=$5
 seed=101
-deepspeed_config_file=ds_zero2_no_offload.json
+deepspeed_config_file=ds_config_zero2.json
 nproc_per_node=1
-torchrun --nnodes 1 --nproc_per_node ${nproc_per_node} run_clm_sft_with_peft.py \
+torchrun --nnodes 1 --nproc_per_node ${nproc_per_node} llm_fine_tune.py \
     --deepspeed ${deepspeed_config_file} \
     --model_name_or_path ${pretrained_model} \
     --tokenizer_name_or_path ${chinese_tokenizer_path} \
@@ -55,4 +55,5 @@ torchrun --nnodes 1 --nproc_per_node ${nproc_per_node} run_clm_sft_with_peft.py 
     --lora_dropout ${lora_dropout} \
     --modules_to_save ${modules_to_save} \
     --torch_dtype float16 \
-    --validation_file ${validation_file}
+    --validation_file ${validation_file} \
+    --llama 

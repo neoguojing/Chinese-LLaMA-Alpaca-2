@@ -49,9 +49,9 @@ isChat := --chat
 
 export cuda?=1
 export chat?=1
-export qwen?=1
+export qwen?=0
 export test?=0
-export zh?=0
+export zh?=1
 export llama?=0
 
 BUILD_FLAGS:=LLAMA_OPENBLAS=1
@@ -134,7 +134,7 @@ train:
 
 sft:
 	# rm -rf cache/*
-	cd scripts/training && run_sft.sh $(BaseModelPath) $(BaseTokenPath) $(CHAT_DATA_DIR) $(ModelOutputDIR) $(CHAT_VALIDATE_FILE)
+	cd scripts/training && ./run_sft.sh $(BaseModelPath) $(BaseTokenPath) $(CHAT_DATA_DIR) $(ModelOutputDIR) $(CHAT_VALIDATE_FILE)
 
 llama.cpp:
 	cd llama.cpp && make $(BUILD_FLAGS)
