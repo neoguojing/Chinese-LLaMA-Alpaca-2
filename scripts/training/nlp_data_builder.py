@@ -221,6 +221,8 @@ class NLPDataBuilder:
 
         files = [file.name for file in path.glob(pattern)]
         print(files)
+        all_eval_dataset = []
+        all_train_dataset = []
         for idx, file in enumerate(files):
             # pdb.set_trace()
             if self.cache_dir != None:
@@ -232,8 +234,13 @@ class NLPDataBuilder:
                     tokenized_dataset = self._split_data(tokenized_dataset)
                 self._save_tokenized_data_to_cache(file,tokenized_dataset)
             train_dataset,eval_dataset = self._group_data(tokenized_dataset)
-
-        return train_dataset, eval_dataset
+            train_dataset.set_format('torch')
+            eval_dataset.set_format('torch')
+            all_train_dataset.append(train_dataset)
+            all_eval_dataset.append(eval_dataset)
+        all_train_dataset = concatenate_datasets(all_train_dataset)
+        all_eval_dataset = concatenate_datasets(all_eval_dataset)
+        return all_train_dataset, all_eval_dataset
     
     def _load_raw_data(self,file:str) -> Union[Dataset, DatasetDict]:
         path = Path(self.dataset_dir)
