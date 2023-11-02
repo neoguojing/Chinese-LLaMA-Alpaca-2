@@ -145,7 +145,7 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
                 if (len(input_id) + len(_input_id)) >= block_size:
                     input_id,target = patch_tokens(input_id,target)
                     print("input_id len:",np.array(input_id).shape)
-                    # [:max_seq_length] 的意义在于确保纬度
+                    # [:block_size] 的意义在于确保纬度
                     input_ids.append(input_id[:block_size])
                     print("input_ids dim:",len(input_ids),len(input_ids[0]))
                     targets.append(target[:block_size])

@@ -200,10 +200,7 @@ if __name__ == "__main__":
 
         metrics = train_result.metrics
 
-        max_train_samples = (
-            data_args.max_train_samples if data_args.max_train_samples is not None else len(train_dataset)
-        )
-        metrics["train_samples"] = min(max_train_samples, len(train_dataset))
+        metrics["train_samples"] =  len(train_dataset)
 
         trainer.log_metrics("train", metrics)
         trainer.save_metrics("train", metrics)
@@ -215,8 +212,7 @@ if __name__ == "__main__":
 
         metrics = trainer.evaluate()
 
-        max_eval_samples = data_args.max_eval_samples if data_args.max_eval_samples is not None else len(eval_dataset)
-        metrics["eval_samples"] = min(max_eval_samples, len(eval_dataset))
+        metrics["eval_samples"] = len(eval_dataset)
         # 它用于评估模型对给定序列的预测能力和模型的概率分布的复杂度
         # 困惑度是对该概率分布的度量，表示模型对真实序列的预测能力。具体来说，困惑度越低表示模型对真实序列的预测越准确
         # 对于一个由N个词组成的序列，困惑度的计算如下：

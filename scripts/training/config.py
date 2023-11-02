@@ -13,63 +13,30 @@ class DataTrainingArguments:
     """
 
     dataset_dir: Optional[str] = field(
-        default=None, metadata={"help": "The name of the dataset to use (via the datasets library)."}
+        default=None, metadata={"help": "数据目录"}
     )
     dataset_config_name: Optional[str] = field(
-        default=None, metadata={"help": "The configuration name of the dataset to use (via the datasets library)."}
+        default=None, metadata={"help": "远程数据名称"}
     )
-    max_train_samples: Optional[int] = field(
-        default=None,
-        metadata={
-            "help": (
-                "For debugging purposes or quicker training, truncate the number of training examples to this "
-                "value if set."
-            )
-        },
-    )
-    max_eval_samples: Optional[int] = field(
-        default=None,
-        metadata={
-            "help": (
-                "For debugging purposes or quicker training, truncate the number of evaluation examples to this "
-                "value if set."
-            )
-        },
-    )
-    max_seq_length: Optional[int] = field(
-        default=512,
-        metadata={
-            "help": (
-                "max_seq_length"
-            )
-        },
-    )
-    streaming: bool = field(default=False, metadata={"help": "Enable streaming mode"})
     block_size: Optional[int] = field(
         default=None,
         metadata={
             "help": (
-                "Optional input sequence length after tokenization. "
-                "The training dataset will be truncated in block of this size for training. "
-                "Default to the model max input length for single sentence inputs (take into account special tokens)."
+                "训练时输入的块大小，默认为模型支持的最大序列长度"
             )
         },
     )
     validation_split_percentage: Optional[float] = field(
         default=0.05,
         metadata={
-            "help": "The percentage of the train set used as validation set in case there's no validation split"
+            "help": "训练集和测试集的拆分比例"
         },
     )
     preprocessing_num_workers: Optional[int] = field(
         default=None,
-        metadata={"help": "The number of processes to use for the preprocessing."},
+        metadata={"help": "数据预处理需要的线程数"},
     )
-    data_cache_dir: Optional[str] = field(default="./", metadata={"help": "The datasets processed stored"})
-
-    def __post_init__(self):
-        if self.streaming:
-            require_version("datasets>=2.0.0", "The streaming feature requires `datasets>=2.0.0`")
+    data_cache_dir: Optional[str] = field(default="./", metadata={"help": "数据缓存目录"})
 
 MODEL_CONFIG_CLASSES = list(MODEL_FOR_CAUSAL_LM_MAPPING.keys())
 MODEL_TYPES = tuple(conf.model_type for conf in MODEL_CONFIG_CLASSES)
@@ -116,13 +83,6 @@ class ModelArguments:
     use_fast_tokenizer: bool = field(
         default=True,
         metadata={"help": "Whether to use one of the fast tokenizer (backed by the tokenizers library) or not."},
-    )
-
-    model_max_length: int = field(
-        default=8192,
-        metadata={
-            "help": "Maximum sequence length. Sequences will be right padded (and possibly truncated)."
-        },
     )
 
     use_auth_token: bool = field(
