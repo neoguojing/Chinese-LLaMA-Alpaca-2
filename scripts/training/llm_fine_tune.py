@@ -29,13 +29,14 @@ from transformers import (
 from sklearn.metrics import accuracy_score
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Any, Mapping
-from dataset_handler import DataTrainingArguments,determine_block_size,preprocess_dataset
+from dataset_handler import determine_block_size,preprocess_dataset
 from nlp_data_builder import NLPDataBuilder
-from llm_model import ModelArguments,load_pretrained_model,determine_vocab_size,create_peft_model,create_tokenizer
+from llm_model import load_pretrained_model,determine_vocab_size,create_peft_model,create_tokenizer
 from optimizer import create_optimizer
 from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR
 import logging
 logger = logging.getLogger(__name__)
+from config import DataTrainingArguments,ModelArguments
 
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:32"
 
@@ -161,9 +162,11 @@ if __name__ == "__main__":
         training_args.fp16 = False
         training_args.bf16 = True
     tokenizer = create_tokenizer(model_args.tokenizer_name_or_path,model_args.model_max_length,model_args.llama)
-    block_size = determine_block_size(data_args,tokenizer)
+    # block_size = determine_block_size(data_args,tokenizer)
     # train_dataset,eval_dataset =  preprocess_dataset(data_args,block_size,tokenizer)
-    builder = NLPDataBuilder(data_args.dataset_dir,tokenizer,cache_dir=data_args.data_cache_dir,data_format="llama")
+    builder = NLPDataBuilder(data_args.dataset_dir,tokenizer,cache_dir=data_args.data_cache_dir,
+                             block_size=data_args.block_size,data_format="llama",
+                             num_of_procs=data_args.preprocessing_num_workers)
     train_dataset,eval_dataset = builder.build_dataset()
     model = load_pretrained_model(model_args)
     model = determine_vocab_size(model,len(tokenizer))

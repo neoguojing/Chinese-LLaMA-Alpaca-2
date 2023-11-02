@@ -35,7 +35,7 @@ PROMPT_TEMPLATE = (
         "<</SYS>>\n\n{instruction} [/INST]"
     )
 def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
-                           max_seq_length: int = None,
+                           block_size: int = None,
                            data_format:str="text"):
     '''
     qwen:
@@ -61,12 +61,12 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
             def patch_tokens(source_id,target_id):
                 input_id = source_id + target_id
                 label = [IGNORE_TOKEN_ID] * len(source_id) + target_id
-                if len(input_id) > max_seq_length:
-                    input_id = input_id[:max_seq_length]
-                    label = label[:max_seq_length]
-                elif len(input_id) < max_seq_length:
-                    input_id += [tokenizer.pad_token_id] * (max_seq_length - len(input_id))
-                    label += [IGNORE_TOKEN_ID] * (max_seq_length - len(label))
+                if len(input_id) > block_size:
+                    input_id = input_id[:block_size]
+                    label = label[:block_size]
+                elif len(input_id) < block_size:
+                    input_id += [tokenizer.pad_token_id] * (block_size - len(input_id))
+                    label += [IGNORE_TOKEN_ID] * (block_size - len(label))
                 return input_id,label
             
             for instruction, input, output in zip(examples['instruction'],examples['input'],examples['output']):
@@ -86,8 +86,8 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
             for s,t in zip(tokenized_sources['input_ids'],tokenized_targets['input_ids']):
                 input_ids,labels = patch_tokens(s,t)
                 assert len(input_ids) == len(labels)
-                input_ids = input_ids[:max_seq_length]
-                labels = labels[:max_seq_length]
+                input_ids = input_ids[:block_size]
+                labels = labels[:block_size]
                 all_input_ids.append(input_ids)
                 all_labels.append(labels)
 
@@ -117,12 +117,12 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
             system = [im_start] + _system + tokenizer(system_message).input_ids + [im_end] + nl_tokens
 
             def patch_tokens(input_id,target):
-                if len(input_id) > max_seq_length:
-                    input_id = input_id[:max_seq_length]
-                    target = target[:max_seq_length]
-                elif len(input_id) < max_seq_length:
-                    input_id += [tokenizer.pad_token_id] * (max_seq_length - len(input_id))
-                    target += [IGNORE_TOKEN_ID] * (max_seq_length - len(target))
+                if len(input_id) > block_size:
+                    input_id = input_id[:block_size]
+                    target = target[:block_size]
+                elif len(input_id) < block_size:
+                    input_id += [tokenizer.pad_token_id] * (block_size - len(input_id))
+                    target += [IGNORE_TOKEN_ID] * (block_size - len(target))
                 return input_id,target
 
             input_id, target = system, [im_start] + [IGNORE_TOKEN_ID] * (len(system) - 3) + [im_end] + nl_tokens
@@ -142,13 +142,13 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
                 _input_id = tokenizer(role).input_ids + nl_tokens + \
                     tokenizer(_value).input_ids + [im_end] + nl_tokens
                 
-                if (len(input_id) + len(_input_id)) >= max_seq_length:
+                if (len(input_id) + len(_input_id)) >= block_size:
                     input_id,target = patch_tokens(input_id,target)
                     print("input_id len:",np.array(input_id).shape)
                     # [:max_seq_length] 的意义在于确保纬度
-                    input_ids.append(input_id[:max_seq_length])
+                    input_ids.append(input_id[:block_size])
                     print("input_ids dim:",len(input_ids),len(input_ids[0]))
-                    targets.append(target[:max_seq_length])
+                    targets.append(target[:block_size])
                     input_id, target = system, [im_start] + [IGNORE_TOKEN_ID] * (len(system) - 3) + [im_end] + nl_tokens
 
                 input_id += _input_id
@@ -170,8 +170,8 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
 
             input_id,target = patch_tokens(input_id,target)
             print("input_id len:",np.array(input_id).shape)
-            input_ids.append(input_id[:max_seq_length])
-            targets.append(target[:max_seq_length])
+            input_ids.append(input_id[:block_size])
+            targets.append(target[:block_size])
             print("input_ids dim:",len(input_ids),len(input_ids[0]))
             input_ids = torch.tensor(input_ids,dtype=torch.int)
             targets = torch.tensor(targets,dtype=torch.int)
@@ -204,7 +204,7 @@ def generate_group_func(block_size: int= 512):
 
 class NLPDataBuilder:
     def __init__(self, dataset_dir: str, tokenizer: PreTrainedTokenizer,
-                 block_size: int = 512,max_seq_length: int = 8192,
+                 block_size: int = 512,
                  cache_dir: str = None,data_format: str = "qwen",
                  num_of_procs:int = 1,
                  validation_split_percentage: float=0.05):
@@ -213,9 +213,9 @@ class NLPDataBuilder:
         self.cache_dir = cache_dir
         self.tokenizer =tokenizer
         self.data_format = data_format
-        self.max_seq_length = max_seq_length
         self.num_of_procs = num_of_procs
         self.validation_split_percentage = validation_split_percentage
+        self.determine_block_size()
 
     def build_dataset(self):
         path = Path(self.dataset_dir)
@@ -289,7 +289,7 @@ class NLPDataBuilder:
 
     def _tokenize_data(self, raw_dataset: Union[Dataset, DatasetDict]) -> Union[Dataset, DatasetDict]:
         do_tokenize = generate_tokenize_func(self.tokenizer,data_format=self.data_format,
-                                             max_seq_length=self.max_seq_length)
+                                             block_size=self.block_size)
         if self.data_format == "qwen":
             remove_columns=["from","value"]
         elif self.data_format == "llama":
@@ -329,6 +329,17 @@ class NLPDataBuilder:
         print("train_dataset---",train_dataset)
         print("eval_dataset---",eval_dataset)
         return train_dataset,eval_dataset
+    
+    def determine_block_size(self):
+        # Determine the block size
+        if self.block_size is None:
+            self.block_size = tokenizer.model_max_length
+            if self.block_size > 1024:
+                self.block_size = 1024
+        else:
+            if self.block_size > self.tokenizer.model_max_length:
+                self.block_size = min(self.block_size, tokenizer.model_max_length)
+        print("block_size:-----",self.block_size)
 
 @dataclass
 class NLPDataset(Dataset):
