@@ -2,8 +2,10 @@
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Any, Mapping
 from transformers.utils.versions import require_version
+
 from transformers import (
     MODEL_FOR_CAUSAL_LM_MAPPING,
+    TrainingArguments,
 )
 
 @dataclass
@@ -168,3 +170,22 @@ class ModelArguments:
             raise ValueError(
                 "--config_overrides can't be used in combination with --config_name or --model_name_or_path"
             )
+
+
+# @dataclass
+# class LLamaConfig(DataTrainingArguments,ModelArguments,TrainingArguments):
+    
+# @dataclass
+# class LLamaChatConfig(DataTrainingArguments,ModelArguments,TrainingArguments):
+
+# @dataclass
+# class QwenChatConfig(DataTrainingArguments,ModelArguments,TrainingArguments):
+
+# @dataclass
+# class ConfigFactory:
+#     """配置工厂"""
+#     configs: Dict[str, Type[BaseConfig]] = field(default_factory=dict)
+
+#     def create(self, name: str) -> BaseConfig:
+#         config_cls = self.configs[name]
+#         return config_cls()
