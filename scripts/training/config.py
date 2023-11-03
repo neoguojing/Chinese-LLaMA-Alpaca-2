@@ -21,7 +21,7 @@ class DataTrainingArguments:
         default=None, metadata={"help": "远程数据名称"}
     )
     block_size: Optional[int] = field(
-        default=None,
+        default=512,
         metadata={
             "help": (
                 "训练时输入的块大小，默认为模型支持的最大序列长度"
@@ -35,7 +35,7 @@ class DataTrainingArguments:
         },
     )
     preprocessing_num_workers: Optional[int] = field(
-        default=None,
+        default=4,
         metadata={"help": "数据预处理需要的线程数"},
     )
     data_cache_dir: Optional[str] = field(default="./", metadata={"help": "数据缓存目录"})
@@ -83,7 +83,7 @@ class ModelArguments:
     )
 
     use_fast_tokenizer: bool = field(
-        default=True,
+        default=False,
         metadata={"help": "Whether to use one of the fast tokenizer (backed by the tokenizers library) or not."},
     )
 
@@ -182,6 +182,9 @@ class ModelArguments:
         
         if self.llama:
             self.torch_dtype = "float16"
+
+        if self.tokenizer_name_or_path == None:
+            self.tokenizer_name_or_path = self.model_name_or_path
 
 
 @dataclass
@@ -347,7 +350,38 @@ Qwen_Chat_Config = QwenChatConfig(
 @dataclass
 class ConfigFactory:
     """配置工厂"""
+    model_name_or_path: Optional[str] = field(
+        default=None,
+        metadata={
+            "help": (
+                "The model checkpoint for weights initialization.Don't set if you want to train a model from scratch."
+            )
+        },
+    )
 
-    def create(self, name: str):
-        if name == "llama":
-            return 
+    dataset_dir: Optional[str] = field(
+        default=None, metadata={"help": "数据目录"}
+    )
+
+    llm_type: Optional[str] = field(
+        default="qwen", metadata={"help": "模型类别"}
+    )
+
+    chat: Optional[bool] = field(
+        default=True, metadata={"help": "是否聊天模型"}
+    )
+
+    def create(self):
+        if self.chat:
+            if self.llm_type == "qwen":
+                Qwen_Chat_Config.model_name_or_path = self.model_name_or_path
+                Qwen_Chat_Config.dataset_dir = self.dataset_dir
+                return Qwen_Chat_Config
+            if self.llm_type == "llama":
+                LLama_Chat_Config.model_name_or_path = self.model_name_or_path
+                LLama_Chat_Config.dataset_dir = self.dataset_dir
+                return LLama_Chat_Config
+        else:
+            LLama_Config.model_name_or_path = self.model_name_or_path
+            LLama_Config.dataset_dir = self.dataset_dir
+            return LLama_Config
