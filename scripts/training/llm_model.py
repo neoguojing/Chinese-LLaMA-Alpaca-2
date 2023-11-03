@@ -41,7 +41,7 @@ def singleton(cls):
 
 @singleton
 class TokenizerSingleton:
-    def __init__(self, tokenizer_name_or_path:str,model_max_length:int=None,llama: bool=False,):
+    def __init__(self, tokenizer_name_or_path:str,model_max_length:int=8192,llama: bool=False,):
         if llama:
             self.tokenizer = LlamaTokenizer.from_pretrained(
                 tokenizer_name_or_path,
@@ -83,17 +83,17 @@ def get_model_config(model_args):
 def get_quantization_config(model_args):
     if model_args.llama:
         quantization_config = None
-    if model_args.gptq:
+
+    elif model_args.use_lora and model_args.q_lora:
         quantization_config = GPTQConfig(
             bits=4, disable_exllama=True
         )
-    elif model_args.q_lora:
-        quantization_config = BitsAndBytesConfig(
-            load_in_4bit=True,
-            bnb_4bit_compute_dtype=torch.bfloat16,
-            bnb_4bit_use_double_quant=True,
-            bnb_4bit_quant_type='nf4'
-        )
+    #     quantization_config = BitsAndBytesConfig(
+    #         load_in_4bit=True,
+    #         bnb_4bit_compute_dtype=torch.bfloat16,
+    #         bnb_4bit_use_double_quant=True,
+    #         bnb_4bit_quant_type='nf4'
+    #     )
     
 
     return quantization_config
@@ -140,7 +140,7 @@ def load_pretrained_model(model_args):
             torch_dtype=torch_dtype,
             max_memory = max_memory,
             quantization_config = get_quantization_config(model_args),
-            low_cpu_mem_usage=True,  # 指示是否启用低CPU内存使用模式
+            low_cpu_mem_usage=True if model_args.use_lora and not model_args.q_lora else False,
             device_map="auto" if device_map == None else device_map,
             trust_remote_code=True,
         )
@@ -187,12 +187,10 @@ def create_peft_model(model, model_args):
         if modules_to_save is not None:
             modules_to_save = modules_to_save.split(',')
         
-        if not model_args.llama:
-            modules_to_save = ["wte", "lm_head"] 
-
         lora_rank = model_args.lora_rank
         lora_dropout = model_args.lora_dropout
         lora_alpha = model_args.lora_alpha
+        lora_bias = model_args.lora_bias
         logger.info(f"target_modules: {target_modules}")
         logger.info(f"lora_rank: {lora_rank}")
 
@@ -202,7 +200,7 @@ def create_peft_model(model, model_args):
             inference_mode=False,
             r=lora_rank, lora_alpha=lora_alpha,
             lora_dropout=lora_dropout,
-            bias=model_args.lora_bias,
+            bias=lora_bias,
             modules_to_save=modules_to_save)
         
         if model_args.q_lora:

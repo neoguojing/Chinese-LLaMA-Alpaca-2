@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 from config import DataTrainingArguments,ModelArguments
 
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:32"
-
+os.environ["CUDA_VISIBLE_DEVICES"] = 0
 class SavePeftModelCallback(transformers.TrainerCallback):
     def save_model(self, args, state, kwargs):
         if state.best_model_checkpoint is not None:
@@ -155,12 +155,6 @@ if __name__ == "__main__":
         model_args, data_args, training_args = parser.parse_args_into_dataclasses()
     print(training_args)
 
-    if model_args.q_lora:
-        training_args.fp16 = True
-        training_args.bf16 = False
-    else:
-        training_args.fp16 = False
-        training_args.bf16 = True
     tokenizer = create_tokenizer(model_args.tokenizer_name_or_path,model_args.model_max_length,model_args.llama)
     # block_size = determine_block_size(data_args,tokenizer)
     # train_dataset,eval_dataset =  preprocess_dataset(data_args,block_size,tokenizer)
@@ -169,7 +163,8 @@ if __name__ == "__main__":
                              num_of_procs=data_args.preprocessing_num_workers)
     train_dataset,eval_dataset = builder.build_dataset()
     model = load_pretrained_model(model_args)
-    model = determine_vocab_size(model,len(tokenizer))
+    print("model vocab size:",len(tokenizer))
+    # model = determine_vocab_size(model,len(tokenizer))
     model = create_peft_model(model,model_args)
 
     if training_args.gradient_checkpointing:

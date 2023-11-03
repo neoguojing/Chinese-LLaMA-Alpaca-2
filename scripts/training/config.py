@@ -138,6 +138,15 @@ class ModelArguments:
     modules_to_save : Optional[str] = field(default=None)
     peft_path : Optional[str] = field(default=None)
 
+    use_lora: bool = field(
+        default=True,
+        metadata={
+            "help": (
+                "use lora for peft or quantize."
+            )
+        },
+    )
+
     q_lora: bool = field(
         default=True,
         metadata={
@@ -148,7 +157,7 @@ class ModelArguments:
     )
 
     gptq : bool = field(
-        default=True,
+        default=False,
         metadata={
             "help": (
                 "use gptq for quantize. Prier to qlora"
@@ -170,6 +179,9 @@ class ModelArguments:
             raise ValueError(
                 "config_overrides can't be used in combination with config_name or model_name_or_path"
             )
+        
+        if self.llama:
+            self.torch_dtype = "float16"
 
 
 @dataclass
@@ -189,6 +201,24 @@ class QwenChatConfig(DataTrainingArguments,ModelArguments,TrainingArguments):
         default="qwen-chat"
     )
 
+    def __post_init__(self):
+        if self.config_overrides is not None and (self.config_name is not None or self.model_name_or_path is not None):
+            raise ValueError(
+                "config_overrides can't be used in combination with config_name or model_name_or_path"
+            )
+        
+        if self.q_lora or 'chat' in self.model_name_or_path.lower():
+            self.modules_to_save = None
+
+        if self.use_lora and not self.q_lora:
+            self.torch_dtype = "bfloat16"
+            self.deepspeed = None
+            self.bf16 = True
+            self.fp16 = False
+        elif self.use_lora and self.q_lora:
+            self.torch_dtype = "float16"
+            self.fp16 = True
+            self.bf16 = False
 
 LLama_Config = LLamaConfig(
                 model_name_or_path = "" ,
@@ -281,10 +311,15 @@ LLama_Chat_Config = LLamaChatConfig(
                 deepspeed = "ds_config_zero2.json" ,
             )
 
+# qlora 与 deepspeed3 不兼容
 Qwen_Chat_Config = QwenChatConfig(
                 model_name_or_path = "",
+                lora_rank = 64 ,
+                lora_alpha = 16 ,
+                trainable = "c_attn,c_proj,w1,w2" ,
+                lora_dropout = 0.05 ,
+                modules_to_save ="wte,lm_head" ,
                 dataset_dir = "",
-                bf16 = True,
                 output_dir = "",
                 num_train_epochs = 5,
                 per_device_train_batch_size = 2,
@@ -303,9 +338,9 @@ Qwen_Chat_Config = QwenChatConfig(
                 report_to = "none",
                 block_size = 512,
                 gradient_checkpointing = True,
+                deepspeed = "ds_config_zero2.json",
                 use_lora = True,
                 # q_lora = True,
-                # deepspeed = "ds_config_zero2.json"
                 # adam_beta2 #AdamW优化器的β2超参数,默认为0.999。控制运行二阶moment的衰减率。
                 # adam_epsilon #AdamW优化器的ε超参数,默认为1e-8。为数值稳定性考虑加入的一个很小的 numero防止分母为0。
             )
