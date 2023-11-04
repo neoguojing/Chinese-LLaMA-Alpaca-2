@@ -41,6 +41,14 @@ class DataTrainingArguments:
     )
     data_cache_dir: Optional[str] = field(default=None, metadata={"help": "数据缓存目录"})
 
+    llm_type: Optional[str] = field(
+        default="qwen", metadata={"help": "模型类别"}
+    )
+
+    chat: Optional[bool] = field(
+        default=True, metadata={"help": "是否聊天模型"}
+    )
+
     def __post_init__(self):
         if self.data_cache_dir == None:
             self.data_cache_dir = os.path.join(self.dataset_dir, "cache")
@@ -153,7 +161,7 @@ class ModelArguments:
     )
 
     q_lora: bool = field(
-        default=True,
+        default=False,
         metadata={
             "help": (
                 "use qlora for peft or quantize."
@@ -349,45 +357,29 @@ Qwen_Chat_Config = QwenChatConfig(
                 gradient_checkpointing = True,
                 deepspeed = "ds_config_zero2.json",
                 use_lora = True,
+                do_train  = True ,
+                do_eval = True ,
                 # q_lora = True,
                 # adam_beta2 #AdamW优化器的β2超参数,默认为0.999。控制运行二阶moment的衰减率。
                 # adam_epsilon #AdamW优化器的ε超参数,默认为1e-8。为数值稳定性考虑加入的一个很小的 numero防止分母为0。
             )
 @dataclass
 class ConfigFactory(DataTrainingArguments,ModelArguments,TrainingArguments):
-    """配置工厂"""
-    model_name_or_path: Optional[str] = field(
-        default=None,
-        metadata={
-            "help": (
-                "模型和token目录"
-            )
-        },
-    )
-
-    dataset_dir: Optional[str] = field(
-        default=None, metadata={"help": "数据目录"}
-    )
-
-    llm_type: Optional[str] = field(
-        default="qwen", metadata={"help": "模型类别"}
-    )
-
-    chat: Optional[bool] = field(
-        default=True, metadata={"help": "是否聊天模型"}
-    )
-
-    def __post_init__(self):
+ 
+    def create(self):
         if self.chat:
             if self.llm_type == "qwen":
                 Qwen_Chat_Config.model_name_or_path = self.model_name_or_path
                 Qwen_Chat_Config.dataset_dir = self.dataset_dir
-                self = Qwen_Chat_Config
+                Qwen_Chat_Config.output_dir = self.output_dir
+                return Qwen_Chat_Config
             if self.llm_type == "llama":
                 LLama_Chat_Config.model_name_or_path = self.model_name_or_path
                 LLama_Chat_Config.dataset_dir = self.dataset_dir
-                self =  LLama_Chat_Config
+                LLama_Chat_Config.output_dir = self.output_dir
+                return LLama_Chat_Config
         else:
             LLama_Config.model_name_or_path = self.model_name_or_path
             LLama_Config.dataset_dir = self.dataset_dir
-            self = LLama_Config
+            LLama_Config.output_dir = self.output_dir
+            return LLama_Config
