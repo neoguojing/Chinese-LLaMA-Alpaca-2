@@ -36,10 +36,10 @@ from optimizer import create_optimizer
 from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR
 import logging
 logger = logging.getLogger(__name__)
-from config import DataTrainingArguments,ModelArguments
+from config import DataTrainingArguments,ModelArguments,ConfigFactory
 
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:32"
-os.environ["CUDA_VISIBLE_DEVICES"] = 0
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 class SavePeftModelCallback(transformers.TrainerCallback):
     def save_model(self, args, state, kwargs):
         if state.best_model_checkpoint is not None:
@@ -146,51 +146,54 @@ if __name__ == "__main__":
     seed = np.random.randint(1, 65535)  
     set_seed(seed)
 
-    parser = HfArgumentParser((ModelArguments, DataTrainingArguments, MyTrainingArguments))
+    parser = HfArgumentParser((ConfigFactory))
     if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
         # If we pass only one argument to the script and it's the path to a json file,
         # let's parse it to get our arguments.
-        model_args, data_args, training_args = parser.parse_json_file(json_file=os.path.abspath(sys.argv[1]))
+        args = parser.parse_json_file(json_file=os.path.abspath(sys.argv[1]))
     else:
-        model_args, data_args, training_args = parser.parse_args_into_dataclasses()
-    print(training_args)
+        args = parser.parse_args_into_dataclasses()
 
-    tokenizer = create_tokenizer(model_args.tokenizer_name_or_path,model_args.model_max_length,model_args.llama)
+    args = args.create()
+    print(args)
+
+    tokenizer = create_tokenizer(args.tokenizer_name_or_path,llama=args.llama)
     # block_size = determine_block_size(data_args,tokenizer)
     # train_dataset,eval_dataset =  preprocess_dataset(data_args,block_size,tokenizer)
-    builder = NLPDataBuilder(data_args.dataset_dir,tokenizer,cache_dir=data_args.data_cache_dir,
-                             block_size=data_args.block_size,data_format="llama",
-                             num_of_procs=data_args.preprocessing_num_workers)
+    builder = NLPDataBuilder(args.dataset_dir,tokenizer,cache_dir=args.data_cache_dir,
+                             block_size=args.block_size,data_format=args.llm_type,
+                             num_of_procs=args.preprocessing_num_workers)
     train_dataset,eval_dataset = builder.build_dataset()
-    model = load_pretrained_model(model_args)
+    model = load_pretrained_model(args)
     print("model vocab size:",len(tokenizer))
     # model = determine_vocab_size(model,len(tokenizer))
-    model = create_peft_model(model,model_args)
+    if args.use_lora:
+        model = create_peft_model(model,args)
 
-    if training_args.gradient_checkpointing:
+    if args.gradient_checkpointing:
         model.enable_input_require_grads()
     # optm = create_optimizer(training_args,model)
     # Initialize our Trainer
     trainer = Trainer(
         model=model,
-        args=training_args,
-        train_dataset=train_dataset if training_args.do_train else None,
-        eval_dataset=eval_dataset if training_args.do_eval else None,
+        args=args,
+        train_dataset=train_dataset if args.do_train else None,
+        eval_dataset=eval_dataset if args.do_eval else None,
         tokenizer=tokenizer,
         data_collator=fault_tolerance_data_collator, #数据批处理和数据加载的数据整合器（data collator）对象。它处理训练和评估数据集的样本，并将它们整合成适当的格式供模型使用。
-        compute_metrics=compute_metrics if training_args.do_eval and not is_torch_tpu_available() else None, #计算模型性能指标的函数
+        compute_metrics=compute_metrics if args.do_eval and not is_torch_tpu_available() else None, #计算模型性能指标的函数
         preprocess_logits_for_metrics=preprocess_logits_for_metrics 
-        if training_args.do_eval and not is_torch_tpu_available()
+        if args.do_eval and not is_torch_tpu_available()
         else None, #对模型输出进行预处理以计算指标的函数
         # optimizers=(optm, None),
 
     )
     trainer.add_callback(SavePeftModelCallback)
     # Training
-    if training_args.do_train:
+    if args.do_train:
         checkpoint = None
-        if training_args.resume_from_checkpoint is not None:
-            checkpoint = training_args.resume_from_checkpoint
+        if args.resume_from_checkpoint is not None:
+            checkpoint = args.resume_from_checkpoint
         train_result = trainer.train(resume_from_checkpoint=checkpoint)
 
         metrics = train_result.metrics
@@ -202,7 +205,7 @@ if __name__ == "__main__":
         trainer.save_state()
 
     # Evaluation
-    if training_args.do_eval:
+    if args.do_eval:
         logger.info("*** Evaluate ***")
 
         metrics = trainer.evaluate()

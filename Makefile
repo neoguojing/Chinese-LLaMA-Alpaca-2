@@ -49,9 +49,9 @@ isChat := --chat
 
 export cuda?=1
 export chat?=1
-export qwen?=0
+export qwen?=1
 export test?=0
-export zh?=1
+export zh?=0
 export llama?=0
 
 BUILD_FLAGS:=LLAMA_OPENBLAS=1
@@ -136,6 +136,14 @@ sft:
 	# rm -rf cache/*
 	cd scripts/training && ./run_sft.sh $(BaseModelPath) $(BaseTokenPath) $(CHAT_DATA_DIR) $(ModelOutputDIR) $(CHAT_VALIDATE_FILE)
 
+qwen:
+	torchrun --nnodes 1 --nproc_per_node 1 scripts/training/llm_fine_tune.py \
+		--model_name_or_path $(BaseModelPath) \
+		--dataset_dir $(CHAT_DATA_DIR) \
+		--llm_type qwen \
+		--chat True \
+		--output_dir $(ModelOutputDIR)
+
 llama.cpp:
 	cd llama.cpp && make $(BUILD_FLAGS)
 
@@ -186,4 +194,4 @@ init:
 	# git clone https://github.com/ggerganov/llama.cpp
  
  # Default rules
-.PHONY: run train init prepare deploy quantize test dataset lora ceval
+.PHONY: run train init prepare deploy quantize test dataset lora ceval test

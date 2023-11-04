@@ -53,7 +53,6 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
     elif data_format == "llama":
         def tokenization(examples):
             print("llama:",len(examples['input']),len(examples['output']),len(examples))
-            pdb.set_trace()
             sources = []
             targets = []
             prompt = PROMPT_TEMPLATE

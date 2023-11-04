@@ -2,6 +2,7 @@
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Any, Mapping
 from transformers.utils.versions import require_version
+import os
 
 from transformers import (
     MODEL_FOR_CAUSAL_LM_MAPPING,
@@ -38,7 +39,11 @@ class DataTrainingArguments:
         default=4,
         metadata={"help": "数据预处理需要的线程数"},
     )
-    data_cache_dir: Optional[str] = field(default="./", metadata={"help": "数据缓存目录"})
+    data_cache_dir: Optional[str] = field(default=None, metadata={"help": "数据缓存目录"})
+
+    def __post_init__(self):
+        if self.data_cache_dir == None:
+            self.data_cache_dir = os.path.join(self.dataset_dir, "cache")
 
 MODEL_CONFIG_CLASSES = list(MODEL_FOR_CAUSAL_LM_MAPPING.keys())
 MODEL_TYPES = tuple(conf.model_type for conf in MODEL_CONFIG_CLASSES)
@@ -185,6 +190,7 @@ class ModelArguments:
 
         if self.tokenizer_name_or_path == None:
             self.tokenizer_name_or_path = self.model_name_or_path
+        
 
 
 @dataclass
@@ -348,13 +354,13 @@ Qwen_Chat_Config = QwenChatConfig(
                 # adam_epsilon #AdamW优化器的ε超参数,默认为1e-8。为数值稳定性考虑加入的一个很小的 numero防止分母为0。
             )
 @dataclass
-class ConfigFactory:
+class ConfigFactory(DataTrainingArguments,ModelArguments,TrainingArguments):
     """配置工厂"""
     model_name_or_path: Optional[str] = field(
         default=None,
         metadata={
             "help": (
-                "The model checkpoint for weights initialization.Don't set if you want to train a model from scratch."
+                "模型和token目录"
             )
         },
     )
@@ -371,17 +377,17 @@ class ConfigFactory:
         default=True, metadata={"help": "是否聊天模型"}
     )
 
-    def create(self):
+    def __post_init__(self):
         if self.chat:
             if self.llm_type == "qwen":
                 Qwen_Chat_Config.model_name_or_path = self.model_name_or_path
                 Qwen_Chat_Config.dataset_dir = self.dataset_dir
-                return Qwen_Chat_Config
+                self = Qwen_Chat_Config
             if self.llm_type == "llama":
                 LLama_Chat_Config.model_name_or_path = self.model_name_or_path
                 LLama_Chat_Config.dataset_dir = self.dataset_dir
-                return LLama_Chat_Config
+                self =  LLama_Chat_Config
         else:
             LLama_Config.model_name_or_path = self.model_name_or_path
             LLama_Config.dataset_dir = self.dataset_dir
-            return LLama_Config
+            self = LLama_Config
