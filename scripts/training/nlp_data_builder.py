@@ -209,7 +209,10 @@ class NLPDataBuilder:
                  validation_split_percentage: float=0.05):
         self.dataset_dir = dataset_dir
         self.block_size = block_size
-        self.cache_dir = cache_dir
+        if cache_dir == None:
+            self.cache_dir = os.path.join(dataset_dir, "cache")
+        else:
+            self.cache_dir = cache_dir
         self.tokenizer =tokenizer
         self.data_format = data_format
         self.num_of_procs = num_of_procs
@@ -235,6 +238,7 @@ class NLPDataBuilder:
         print(files)
         all_eval_dataset = []
         all_train_dataset = []
+        tokenized_dataset = None
         for idx, file in enumerate(files):
             # pdb.set_trace()
             if self.cache_dir != None:

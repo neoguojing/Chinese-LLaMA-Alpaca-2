@@ -370,16 +370,19 @@ class ConfigFactory(DataTrainingArguments,ModelArguments,TrainingArguments):
         if self.chat:
             if self.llm_type == "qwen":
                 Qwen_Chat_Config.model_name_or_path = self.model_name_or_path
+                Qwen_Chat_Config.tokenizer_name_or_path = self.model_name_or_path
                 Qwen_Chat_Config.dataset_dir = self.dataset_dir
                 Qwen_Chat_Config.output_dir = self.output_dir
                 return Qwen_Chat_Config
             if self.llm_type == "llama":
                 LLama_Chat_Config.model_name_or_path = self.model_name_or_path
+                LLama_Chat_Config.tokenizer_name_or_path = self.model_name_or_path
                 LLama_Chat_Config.dataset_dir = self.dataset_dir
                 LLama_Chat_Config.output_dir = self.output_dir
                 return LLama_Chat_Config
         else:
             LLama_Config.model_name_or_path = self.model_name_or_path
+            LLama_Config.tokenizer_name_or_path = self.model_name_or_path
             LLama_Config.dataset_dir = self.dataset_dir
             LLama_Config.output_dir = self.output_dir
             return LLama_Config

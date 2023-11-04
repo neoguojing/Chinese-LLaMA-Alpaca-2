@@ -81,6 +81,7 @@ def get_model_config(model_args):
     return config
 
 def get_quantization_config(model_args):
+    quantization_config = None
     if model_args.llama:
         quantization_config = None
 
