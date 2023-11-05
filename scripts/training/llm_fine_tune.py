@@ -131,16 +131,6 @@ def fault_tolerance_data_collator(features: List) -> Dict[str, Any]:
     return batch
 
 
-
-
-@dataclass
-class MyTrainingArguments(TrainingArguments):
-    
-    debug_mode : Optional[bool] = field(default=False)
-
-
-
-
 if __name__ == "__main__":
     # 设置随机数 Set seed before initializing model.
     seed = np.random.randint(1, 65535)  
