@@ -171,7 +171,7 @@ if __name__ == "__main__":
         train_dataset=train_dataset if train_args.do_train else None,
         eval_dataset=eval_dataset if train_args.do_eval else None,
         tokenizer=tokenizer,
-        data_collator=fault_tolerance_data_collator, #数据批处理和数据加载的数据整合器（data collator）对象。它处理训练和评估数据集的样本，并将它们整合成适当的格式供模型使用。
+        data_collator=fault_tolerance_data_collator if args.llama else None, #数据批处理和数据加载的数据整合器（data collator）对象。它处理训练和评估数据集的样本，并将它们整合成适当的格式供模型使用。
         compute_metrics=compute_metrics if train_args.do_eval and not is_torch_tpu_available() else None, #计算模型性能指标的函数
         preprocess_logits_for_metrics=preprocess_logits_for_metrics 
         if train_args.do_eval and not is_torch_tpu_available()

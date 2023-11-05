@@ -202,13 +202,13 @@ class ModelArguments:
 
 
 @dataclass
-class LLamaConfig(DataTrainingArguments,ModelArguments,TrainingArguments):
+class LLamaConfig(DataTrainingArguments,ModelArguments):
     name: Optional[str] = field(
         default="llama"
     )
     
 @dataclass
-class LLamaChatConfig(DataTrainingArguments,ModelArguments,TrainingArguments):
+class LLamaChatConfig(DataTrainingArguments,ModelArguments):
     name: Optional[str] = field(
         default="llama-chat"
     )
@@ -279,7 +279,7 @@ LLama_Train_Config = TrainingArguments(
 
                 fp16=True ,
                 
-                deepspeed = "ds_config_zero2.json",
+                # deepspeed = "ds_config_zero2.json",
                 # llama = ,
                 # qlota = ,
                 # gptq = ,
@@ -329,7 +329,7 @@ LLama_Chat_Train_Config = TrainingArguments(
                 overwrite_output_dir = True ,
                 logging_first_step = True ,
 
-                deepspeed = "ds_config_zero2.json" ,
+                # deepspeed = "ds_config_zero2.json" ,
             )
 
 # qlora 与 deepspeed3 不兼容
@@ -366,7 +366,7 @@ Qwen_Chat_Train_Config = TrainingArguments(
                 gradient_checkpointing = True,
                 do_train  = True ,
                 do_eval = True ,
-                bf16 = True
+                bf16 = True,
                 # deepspeed = "ds_config_zero2.json",
                 # adam_beta2 #AdamW优化器的β2超参数,默认为0.999。控制运行二阶moment的衰减率。
                 # adam_epsilon #AdamW优化器的ε超参数,默认为1e-8。为数值稳定性考虑加入的一个很小的 numero防止分母为0。
