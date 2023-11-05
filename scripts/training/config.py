@@ -213,7 +213,7 @@ class LLamaChatConfig(DataTrainingArguments,ModelArguments,TrainingArguments):
         default="llama-chat"
     )
 @dataclass
-class QwenChatConfig(DataTrainingArguments,ModelArguments,TrainingArguments):
+class QwenChatConfig(DataTrainingArguments,ModelArguments):
     name: Optional[str] = field(
         default="qwen-chat"
     )
@@ -229,13 +229,13 @@ class QwenChatConfig(DataTrainingArguments,ModelArguments,TrainingArguments):
 
         if self.use_lora and not self.q_lora:
             self.torch_dtype = "bfloat16"
-            self.deepspeed = None
-            self.bf16 = True
-            self.fp16 = False
+            # self.deepspeed = None
+            # self.bf16 = True
+            # self.fp16 = False
         elif self.use_lora and self.q_lora:
             self.torch_dtype = "float16"
-            self.fp16 = True
-            self.bf16 = False
+            # self.fp16 = True
+            # self.bf16 = False
 
 LLama_Config = LLamaConfig(
                 model_name_or_path = "" ,
@@ -252,7 +252,9 @@ LLama_Config = LLamaConfig(
                 validation_split_percentage = 0.001 ,
                 preprocessing_num_workers = 8 ,
                 block_size = 512 ,
+            )
 
+LLama_Train_Config = TrainingArguments(
                 dataloader_num_workers = 4 , #数据加载时使用的子进程数
                 per_device_train_batch_size = 1, #它控制了分布式训练场景下,每个独立设备处理的批次样本数量
                 do_train = True, #开启训练模式
@@ -296,11 +298,15 @@ LLama_Chat_Config = LLamaChatConfig(
                 lora_dropout = 0.05 ,
                 modules_to_save ="embed_tokens,lm_head" ,
                 torch_dtype = "float16" ,
+                llama = True,
+
 
                 dataset_dir = "",
                 preprocessing_num_workers = 8 ,
                 block_size =  512 ,
+            )
 
+LLama_Chat_Train_Config = TrainingArguments(
                 per_device_train_batch_size = 1 ,
                 per_device_eval_batch_size = 1,
                 do_train  = True ,
@@ -322,8 +328,6 @@ LLama_Chat_Config = LLamaChatConfig(
                 output_dir = "",
                 overwrite_output_dir = True ,
                 logging_first_step = True ,
-                
-                llama = True,
 
                 deepspeed = "ds_config_zero2.json" ,
             )
@@ -335,8 +339,14 @@ Qwen_Chat_Config = QwenChatConfig(
                 lora_alpha = 16 ,
                 trainable = "c_attn,c_proj,w1,w2" ,
                 lora_dropout = 0.05 ,
-                modules_to_save ="wte,lm_head" ,
+                # modules_to_save ="wte,lm_head" ,
                 dataset_dir = "",
+                block_size = 512,
+                use_lora = True,
+                # q_lora = True,
+            )
+
+Qwen_Chat_Train_Config = TrainingArguments(
                 output_dir = "",
                 num_train_epochs = 5,
                 per_device_train_batch_size = 2,
@@ -353,16 +363,15 @@ Qwen_Chat_Config = QwenChatConfig(
                 lr_scheduler_type = "cosine",
                 logging_steps = 1,
                 report_to = "none",
-                block_size = 512,
                 gradient_checkpointing = True,
-                deepspeed = "ds_config_zero2.json",
-                use_lora = True,
                 do_train  = True ,
                 do_eval = True ,
-                # q_lora = True,
+                bf16 = True
+                # deepspeed = "ds_config_zero2.json",
                 # adam_beta2 #AdamW优化器的β2超参数,默认为0.999。控制运行二阶moment的衰减率。
                 # adam_epsilon #AdamW优化器的ε超参数,默认为1e-8。为数值稳定性考虑加入的一个很小的 numero防止分母为0。
-            )
+)
+
 @dataclass
 class ConfigFactory(DataTrainingArguments,ModelArguments,TrainingArguments):
  
@@ -372,21 +381,18 @@ class ConfigFactory(DataTrainingArguments,ModelArguments,TrainingArguments):
                 Qwen_Chat_Config.model_name_or_path = self.model_name_or_path
                 Qwen_Chat_Config.tokenizer_name_or_path = self.model_name_or_path
                 Qwen_Chat_Config.dataset_dir = self.dataset_dir
-                Qwen_Chat_Config.output_dir = self.output_dir
-                return Qwen_Chat_Config
+                Qwen_Chat_Train_Config.output_dir = self.output_dir
+                return Qwen_Chat_Config,Qwen_Chat_Train_Config
             if self.llm_type == "llama":
                 LLama_Chat_Config.model_name_or_path = self.model_name_or_path
                 LLama_Chat_Config.tokenizer_name_or_path = self.model_name_or_path
                 LLama_Chat_Config.dataset_dir = self.dataset_dir
-                LLama_Chat_Config.output_dir = self.output_dir
+                LLama_Chat_Train_Config.output_dir = self.output_dir
                 return LLama_Chat_Config
         else:
             LLama_Config.model_name_or_path = self.model_name_or_path
             LLama_Config.tokenizer_name_or_path = self.model_name_or_path
             LLama_Config.dataset_dir = self.dataset_dir
-            LLama_Config.output_dir = self.output_dir
+            LLama_Train_Config.output_dir = self.output_dir
             return LLama_Config
-        
-    def get_train_args(self):
-        training_arguments = TrainingArguments(**self.__dict__)
-        return training_arguments
+    

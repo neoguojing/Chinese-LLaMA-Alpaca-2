@@ -37,7 +37,7 @@ from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR
 import logging
 logger = logging.getLogger(__name__)
 from config import DataTrainingArguments,ModelArguments,ConfigFactory
-
+import pdb
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:32"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 class SavePeftModelCallback(transformers.TrainerCallback):
@@ -143,9 +143,8 @@ if __name__ == "__main__":
         args = parser.parse_json_file(json_file=os.path.abspath(sys.argv[1]))
     else:
         args = parser.parse_args_into_dataclasses()
-    training_args = args[0].get_train_args()
-    args = args[0].create()
-    print(args)
+    args,train_args = args[0].create()
+    print(args,train_args)
 
     tokenizer = create_tokenizer(args.tokenizer_name_or_path,llama=args.llama)
     # block_size = determine_block_size(data_args,tokenizer)
@@ -156,36 +155,36 @@ if __name__ == "__main__":
     train_dataset,eval_dataset = builder.build_dataset()
     model = load_pretrained_model(args)
     print("model vocab size:",len(tokenizer))
+    # pdb.set_trace()
     # model = determine_vocab_size(model,len(tokenizer))
     if args.use_lora:
         model = create_peft_model(model,args)
 
-    if args.gradient_checkpointing:
+    if train_args.gradient_checkpointing:
         model.enable_input_require_grads()
     # optm = create_optimizer(training_args,model)
     # Initialize our Trainer
     
-    print("training_args:",training_args)
     trainer = Trainer(
         model=model,
-        args=training_args,
-        train_dataset=train_dataset if args.do_train else None,
-        eval_dataset=eval_dataset if args.do_eval else None,
+        args=train_args,
+        train_dataset=train_dataset if train_args.do_train else None,
+        eval_dataset=eval_dataset if train_args.do_eval else None,
         tokenizer=tokenizer,
         data_collator=fault_tolerance_data_collator, #数据批处理和数据加载的数据整合器（data collator）对象。它处理训练和评估数据集的样本，并将它们整合成适当的格式供模型使用。
-        compute_metrics=compute_metrics if args.do_eval and not is_torch_tpu_available() else None, #计算模型性能指标的函数
+        compute_metrics=compute_metrics if train_args.do_eval and not is_torch_tpu_available() else None, #计算模型性能指标的函数
         preprocess_logits_for_metrics=preprocess_logits_for_metrics 
-        if args.do_eval and not is_torch_tpu_available()
+        if train_args.do_eval and not is_torch_tpu_available()
         else None, #对模型输出进行预处理以计算指标的函数
         # optimizers=(optm, None),
 
     )
     trainer.add_callback(SavePeftModelCallback)
     # Training
-    if args.do_train:
+    if train_args.do_train:
         checkpoint = None
-        if args.resume_from_checkpoint is not None:
-            checkpoint = args.resume_from_checkpoint
+        if train_args.resume_from_checkpoint is not None:
+            checkpoint = train_args.resume_from_checkpoint
         train_result = trainer.train(resume_from_checkpoint=checkpoint)
 
         metrics = train_result.metrics
@@ -197,7 +196,7 @@ if __name__ == "__main__":
         trainer.save_state()
 
     # Evaluation
-    if args.do_eval:
+    if train_args.do_eval:
         logger.info("*** Evaluate ***")
 
         metrics = trainer.evaluate()
