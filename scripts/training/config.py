@@ -386,3 +386,7 @@ class ConfigFactory(DataTrainingArguments,ModelArguments,TrainingArguments):
             LLama_Config.dataset_dir = self.dataset_dir
             LLama_Config.output_dir = self.output_dir
             return LLama_Config
+        
+    def get_train_args(self):
+        training_arguments = TrainingArguments(**self.__dict__)
+        return training_arguments

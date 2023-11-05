@@ -153,6 +153,7 @@ if __name__ == "__main__":
         args = parser.parse_json_file(json_file=os.path.abspath(sys.argv[1]))
     else:
         args = parser.parse_args_into_dataclasses()
+    training_args = args[0].get_train_args()
     args = args[0].create()
     print(args)
 
@@ -173,9 +174,11 @@ if __name__ == "__main__":
         model.enable_input_require_grads()
     # optm = create_optimizer(training_args,model)
     # Initialize our Trainer
+    
+    print("training_args:",training_args)
     trainer = Trainer(
         model=model,
-        args=args,
+        args=training_args,
         train_dataset=train_dataset if args.do_train else None,
         eval_dataset=eval_dataset if args.do_eval else None,
         tokenizer=tokenizer,
