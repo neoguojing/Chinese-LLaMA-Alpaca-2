@@ -143,8 +143,7 @@ if __name__ == "__main__":
         args = parser.parse_json_file(json_file=os.path.abspath(sys.argv[1]))
     else:
         args = parser.parse_args_into_dataclasses()
-    args = args[0].create()
-    train_args = args.train_args
+    args,train_args = args[0].create()
     print(args,args.train_args)
 
     tokenizer = create_tokenizer(args.tokenizer_name_or_path,llama=args.llama)
