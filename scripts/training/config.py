@@ -344,7 +344,7 @@ Qwen_Chat_Config = {
     "dataset_dir": "",
     "block_size": 512,
     "use_lora": True,
-    "q_lora": True,
+    "q_lora": False,
 }
 
 Qwen_Chat_Train_Config = {
@@ -367,9 +367,9 @@ Qwen_Chat_Train_Config = {
     "gradient_checkpointing": True,
     "do_train": True,
     "do_eval": True,
-    "bf16": True,
-    #"deepspeed": "ds_config_zero2.json",
-    #"fp16": True
+    # "bf16": True,
+    "deepspeed": "ds_config_zero2.json",
+    "fp16": True
 }
 
 @dataclass
@@ -397,5 +397,4 @@ class ConfigFactory(DataTrainingArguments,ModelArguments,TrainingArguments):
               LLama_Train_Config["output_dir"] = self.output_dir
               return LLamaConfig(**LLama_Config),TrainingArguments(**LLama_Train_Config)
   
-    
     
