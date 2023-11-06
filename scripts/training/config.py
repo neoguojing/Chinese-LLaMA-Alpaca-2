@@ -326,9 +326,9 @@ Qwen_Chat_Train_Config = {
     "gradient_checkpointing": True,
     "do_train": True,
     "do_eval": True,
-    "bf16": True,
-    # "deepspeed": "ds_config_zero2.json",
-    #"fp16": True
+    # "bf16": True,
+    "deepspeed": "ds_config_zero2.json",
+    "fp16": True
 }
 
 
