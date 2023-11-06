@@ -334,7 +334,9 @@ Qwen_Chat_Train_Config = {
 
 @dataclass
 class LLMConfig(DataTrainingArguments,ModelArguments):
-    train_args: Optional[TrainingArguments]
+    train_args: Optional[TrainingArguments] = field(
+        default=None,
+    )
 
     def __post_init__(self):
         if self.config_overrides is not None and (self.config_name is not None or self.model_name_or_path is not None):
