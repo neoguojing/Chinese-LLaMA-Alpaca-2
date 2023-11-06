@@ -200,47 +200,6 @@ class ModelArguments:
             self.tokenizer_name_or_path = self.model_name_or_path
         
 
-
-@dataclass
-class LLamaConfig(DataTrainingArguments,ModelArguments):
-    name: Optional[str] = field(
-        default="llama"
-    )
-    
-@dataclass
-class LLamaChatConfig(DataTrainingArguments,ModelArguments):
-    name: Optional[str] = field(
-        default="llama-chat"
-    )
-@dataclass
-class QwenChatConfig(DataTrainingArguments,ModelArguments):
-    name: Optional[str] = field(
-        default="qwen-chat"
-    )
-
-    train_args: Optional[TrainingArguments] = field(
-        default=None
-    )
-
-    def __post_init__(self):
-        if self.config_overrides is not None and (self.config_name is not None or self.model_name_or_path is not None):
-            raise ValueError(
-                "config_overrides can't be used in combination with config_name or model_name_or_path"
-            )
-        
-        if self.q_lora or 'chat' in self.model_name_or_path.lower():
-            self.modules_to_save = None
-
-        if self.use_lora and not self.q_lora:
-            self.torch_dtype = "bfloat16"
-            # self.deepspeed = None
-            # self.bf16 = True
-            # self.fp16 = False
-        elif self.use_lora and self.q_lora:
-            self.torch_dtype = "float16"
-            # self.fp16 = True
-            # self.bf16 = False
-
 LLama_Config = {
     "model_name_or_path": "",  # 模型名称或路径
     "tokenizer_name_or_path": "",  # 分词器名称或路径
@@ -372,6 +331,37 @@ Qwen_Chat_Train_Config = {
     "fp16": True
 }
 
+
+@dataclass
+class LLMConfig(DataTrainingArguments,ModelArguments):
+
+    def __post_init__(self):
+        if self.config_overrides is not None and (self.config_name is not None or self.model_name_or_path is not None):
+            raise ValueError(
+                "config_overrides can't be used in combination with config_name or model_name_or_path"
+            )
+        if self.data_cache_dir == None:
+            self.data_cache_dir = os.path.join(self.dataset_dir, "cache")
+
+        if self.llama:
+            self.torch_dtype = "float16"
+
+        if self.tokenizer_name_or_path == None:
+            self.tokenizer_name_or_path = self.model_name_or_path
+
+        if self.q_lora or 'chat' in self.model_name_or_path.lower():
+            self.modules_to_save = None
+
+        if self.use_lora and not self.q_lora:
+            self.torch_dtype = "bfloat16"
+            # self.deepspeed = None
+            # self.bf16 = True
+            # self.fp16 = False
+        elif self.use_lora and self.q_lora:
+            self.torch_dtype = "float16"
+            # self.fp16 = True
+            # self.bf16 = False
+
 @dataclass
 class ConfigFactory(DataTrainingArguments,ModelArguments,TrainingArguments):
  
@@ -383,18 +373,18 @@ class ConfigFactory(DataTrainingArguments,ModelArguments,TrainingArguments):
                   Qwen_Chat_Config["dataset_dir"] = self.dataset_dir
   
                   Qwen_Chat_Train_Config["output_dir"] = self.output_dir
-                  return QwenChatConfig(**Qwen_Chat_Config),TrainingArguments(**Qwen_Chat_Train_Config)
+                  return LLMConfig(**Qwen_Chat_Config),TrainingArguments(**Qwen_Chat_Train_Config)
               if self.llm_type == "llama":
                   LLama_Chat_Config["model_name_or_path"] = self.model_name_or_path
                   LLama_Chat_Config["tokenizer_name_or_path"] = self.model_name_or_path
                   LLama_Chat_Config["dataset_dir"] = self.dataset_dir
                   LLama_Chat_Train_Config["output_dir"] = self.output_dir
-                  return LLamaChatConfig(**LLama_Chat_Config),TrainingArguments(**LLama_Chat_Train_Config)
+                  return LLMConfig(**LLama_Chat_Config),TrainingArguments(**LLama_Chat_Train_Config)
           else:
               LLama_Config["model_name_or_path"] = self.model_name_or_path
               LLama_Config["tokenizer_name_or_path"] = self.model_name_or_path
               LLama_Config["dataset_dir"] = self.dataset_dir
               LLama_Train_Config["output_dir"] = self.output_dir
-              return LLamaConfig(**LLama_Config),TrainingArguments(**LLama_Train_Config)
+              return LLMConfig(**LLama_Config),TrainingArguments(**LLama_Train_Config)
   
     
