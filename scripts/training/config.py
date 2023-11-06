@@ -218,6 +218,10 @@ class QwenChatConfig(DataTrainingArguments,ModelArguments):
         default="qwen-chat"
     )
 
+    train_args: Optional[TrainingArguments] = field(
+        default=None
+    )
+
     def __post_init__(self):
         if self.config_overrides is not None and (self.config_name is not None or self.model_name_or_path is not None):
             raise ValueError(
@@ -237,140 +241,136 @@ class QwenChatConfig(DataTrainingArguments,ModelArguments):
             # self.fp16 = True
             # self.bf16 = False
 
-LLama_Config = LLamaConfig(
-                model_name_or_path = "" ,
-                tokenizer_name_or_path = "" ,
-                llama = True,
-                torch_dtype = "float16" ,
-                lora_rank = 64 , #更新矩阵的秩,以整数表示。秩越低,更新矩阵规模越小,可训练参数越少
-                lora_alpha = 128 , #低秩近似缩放因子，缩放因子值越大,重构后的矩阵与原始矩阵越相似；缩放因子值越小,参数量会更小,但重构误差也会更大
-                trainable = "q_proj,v_proj,k_proj,o_proj,gate_proj,down_proj,up_proj" , #可更新的参数层
-                lora_dropout = 0.05, #不存在？
+LLama_Config = {
+    "model_name_or_path": "",  # 模型名称或路径
+    "tokenizer_name_or_path": "",  # 分词器名称或路径
+    "llama": True,  # 是否使用 LLama 模型
+    "torch_dtype": "float16",  # 使用的 Torch 数据类型
+    "lora_rank": 64,  # 更新矩阵的秩，以整数表示。秩越低，更新矩阵规模越小，可训练参数越少
+    "lora_alpha": 128,  # 低秩近似缩放因子，缩放因子值越大，重构后的矩阵与原始矩阵越相似；缩放因子值越小，参数量会更小，但重构误差也会更大
+    "trainable": "q_proj,v_proj,k_proj,o_proj,gate_proj,down_proj,up_proj",  # 可更新的参数层
+    "lora_dropout": 0.05,  # 不存在？
+    "modules_to_save": "embed_tokens,lm_head",  # 除LoRa层外需要设置为可训练并保存到最终检查点的模块列表。这些模块通常包括模型自定义的头层，用于初始化下游调优任务。
 
-                dataset_dir = "" ,
-                data_cache_dir = "" ,
-                validation_split_percentage = 0.001 ,
-                preprocessing_num_workers = 8 ,
-                block_size = 512 ,
-            )
-
-LLama_Train_Config = TrainingArguments(
-                dataloader_num_workers = 4 , #数据加载时使用的子进程数
-                per_device_train_batch_size = 1, #它控制了分布式训练场景下,每个独立设备处理的批次样本数量
-                do_train = True, #开启训练模式
-                do_eval = False, #开启评估
-                num_train_epochs = 1 , #总训练周期数
-                gradient_accumulation_steps = 8 , #在反向更新参数时，累积多少步梯度
-
-                lr_scheduler_type = "cosine" , #学习率衰减策略，学习率随训练进度进行余弦下降
-                learning_rate = 2e-4 , #AdamW的学习率
-                warmup_ratio = 0.05 , #0.1,则总训练步骤的前10%时间内,学习率从0逐步线性增长到最大学习率，在深度学习模型训练开始时,直接使用最大学习率可能导致模型卡住或发散
-                weight_decay = 0.01 , #AdamW优化器中,应用于除去Bias和LayerNorm参数以外的所有层的权重衰减值(如果不为零)
-                
-                logging_strategy = "steps" , #日志策略
-                logging_steps = 10 , #日志更新的步数
-                logging_first_step = True , #是否记录第一步
-                
-                output_dir = "" ,  #模型checkpoint输出目录
-                overwrite_output_dir = True, #覆盖输出目录
-                save_strategy = "steps"  , #检查点保存策略
-                save_total_limit = 3 , #限制的检查点个数
-                save_steps = 200 , #两个检查点直接的间隔步数
-
-                fp16=True ,
-                
-                # deepspeed = "ds_config_zero2.json",
-                # llama = ,
-                # qlota = ,
-                # gptq = ,
-                # gradient_checkpointing = True , #梯度检查点技术,可以减少内存开销,但代价是反向传播会较慢
-                # modules_to_save = "embed_tokens,lm_head", #除LoRa层外需要设置为可训练并保存到最终检查点的模块列表。这些模块通常包括模型自定义的头层,用于初始化下游调优任务。
-                # flash_attn = True ,
-                # bf16 = False
-            )
-
-LLama_Chat_Config = LLamaChatConfig(
-                model_name_or_path = "",
-                tokenizer_name_or_path = "",
-                lora_rank = 64 ,
-                lora_alpha = 128 ,
-                trainable = "q_proj,v_proj,k_proj,o_proj,gate_proj,down_proj,up_proj" ,
-                lora_dropout = 0.05 ,
-                modules_to_save ="embed_tokens,lm_head" ,
-                torch_dtype = "float16" ,
-                llama = True,
+    "dataset_dir": "",  # 数据集目录
+    "data_cache_dir": "",  # 数据缓存目录
+    "validation_split_percentage": 0.001,  # 验证集百分比
+    "preprocessing_num_workers": 8,  # 预处理工作线程数
+    "block_size": 512,  # 块大小
+}
 
 
-                dataset_dir = "",
-                preprocessing_num_workers = 8 ,
-                block_size =  512 ,
-            )
+LLama_Train_Config = {
+    "dataloader_num_workers": 4,  # 数据加载时使用的子进程数
+    "per_device_train_batch_size": 1,  # 它控制了分布式训练场景下，每个独立设备处理的批次样本数量
+    "do_train": True,  # 开启训练模式
+    "do_eval": False,  # 开启评估
+    "num_train_epochs": 1,  # 总训练周期数
+    "gradient_accumulation_steps": 8,  # 在反向更新参数时，累积多少步梯度
 
-LLama_Chat_Train_Config = TrainingArguments(
-                per_device_train_batch_size = 1 ,
-                per_device_eval_batch_size = 1,
-                do_train  = True ,
-                do_eval = True ,
-                fp16 = True ,
-                num_train_epochs = 1 ,
-                lr_scheduler_type = "cosine" ,
-                learning_rate = 1e-4 ,
-                warmup_ratio = 0.03 ,
-                weight_decay = 0 ,
-                logging_strategy = "steps" ,
-                logging_steps = 10 ,
-                save_strategy = "steps" ,
-                save_total_limit = 3 ,
-                evaluation_strategy = "steps" ,
-                eval_steps = 100 ,
-                save_steps = 200 ,
-                gradient_accumulation_steps = 8 ,
-                output_dir = "",
-                overwrite_output_dir = True ,
-                logging_first_step = True ,
+    "lr_scheduler_type": "cosine",  # 学习率衰减策略，学习率随训练进度进行余弦下降
+    "learning_rate": 2e-4,  # AdamW的学习率
+    "warmup_ratio": 0.05,  # 0.1，则总训练步骤的前10%时间内，学习率从0逐步线性增长到最大学习率，在深度学习模型训练开始时，直接使用最大学习率可能导致模型卡住或发散
+    "weight_decay": 0.01,  # AdamW优化器中，应用于除去Bias和LayerNorm参数以外的所有层的权重衰减值（如果不为零）
 
-                # deepspeed = "ds_config_zero2.json" ,
-            )
+    "logging_strategy": "steps",  # 日志策略
+    "logging_steps": 10,  # 日志更新的步数
+    "logging_first_step": True,  # 是否记录第一步
+
+    "output_dir": "",  # 模型checkpoint输出目录
+    "overwrite_output_dir": True,  # 覆盖输出目录
+    "save_strategy": "steps",  # 检查点保存策略
+    "save_total_limit": 3,  # 限制的检查点个数
+    "save_steps": 200,  # 两个检查点之间的间隔步数
+
+    "fp16": True,  # 使用半精度浮点数
+
+    "deepspeed":"ds_config_zero2.json",
+    # "gradient_checkpointing": True,  # 梯度检查点技术，可以减少内存开销，但代价是反向传播会较慢
+    # "flash_attn": True,
+}
+
+
+LLama_Chat_Config = {
+    "model_name_or_path": "",
+    "tokenizer_name_or_path": "",
+    "lora_rank": 64,
+    "lora_alpha": 128,
+    "trainable": "q_proj,v_proj,k_proj,o_proj,gate_proj,down_proj,up_proj",
+    "lora_dropout": 0.05,
+    "modules_to_save": "embed_tokens,lm_head",
+    "torch_dtype": "float16",
+    "llama": True,
+
+    "dataset_dir": "",
+    "preprocessing_num_workers": 8,
+    "block_size": 512,
+}
+
+LLama_Chat_Train_Config = {
+    "per_device_train_batch_size": 1,
+    "per_device_eval_batch_size": 1,
+    "do_train": True,
+    "do_eval": True,
+    "fp16": True,
+    "num_train_epochs": 1,
+    "lr_scheduler_type": "cosine",
+    "learning_rate": 1e-4,
+    "warmup_ratio": 0.03,
+    "weight_decay": 0,
+    "logging_strategy": "steps",
+    "logging_steps": 10,
+    "save_strategy": "steps",
+    "save_total_limit": 3,
+    "evaluation_strategy": "steps",
+    "eval_steps": 100,
+    "save_steps": 200,
+    "gradient_accumulation_steps": 8,
+    "output_dir": "",
+    "overwrite_output_dir": True,
+    "logging_first_step": True,
+
+    "deepspeed": "ds_config_zero2.json",
+}
 
 # qlora 与 deepspeed3 不兼容
-Qwen_Chat_Config = QwenChatConfig(
-                model_name_or_path = "",
-                lora_rank = 64 ,
-                lora_alpha = 16 ,
-                trainable = "c_attn,c_proj,w1,w2" ,
-                lora_dropout = 0.05 ,
-                # modules_to_save ="wte,lm_head" ,
-                dataset_dir = "",
-                block_size = 512,
-                use_lora = True,
-                # q_lora = True,
-            )
+Qwen_Chat_Config = {
+    "model_name_or_path": "",
+    "lora_rank": 64,
+    "lora_alpha": 16,
+    "trainable": "c_attn,c_proj,w1,w2",
+    "lora_dropout": 0.05,
+    "modules_to_save": "wte,lm_head",
+    "dataset_dir": "",
+    "block_size": 512,
+    "use_lora": True,
+    "q_lora": True,
+}
 
-Qwen_Chat_Train_Config = TrainingArguments(
-                output_dir = "",
-                num_train_epochs = 5,
-                per_device_train_batch_size = 2,
-                per_device_eval_batch_size = 1,
-                gradient_accumulation_steps = 8,
-                evaluation_strategy = "no",
-                save_strategy = "steps",
-                save_steps = 1000,
-                save_total_limit = 10,
-                learning_rate = 3e-4,
-                weight_decay = 0.1,
-                adam_beta2 = 0.95, # AdamW优化器的β1超参数,默认为0.9。控制运行平均的衰减率。
-                warmup_ratio = 0.01,
-                lr_scheduler_type = "cosine",
-                logging_steps = 1,
-                report_to = "none",
-                gradient_checkpointing = True,
-                do_train  = True ,
-                do_eval = True ,
-                bf16 = True,
-                # deepspeed = "ds_config_zero2.json",
-                # adam_beta2 #AdamW优化器的β2超参数,默认为0.999。控制运行二阶moment的衰减率。
-                # adam_epsilon #AdamW优化器的ε超参数,默认为1e-8。为数值稳定性考虑加入的一个很小的 numero防止分母为0。
-)
+Qwen_Chat_Train_Config = {
+    "output_dir": "",
+    "num_train_epochs": 5,
+    "per_device_train_batch_size": 2,
+    "per_device_eval_batch_size": 1,
+    "gradient_accumulation_steps": 8,
+    "evaluation_strategy": "no",
+    "save_strategy": "steps",
+    "save_steps": 1000,
+    "save_total_limit": 10,
+    "learning_rate": 3e-4,
+    "weight_decay": 0.1,
+    "adam_beta2": 0.95,
+    "warmup_ratio": 0.01,
+    "lr_scheduler_type": "cosine",
+    "logging_steps": 1,
+    "report_to": "none",
+    "gradient_checkpointing": True,
+    "do_train": True,
+    "do_eval": True,
+    "bf16": True,
+    #"deepspeed": "ds_config_zero2.json",
+    #"fp16": True
+}
 
 @dataclass
 class ConfigFactory(DataTrainingArguments,ModelArguments,TrainingArguments):
@@ -379,20 +379,21 @@ class ConfigFactory(DataTrainingArguments,ModelArguments,TrainingArguments):
         if self.chat:
             if self.llm_type == "qwen":
                 Qwen_Chat_Config.model_name_or_path = self.model_name_or_path
-                Qwen_Chat_Config.tokenizer_name_or_path = self.model_name_or_path
+                Qwen_Chat_Config.tokenizer_name_or_path = self.tokenizer_name_or_path
                 Qwen_Chat_Config.dataset_dir = self.dataset_dir
+
                 Qwen_Chat_Train_Config.output_dir = self.output_dir
-                return Qwen_Chat_Config,Qwen_Chat_Train_Config
+                return QwenChatConfig(**Qwen_Chat_Config),TrainingArguments(**Qwen_Chat_Train_Config)
             if self.llm_type == "llama":
                 LLama_Chat_Config.model_name_or_path = self.model_name_or_path
                 LLama_Chat_Config.tokenizer_name_or_path = self.model_name_or_path
                 LLama_Chat_Config.dataset_dir = self.dataset_dir
                 LLama_Chat_Train_Config.output_dir = self.output_dir
-                return LLama_Chat_Config
+                return LLamaChatConfig(**LLama_Chat_Config),TrainingArguments(**LLama_Chat_Train_Config)
         else:
             LLama_Config.model_name_or_path = self.model_name_or_path
             LLama_Config.tokenizer_name_or_path = self.model_name_or_path
             LLama_Config.dataset_dir = self.dataset_dir
             LLama_Train_Config.output_dir = self.output_dir
-            return LLama_Config
+            return LLamaConfig(**LLama_Config),TrainingArguments(**LLama_Train_Config)
     

@@ -192,9 +192,9 @@ def create_peft_model(model, model_args):
         lora_dropout = model_args.lora_dropout
         lora_alpha = model_args.lora_alpha
         lora_bias = model_args.lora_bias
-        logger.info(f"target_modules: {target_modules}")
-        logger.info(f"lora_rank: {lora_rank}")
-
+        print(f"target_modules: {target_modules}")
+        print(f"lora_rank: {lora_rank}")
+        print(f"modules_to_save: {modules_to_save}")
         peft_config = LoraConfig(
             task_type=TaskType.CAUSAL_LM,
             target_modules=target_modules,
@@ -215,10 +215,10 @@ def create_peft_model(model, model_args):
         model.print_trainable_parameters()
         # state_dict字典将每个模型参数的名称作为键（key），将对应参数的张量值作为值（value）。
         # 这些参数张量包含了模型在训练过程中学习到的权重和偏置等可训练参数。
-        old_state_dict = model.state_dict
-        model.state_dict = (
-            lambda self, *_, **__: get_peft_model_state_dict(self, old_state_dict())
-        ).__get__(model, type(model))
+        # old_state_dict = model.state_dict
+        # model.state_dict = (
+        #     lambda self, *_, **__: get_peft_model_state_dict(self, old_state_dict())
+        # ).__get__(model, type(model))
 
     return model
 
