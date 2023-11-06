@@ -368,7 +368,7 @@ Qwen_Chat_Train_Config = {
     "do_train": True,
     "do_eval": True,
     # "bf16": True,
-    "deepspeed": "ds_config_zero2.json",
+    # "deepspeed": "ds_config_zero2.json",
     "fp16": True
 }
 
