@@ -376,24 +376,26 @@ Qwen_Chat_Train_Config = {
 class ConfigFactory(DataTrainingArguments,ModelArguments,TrainingArguments):
  
     def create(self):
-        if self.chat:
-            if self.llm_type == "qwen":
-                Qwen_Chat_Config.model_name_or_path = self.model_name_or_path
-                Qwen_Chat_Config.tokenizer_name_or_path = self.tokenizer_name_or_path
-                Qwen_Chat_Config.dataset_dir = self.dataset_dir
-
-                Qwen_Chat_Train_Config.output_dir = self.output_dir
-                return QwenChatConfig(**Qwen_Chat_Config),TrainingArguments(**Qwen_Chat_Train_Config)
-            if self.llm_type == "llama":
-                LLama_Chat_Config.model_name_or_path = self.model_name_or_path
-                LLama_Chat_Config.tokenizer_name_or_path = self.model_name_or_path
-                LLama_Chat_Config.dataset_dir = self.dataset_dir
-                LLama_Chat_Train_Config.output_dir = self.output_dir
-                return LLamaChatConfig(**LLama_Chat_Config),TrainingArguments(**LLama_Chat_Train_Config)
-        else:
-            LLama_Config.model_name_or_path = self.model_name_or_path
-            LLama_Config.tokenizer_name_or_path = self.model_name_or_path
-            LLama_Config.dataset_dir = self.dataset_dir
-            LLama_Train_Config.output_dir = self.output_dir
-            return LLamaConfig(**LLama_Config),TrainingArguments(**LLama_Train_Config)
+          if self.chat:
+              if self.llm_type == "qwen":
+                  Qwen_Chat_Config["model_name_or_path"] = self.model_name_or_path
+                  Qwen_Chat_Config["tokenizer_name_or_path"] = self.tokenizer_name_or_path
+                  Qwen_Chat_Config["dataset_dir"] = self.dataset_dir
+  
+                  Qwen_Chat_Train_Config["output_dir"] = self.output_dir
+                  return QwenChatConfig(**Qwen_Chat_Config),TrainingArguments(**Qwen_Chat_Train_Config)
+              if self.llm_type == "llama":
+                  LLama_Chat_Config["model_name_or_path"] = self.model_name_or_path
+                  LLama_Chat_Config["tokenizer_name_or_path"] = self.model_name_or_path
+                  LLama_Chat_Config["dataset_dir"] = self.dataset_dir
+                  LLama_Chat_Train_Config["output_dir"] = self.output_dir
+                  return LLamaChatConfig(**LLama_Chat_Config),TrainingArguments(**LLama_Chat_Train_Config)
+          else:
+              LLama_Config["model_name_or_path"] = self.model_name_or_path
+              LLama_Config["tokenizer_name_or_path"] = self.model_name_or_path
+              LLama_Config["dataset_dir"] = self.dataset_dir
+              LLama_Train_Config["output_dir"] = self.output_dir
+              return LLamaConfig(**LLama_Config),TrainingArguments(**LLama_Train_Config)
+  
+    
     
