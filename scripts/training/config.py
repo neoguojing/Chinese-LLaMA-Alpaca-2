@@ -328,12 +328,13 @@ Qwen_Chat_Train_Config = {
     "do_eval": True,
     # "bf16": True,
     # "deepspeed": "ds_config_zero2.json",
-    "fp16": True
+    # "fp16": True
 }
 
 
 @dataclass
 class LLMConfig(DataTrainingArguments,ModelArguments):
+    train_args: Optional[TrainingArguments]
 
     def __post_init__(self):
         if self.config_overrides is not None and (self.config_name is not None or self.model_name_or_path is not None):
@@ -345,6 +346,7 @@ class LLMConfig(DataTrainingArguments,ModelArguments):
 
         if self.llama:
             self.torch_dtype = "float16"
+            self.train_args.fp16 = True
 
         if self.tokenizer_name_or_path == None:
             self.tokenizer_name_or_path = self.model_name_or_path
@@ -354,13 +356,13 @@ class LLMConfig(DataTrainingArguments,ModelArguments):
 
         if self.use_lora and not self.q_lora:
             self.torch_dtype = "bfloat16"
-            # self.deepspeed = None
-            # self.bf16 = True
-            # self.fp16 = False
+            self.train_args.deepspeed = None
+            self.train_args.bf16 = True
+            self.train_args.fp16 = False
         elif self.use_lora and self.q_lora:
-            self.torch_dtype = "float16"
-            # self.fp16 = True
-            # self.bf16 = False
+            self.train_args.torch_dtype = "float16"
+            self.train_args.fp16 = True
+            self.train_args.bf16 = False
 
 @dataclass
 class ConfigFactory(DataTrainingArguments,ModelArguments,TrainingArguments):
@@ -373,18 +375,21 @@ class ConfigFactory(DataTrainingArguments,ModelArguments,TrainingArguments):
                   Qwen_Chat_Config["dataset_dir"] = self.dataset_dir
   
                   Qwen_Chat_Train_Config["output_dir"] = self.output_dir
-                  return LLMConfig(**Qwen_Chat_Config),TrainingArguments(**Qwen_Chat_Train_Config)
+                  Qwen_Chat_Config["train_args"] = TrainingArguments(**Qwen_Chat_Train_Config)
+                  return LLMConfig(**Qwen_Chat_Config),
               if self.llm_type == "llama":
                   LLama_Chat_Config["model_name_or_path"] = self.model_name_or_path
                   LLama_Chat_Config["tokenizer_name_or_path"] = self.model_name_or_path
                   LLama_Chat_Config["dataset_dir"] = self.dataset_dir
                   LLama_Chat_Train_Config["output_dir"] = self.output_dir
-                  return LLMConfig(**LLama_Chat_Config),TrainingArguments(**LLama_Chat_Train_Config)
+                  LLama_Chat_Config["train_args"] = TrainingArguments(**LLama_Chat_Train_Config)
+                  return LLMConfig(**LLama_Chat_Config)
           else:
               LLama_Config["model_name_or_path"] = self.model_name_or_path
               LLama_Config["tokenizer_name_or_path"] = self.model_name_or_path
               LLama_Config["dataset_dir"] = self.dataset_dir
               LLama_Train_Config["output_dir"] = self.output_dir
-              return LLMConfig(**LLama_Config),TrainingArguments(**LLama_Train_Config)
+              LLama_Config["train_args"] = TrainingArguments(**LLama_Train_Config)
+              return LLMConfig(**LLama_Config)
   
     
