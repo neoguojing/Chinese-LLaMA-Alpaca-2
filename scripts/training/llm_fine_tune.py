@@ -37,7 +37,6 @@ from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR
 import logging
 logger = logging.getLogger(__name__)
 from config import DataTrainingArguments,ModelArguments,ConfigFactory
-import pdb
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:32"
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 class SavePeftModelCallback(transformers.TrainerCallback):
@@ -144,7 +143,7 @@ if __name__ == "__main__":
     else:
         args = parser.parse_args_into_dataclasses()
     args,train_args = args[0].create()
-    print(args,args.train_args)
+    print(args,train_args)
 
     tokenizer = create_tokenizer(args.tokenizer_name_or_path,llama=args.llama)
     # block_size = determine_block_size(data_args,tokenizer)

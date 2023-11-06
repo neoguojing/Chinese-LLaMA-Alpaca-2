@@ -243,7 +243,7 @@ LLama_Train_Config = {
     "save_steps": 200,  # 两个检查点之间的间隔步数
 
     "fp16": True,  # 使用半精度浮点数
-
+    "ddp_find_unused_parameters": False,
     "deepspeed":"ds_config_zero2.json",
     # "gradient_checkpointing": True,  # 梯度检查点技术，可以减少内存开销，但代价是反向传播会较慢
     # "flash_attn": True,
@@ -326,9 +326,10 @@ Qwen_Chat_Train_Config = {
     "gradient_checkpointing": True,
     "do_train": True,
     "do_eval": True,
-    # "bf16": True,
-    "deepspeed": "ds_config_zero2.json",
-    "fp16": True
+    "bf16": True,
+    "ddp_find_unused_parameters": False,
+    # "deepspeed": "ds_config_zero2.json",
+    # "fp16": True
 }
 
 
