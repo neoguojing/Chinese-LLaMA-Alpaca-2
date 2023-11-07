@@ -76,7 +76,7 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
                 # 字符串数组，每个元素对应一段输入
                 sources.append(source)
                 targets.append(target)
-            pdb.set_trace()
+                
             tokenized_sources = tokenizer(sources,return_attention_mask=False)
             tokenized_targets = tokenizer(targets,return_attention_mask=False,add_special_tokens=False)
             print("tokenized_sources len:",np.array(tokenized_sources).shape)
@@ -163,8 +163,6 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
                     raise NotImplementedError
                 target += _target
 
-
-            pdb.set_trace()
             assert len(input_id) == len(target)
            
             input_id,target = patch_tokens(input_id,target)
