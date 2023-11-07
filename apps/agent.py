@@ -14,7 +14,6 @@ os.environ['WOLFRAM_ALPHA_APPID'] = '重要！请在这里填入您的 WOLFRAM_A
 search = SerpAPIWrapper()
 WolframAlpha = WolframAlphaAPIWrapper()
 arxiv = ArxivAPIWrapper()
-python=PythonAstREPLTool()
 
 
 tools = [
@@ -22,6 +21,18 @@ tools = [
         name="Search",
         func=search.run,
         description="useful for when you need to answer questions about current events"
+    ),
+    Tool(
+        name="Math",
+        func=WolframAlpha.run,
+        description="Useful for when you need to answer questions about Math, Science, Technology, Culture, Society and Everyday Life."
+    ),
+    Tool(
+        name="arxiv",
+        func=arxiv.run,
+        description="A wrapper around Arxiv.org Useful for when you need to answer questions about Physics, Mathematics, Computer Science, \
+            Quantitative Biology, Quantitative Finance, Statistics, Electrical Engineering, and Economics from scientific articles \
+            on arxiv.org."
     )
 ]
 
@@ -136,6 +147,7 @@ def use_api(tools, response):
 if __name__ == '__main__':
     from .model_factory import ModelFactory
     from .prompt import QwenAgentPromptTemplate
+    from .parser import QwenAgentOutputParser
     from langchain.agents import Tool, AgentExecutor, LLMSingleActionAgent, AgentOutputParser
     # prompt_1 = build_planning_prompt(TOOLS[0:1], query="加拿大2023年人口统计数字是多少？")
     # print(prompt_1)
@@ -151,7 +163,7 @@ if __name__ == '__main__':
     )
 
     llm = ModelFactory().get_model("qwen")
-
+    output_parser = QwenAgentOutputParser()
     llm_chain = LLMChain(llm=llm, prompt=prompt)
 
     tool_names = [tool.name for tool in tools]

@@ -82,9 +82,33 @@ def build_planning_prompt(TOOLS, query):
     prompt = REACT_PROMPT.format(tool_descs=tool_descs, tool_names=tool_names, query=query)
     return prompt
 
+template = """Complete the objective as best you can. You have access to the following tools:
+
+{tools}
+
+Use the following format:
+
+Question: the input question you must answer
+Thought: you should always think about what to do
+Action: the action to take, should be one of [{tool_names}]
+Action Input: the input to the action
+Observation: the result of the action
+... (this Thought/Action/Action Input/Observation can repeat N times)
+Thought: I now know the final answer
+Final Answer: the final answer to the original input question
+
+These were previous tasks you completed:
+
+
+
+Begin!
+
+Question: {input}
+{agent_scratchpad}"""
+
 class QwenAgentPromptTemplate(BaseChatPromptTemplate):
     # The template to use
-    template: str = REACT_PROMPT
+    template: str = template
     # The list of tools available
     tools: List[Tool]
 

@@ -76,7 +76,7 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
                 # 字符串数组，每个元素对应一段输入
                 sources.append(source)
                 targets.append(target)
-                
+
             tokenized_sources = tokenizer(sources,return_attention_mask=False)
             tokenized_targets = tokenizer(targets,return_attention_mask=False,add_special_tokens=False)
             print("tokenized_sources len:",np.array(tokenized_sources).shape)
@@ -328,7 +328,7 @@ class NLPDataBuilder:
         eval_dataset = lm_datasets["test"]
         print("train_dataset---",train_dataset)
         print("eval_dataset---",eval_dataset)
-        print("***************", tokenizer.decode(train_dataset[0]["input_ids"]))
+        print("***************", self.tokenizer.decode(train_dataset[0]["input_ids"]))
         return train_dataset,eval_dataset
     
     def determine_block_size(self):
