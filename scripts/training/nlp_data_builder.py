@@ -101,7 +101,7 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
             return results
         return tokenization
     elif data_format == "qwen":
-        system_message = "You are a helpful assistant."
+        system_message = "中国移动2023年财报"
         def tokenization(examples):
             print("qwen:",len(examples['from']),len(examples['value']),len(examples))
             roles = {"user": "<|im_start|>user", "assistant": "<|im_start|>assistant"}
@@ -164,9 +164,9 @@ def generate_tokenize_func(tokenizer: PreTrainedTokenizer,
                 target += _target
 
 
-
+            pdb.set_trace()
             assert len(input_id) == len(target)
-
+           
             input_id,target = patch_tokens(input_id,target)
             print("input_id len:",np.array(input_id).shape)
             input_ids.append(input_id[:block_size])
@@ -240,7 +240,6 @@ class NLPDataBuilder:
         all_train_dataset = []
         tokenized_dataset = None
         for idx, file in enumerate(files):
-            # pdb.set_trace()
             if self.cache_dir != None:
                 tokenized_dataset = self._load_tokenized_data_from_cache(file)
             if tokenized_dataset == None:
@@ -331,6 +330,7 @@ class NLPDataBuilder:
         eval_dataset = lm_datasets["test"]
         print("train_dataset---",train_dataset)
         print("eval_dataset---",eval_dataset)
+        print("***************", tokenizer.decode(train_dataset[0]["input_ids"]))
         return train_dataset,eval_dataset
     
     def determine_block_size(self):
@@ -361,7 +361,7 @@ class NLPDataset(Dataset):
 
 if __name__ == "__main__":
     from llm_model import create_tokenizer
-    tokenizer = create_tokenizer("../../model/chinese/chinese-alpaca-2-7b-hf/",512,llama=True)
-    builder = NLPDataBuilder("../../dataset/chat/",tokenizer,cache_dir=".",data_format="llama")
+    tokenizer = create_tokenizer("../../model/chinese/Qwen-7B-Chat/",512,llama=False)
+    builder = NLPDataBuilder("../../dataset/chat/",tokenizer,cache_dir=".",data_format="qwen")
     builder.build_dataset()
     
