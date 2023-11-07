@@ -154,7 +154,7 @@ def load_model(model_path,tokenizer_path=None,llama=False,lora_model=False,
 
     if lora_model:
         print("loading peft model")
-        model = PeftModel.from_pretrained(model_path, lora_model,
+        model = PeftModel.from_pretrained(base_model, lora_model,
                                           torch_dtype=load_type,device_map='auto',).half()
     elif use_vllm:
         print("loading vllm model")

@@ -61,7 +61,7 @@ def resize_model_vocab_size(base_model,tokenizer):
         print("Resize model embeddings to fit tokenizer")
         base_model.resize_token_embeddings(tokenizer_vocab_size)
 
-def load_model(model_path,tokenizer_path=None,llama=False,lora_model=False,
+def load_model(model_path,tokenizer_path=None,llama=False,lora_model=None,
                load_in_4bit=False,
                load_in_8bit=False,
                use_vllm=False,
@@ -101,9 +101,9 @@ def load_model(model_path,tokenizer_path=None,llama=False,lora_model=False,
         generation_config = GenerationConfig.from_pretrained(model_path, 
                                                              trust_remote_code=True)
 
-    if lora_model:
+    if lora_model is not None:
         print("loading peft model")
-        model = PeftModel.from_pretrained(model_path, lora_model,
+        model = PeftModel.from_pretrained(base_model, lora_model,
                                           torch_dtype=load_type,device_map='auto',).half()
     else:
         model = base_model

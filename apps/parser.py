@@ -7,7 +7,13 @@ from pydantic import  Field, BaseModel,validator
 from langchain.schema.agent import AgentAction, AgentFinish
 from langchain.agents.agent import AgentOutputParser
 
+import os
+import time
+# 获取当前脚本所在的目录路径
+current_dir = os.path.dirname(os.path.abspath(__file__))
 
+# 将当前package的父目录作为顶层package的路径
+top_package_path = os.path.abspath(os.path.join(current_dir, ".."))
 
 class QAItem(BaseModel):
     question: str = Field(description="question")
@@ -153,7 +159,56 @@ class JsonOutputParser(AgentOutputParser):
                 return json.load(f)
         except FileNotFoundError:
             return None
+
+
+def data_generate_chain(data_dir: str,glob: str = "**/*.txt",model_type: str="tongyi",):
+    from langchain.text_splitter import RecursiveCharacterTextSplitter
+    from langchain.document_loaders import DirectoryLoader,TextLoader
+    from langchain.output_parsers import PydanticOutputParser
+    from apps.model_factory import ModelFactory
+    from apps.parser import JsonOutputParser,QAPackage,QAItem
+    from apps.prompt import PromptFactory
+    from typing import Any, List
+    
+    loader = DirectoryLoader(data_dir, glob=glob,loader_cls=TextLoader)
+    # loader = TextLoader("./doc.txt")
+    docs = loader.load()
+
+    # llm = ModelFactory().get_model("openai")
+    # llm = ModelFactory().get_model("claude")
+    # llm = ModelFactory().get_model("qwen")
+    # llm = ModelFactory().get_model("qianfan")
+    llm = ModelFactory().get_model(model_type)
+    
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=500, chunk_overlap=0
+    )
+    
+    qaParser = PydanticOutputParser(pydantic_object=QAPackage)
+
+    prompt = PromptFactory.caibao_analyse_prompt(qaParser.get_format_instructions())
+    
+    texts = []
+    for doc in docs:
+        text = doc.page_content
+        print(doc.metadata)
+        jsonParser = JsonOutputParser()
+        chain = prompt | llm | jsonParser 
+
+        texts += text_splitter.create_documents([text])
+        for text in texts:
+            print(text)
+            try:
+                answer = chain.invoke({"text": text,"format_instructions":qaParser.get_format_instructions()})
+            except Exception as e:
+                print("",str(e))
+                continue
+            
+            print(f"Output: {answer}")
+            time.sleep(1)
         
+        jsonParser.dump(os.path.splitext(doc.metadata["source"])[0])
+
 if __name__ == '__main__':
     # qas = QAPackage(data=[])
     # qas.load("./ir2023_ashare.json")

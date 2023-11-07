@@ -23,3 +23,6 @@ pypdf
 slack_sdk
 qianfan
 dashscope
+google-search-results 
+wolframalpha
+arxiv
