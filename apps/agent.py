@@ -3,13 +3,16 @@ from langchain.utilities.wolfram_alpha import WolframAlphaAPIWrapper
 from langchain.utilities import ArxivAPIWrapper
 from langchain.agents import AgentType, initialize_agent
 from langchain.chains.llm import LLMChain
-
+from model_factory import ModelFactory
+from prompt import QwenAgentPromptTemplate
+from parser import QwenAgentOutputParser
+from langchain.agents import Tool, AgentExecutor, LLMSingleActionAgent, AgentOutputParser
 from typing import Dict, Tuple
 import os
 import json
 
-os.environ['SERPAPI_API_KEY'] = '重要！请在这里填入您的 SERPAPI_API_KEY！'
-os.environ['WOLFRAM_ALPHA_APPID'] = '重要！请在这里填入您的 WOLFRAM_ALPHA_APPID！'
+os.environ['SERPAPI_API_KEY'] = ''
+os.environ['WOLFRAM_ALPHA_APPID'] = ''
 
 search = SerpAPIWrapper()
 WolframAlpha = WolframAlphaAPIWrapper()
@@ -90,23 +93,6 @@ TOOLS = [
             'required': True
         }], 
         'tool_api': tool_wrapper_for_qwen(arxiv)
-    },
-    {
-        'name_for_human':
-            'python',
-        'name_for_model':
-            'python',
-        'description_for_model':
-            "A Python shell. Use this to execute python commands. When using this tool, sometimes output is abbreviated - Make sure \
-                it does not look abbreviated before using it in your answer. "
-            "Don't add comments to your python code.",
-        'parameters': [{
-            "name": "query",
-            "type": "string",
-            "description": "a valid python command.",
-            'required': True
-        }],
-        'tool_api': tool_wrapper_for_qwen(python)
     }
 
 ]
@@ -145,10 +131,6 @@ def use_api(tools, response):
 
 
 if __name__ == '__main__':
-    from .model_factory import ModelFactory
-    from .prompt import QwenAgentPromptTemplate
-    from .parser import QwenAgentOutputParser
-    from langchain.agents import Tool, AgentExecutor, LLMSingleActionAgent, AgentOutputParser
     # prompt_1 = build_planning_prompt(TOOLS[0:1], query="加拿大2023年人口统计数字是多少？")
     # print(prompt_1)
 
