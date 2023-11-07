@@ -57,7 +57,7 @@ class QwenLLM(LLM):
     tokenizer: Any = None
     chat_format: Optional[str]   = 'chatml'
     max_window_size: Optional[int]   = 8192
-    stop = ["Observation:", "Observation:\n"]
+    stop = ["Observation:", "Observation:\n","\nObservation:"]
     react_stop_words_tokens: Optional[List[List[int]]]
     
 
