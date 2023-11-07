@@ -224,10 +224,11 @@ def chat(
         ))
         input_ids = torch.tensor([context_tokens]).to(device)
         outputs = model.generate(
-                    input_ids,
+                    inputs=input_ids,
                     # stop_words_ids=stop_words_ids,
                     return_dict_in_generate=False,
                     generation_config=generation_config,
+                    stop_words_ids=stop_words_ids,
                     # **kwargs,
                 )
 

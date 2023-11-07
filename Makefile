@@ -120,7 +120,7 @@ run:
 
 lora:
 	@echo "Using model path: $(BaseModelPath)"
-	python scripts/inference/inference_hf.py \
+	python scripts/inference/inference.py \
 				--base_model $(BaseModelPath) \
 				--lora_model $(LORAModelDIR) \
 				$(cpu) \
