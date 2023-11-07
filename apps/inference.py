@@ -142,9 +142,9 @@ def chat(
         append_history: bool = True,
         chat_format: str = "chatml",
         stop_words_ids: Optional[List[List[int]]] = None,
-        max_window_size: int = 6144
-        # generation_config: Optional[GenerationConfig] = None,
-        # **kwargs,
+        max_window_size: int = 6144,
+        generation_config: Optional[GenerationConfig] = None,
+        **kwargs
     ) -> Tuple[str, HistoryType]:
         if history is None:
             history = []
@@ -165,10 +165,9 @@ def chat(
         input_ids = torch.tensor([context_tokens]).to(device)
         outputs = model.generate(
                     input_ids,
-                    # stop_words_ids=stop_words_ids,
                     return_dict_in_generate=False,
                     generation_config=generation_config,
-                    # **kwargs,
+                    stop_words_ids=stop_words_ids
                 )
 
         response = decode_tokens(

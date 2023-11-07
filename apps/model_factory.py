@@ -56,12 +56,16 @@ class QwenLLM(LLM):
     model: Any = None 
     tokenizer: Any = None
     chat_format: Optional[str]   = 'chatml'
-    max_window_size: Optional[int]   = 6144
+    max_window_size: Optional[int]   = 8192
+    stop = ["Observation:", "Observation:\n"]
+    react_stop_words_tokens: Optional[List[List[int]]]
+    
 
     def __init__(self, model_path: str,**kwargs):
         super(QwenLLM, self).__init__()
         self.model_path: str = model_path
         self.model,self.tokenizer = load_model(model_path=model_path,llama=False)
+        self.react_stop_words_tokens = [self.tokenizer.encode(stop_) for stop_ in self.stop]
 
     @property
     def _llm_type(self) -> str:
@@ -74,9 +78,14 @@ class QwenLLM(LLM):
         run_manager: Optional[CallbackManagerForLLMRun] = None,
         **kwargs: Any,
     ) -> str:
+        if stop is None:
+            self.react_stop_words_tokens.extend([self.tokenizer.encode(stop_) for stop_ in stop])
+            
         response, _ = chat(self.model,self.tokenizer,prompt,history=None,
                            chat_format=self.chat_format,
-                           max_window_size=self.max_window_size)
+                           max_window_size=self.max_window_size,
+                           stop_words_ids=self.react_stop_words_tokens
+                           )
         return response
 
     @property
