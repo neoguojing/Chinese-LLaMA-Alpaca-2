@@ -28,3 +28,4 @@ dashscope
 google-search-results 
 wolframalpha
 arxiv
+diffusers

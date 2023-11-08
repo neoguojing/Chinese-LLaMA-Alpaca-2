@@ -1,10 +1,20 @@
 
 
+import sys
+import os
+# 获取当前脚本所在的目录路径
+current_dir = os.path.dirname(os.path.abspath(__file__))
+
+# 将当前package的父目录作为顶层package的路径
+top_package_path = os.path.abspath(os.path.join(current_dir, ".."))
+
+# 将顶层package路径添加到sys.path
+sys.path.insert(0, top_package_path)
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, Agent
 from transformers.generation import GenerationConfig
-from .inference import load_model
-
+from apps.inference import load_model
+import pdb
 
 class QWenAgent(Agent):
     """
@@ -47,9 +57,14 @@ class QWenAgent(Agent):
         stop = [item.replace("Human:", "_HUMAN_:").replace("Assistant:", "_ASSISTANT_:") for item in stop]
 
         result, _ = self.model.chat(self.tokenizer, prompt, history=None)
+        pdb.set_trace()
         for stop_seq in stop:
             if result.endswith(stop_seq):
                 result = result[: -len(stop_seq)]
 
         result = result.replace("_HUMAN_:", "Human:").replace("_ASSISTANT_:", "Assistant:")
         return result
+
+if __name__ == '__main__':
+    agent = QWenAgent(model_path="../model/chinese/Qwen-7B-Chat/")
+    agent.run("Draw me a picture of rivers and lakes.")

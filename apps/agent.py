@@ -11,8 +11,8 @@ from typing import Dict, Tuple
 import os
 import json
 
-os.environ['SERPAPI_API_KEY'] = ''
-os.environ['WOLFRAM_ALPHA_APPID'] = ''
+os.environ['SERPAPI_API_KEY'] = 'f765e0536e1a72c2f353bb1946875937b3ac7bed0270881f966d4147ac0a7943'
+os.environ['WOLFRAM_ALPHA_APPID'] = 'QTJAQT-UPJ2R3KP89'
 
 search = SerpAPIWrapper()
 WolframAlpha = WolframAlphaAPIWrapper()
@@ -120,7 +120,10 @@ if __name__ == '__main__':
 
     agent_executor = AgentExecutor.from_agent_and_tools(agent=agent, tools=tools, verbose=True)
 
-    agent_executor.run("Search for Leo DiCaprio's girlfriend on the internet.")
+    # output = agent_executor.run("Search for Leo DiCaprio's girlfriend on the internet.")
+    output = agent_executor.run("1000x1000=？")
+    print(output)
+    # 
     # agent = initialize_agent(
     #     [tool], llm, agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION, verbose=False
     # )

@@ -2,7 +2,7 @@
 import json
 from pathlib import Path
 import re
-from typing import Any, List, Mapping, Optional,Dict,Union
+from typing import Any, List, Mapping, Optional,Dict,Union,Tuple
 from pydantic import  Field, BaseModel,validator
 from langchain.schema.agent import AgentAction, AgentFinish
 from langchain.agents.agent import AgentOutputParser
@@ -209,7 +209,7 @@ def data_generate_chain(data_dir: str,glob: str = "**/*.txt",model_type: str="to
         
         jsonParser.dump(os.path.splitext(doc.metadata["source"])[0])
 
-
+import pdb
 class QwenAgentOutputParser(AgentOutputParser):
 
     def parse(self, llm_output: str) -> Union[AgentAction, AgentFinish]:
