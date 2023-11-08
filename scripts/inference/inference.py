@@ -154,8 +154,11 @@ def load_model(model_path,tokenizer_path=None,llama=False,lora_model=False,
 
     if lora_model:
         print("loading peft model")
+        # 半精度
+        # model = PeftModel.from_pretrained(base_model, lora_model,
+        #                                   torch_dtype=load_type,device_map='auto',).half()
         model = PeftModel.from_pretrained(base_model, lora_model,
-                                          torch_dtype=load_type,device_map='auto',).half()
+                                          torch_dtype=load_type,device_map='auto',)
     elif use_vllm:
         print("loading vllm model")
         model = LLM(model=base_model,

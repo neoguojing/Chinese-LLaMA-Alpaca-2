@@ -98,45 +98,7 @@ TOOLS = [
 ]
 
 
-
-
-def parse_latest_plugin_call(text: str) -> Tuple[str, str]:
-    i = text.rfind('\nAction:')
-    j = text.rfind('\nAction Input:')
-    k = text.rfind('\nObservation:')
-    if 0 <= i < j:  # If the text has `Action` and `Action input`,
-        if k < j:  # but does not contain `Observation`,
-            # then it is likely that `Observation` is ommited by the LLM,
-            # because the output text may have discarded the stop word.
-            text = text.rstrip() + '\nObservation:'  # Add it back.
-            k = text.rfind('\nObservation:')
-    if 0 <= i < j < k:
-        plugin_name = text[i + len('\nAction:'):j].strip()
-        plugin_args = text[j + len('\nAction Input:'):k].strip()
-        return plugin_name, plugin_args
-    return '', ''
-
-def use_api(tools, response):
-    use_toolname, action_input = parse_latest_plugin_call(response)
-    if use_toolname == "":
-        return "no tool founds"
-
-    used_tool_meta = list(filter(lambda x: x["name_for_model"] == use_toolname, tools))
-    if len(used_tool_meta) == 0:
-        return "no tool founds"
-    
-    api_output = used_tool_meta[0]["tool_api"](action_input)
-    return api_output
-
-
-
 if __name__ == '__main__':
-    # prompt_1 = build_planning_prompt(TOOLS[0:1], query="加拿大2023年人口统计数字是多少？")
-    # print(prompt_1)
-
-    # api_output = use_api(TOOLS, response_1)
-    # print(api_output)
-
     prompt = QwenAgentPromptTemplate(
         tools=tools,
         # This omits the `agent_scratchpad`, `tools`, and `tool_names` variables because those are generated dynamically
