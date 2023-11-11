@@ -27,8 +27,11 @@ ZHChatTokenDIR := $(MODEL_DIR)/chinese/chinese-alpaca-2-7b-hf/
 # qwen
 QWenModelDIR := $(MODEL_DIR)/chinese/Qwen-7B/
 QWenTokenModelDIR := $(MODEL_DIR)/chinese/Qwen-7B/
-QWenChatModelDIR := $(MODEL_DIR)/chinese/Qwen-7B-Chat/
-QWenChatTokenModelDIR := $(MODEL_DIR)/chinese/Qwen-7B-Chat/
+# QWenChatModelDIR := $(MODEL_DIR)/chinese/Qwen-7B-Chat/
+# QWenChatTokenModelDIR := $(MODEL_DIR)/chinese/Qwen-7B-Chat/
+
+QWenChatModelDIR := $(MODEL_DIR)/chinese/Qwen-14B-Chat-Int4/
+QWenChatTokenModelDIR := $(MODEL_DIR)/chinese/Qwen-14B-Chat-Int4/
 
 # lora
 LORAModelDIR := $(MODEL_DIR)/pt_lora_model

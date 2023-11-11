@@ -23,7 +23,8 @@ pypdf
 slack_sdk
 qianfan
 dashscope
-
+optimum
+auto-gptq
 
 google-search-results 
 wolframalpha

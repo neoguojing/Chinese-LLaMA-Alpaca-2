@@ -131,6 +131,8 @@ def load_pretrained_model(model_args):
             trust_remote_code=True,
         )
     else:
+        # INT8 + DeepSpeed also isn't supported
+        # deepSpeed isn't can't be used when using device_map or low_cpu_mem_usage
         model = AutoModelForCausalLM.from_pretrained(
             model_args.model_name_or_path,
             from_tf=bool(".ckpt" in model_args.model_name_or_path),  # 指示模型是否来自TensorFlow的检查点（.ckpt文件）。如果模型路径包含.ckpt，则为True；否则为False
@@ -142,7 +144,7 @@ def load_pretrained_model(model_args):
             max_memory = max_memory,
             quantization_config = get_quantization_config(model_args),
             low_cpu_mem_usage=True if model_args.use_lora and not model_args.q_lora else False,
-            device_map="auto" if device_map == None else device_map,
+            device_map="auto" if model_args.use_lora and not model_args.q_lora else None,
             trust_remote_code=True,
         )
     return model

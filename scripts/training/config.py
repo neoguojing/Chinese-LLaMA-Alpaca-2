@@ -198,8 +198,9 @@ class ModelArguments:
 
         if self.tokenizer_name_or_path == None:
             self.tokenizer_name_or_path = self.model_name_or_path
-        
 
+pwd = os.path.dirname(os.path.realpath(__file__))
+deepspeed_config_path = os.path.join(pwd, 'ds_config_zero2.json') 
 LLama_Config = {
     "model_name_or_path": "",  # 模型名称或路径
     "tokenizer_name_or_path": "",  # 分词器名称或路径
@@ -244,7 +245,7 @@ LLama_Train_Config = {
 
     "fp16": True,  # 使用半精度浮点数
     "ddp_find_unused_parameters": False,
-    "deepspeed":"ds_config_zero2.json",
+    "deepspeed":deepspeed_config_path,
     # "gradient_checkpointing": True,  # 梯度检查点技术，可以减少内存开销，但代价是反向传播会较慢
     # "flash_attn": True,
 }
@@ -289,7 +290,7 @@ LLama_Chat_Train_Config = {
     "overwrite_output_dir": True,
     "logging_first_step": True,
 
-    "deepspeed": "ds_config_zero2.json",
+    "deepspeed": deepspeed_config_path,
 }
 
 # qlora 与 deepspeed3 不兼容
@@ -303,7 +304,7 @@ Qwen_Chat_Config = {
     "dataset_dir": "",
     "block_size": 512,
     "use_lora": True,
-    "q_lora": False,
+    "q_lora": True,
 }
 
 Qwen_Chat_Train_Config = {
@@ -326,10 +327,10 @@ Qwen_Chat_Train_Config = {
     "gradient_checkpointing": True,
     "do_train": True,
     "do_eval": True,
-    "bf16": True,
+    # "bf16": True,
     "ddp_find_unused_parameters": False,
-    # "deepspeed": "ds_config_zero2.json",
-    # "fp16": True
+    "deepspeed": deepspeed_config_path,
+    "fp16": True,
 }
 
 
