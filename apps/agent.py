@@ -121,7 +121,7 @@ if __name__ == '__main__':
     agent_executor = AgentExecutor.from_agent_and_tools(agent=agent, tools=tools, verbose=True)
 
     # output = agent_executor.run("Search for Leo DiCaprio's girlfriend on the internet.")
-    output = agent_executor.run("1000x1000=？")
+    output = agent_executor.run("今天北京的PM2.5")
     print(output)
     # 
     # agent = initialize_agent(

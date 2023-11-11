@@ -30,3 +30,13 @@ google-search-results
 wolframalpha
 arxiv
 diffusers
+pdfminer.six
+opencv-python
+unstructured
+pytesseract
+tesseract
+pypdfium2
+pymupdf
+pdfplumber
+docx
+docx-parser

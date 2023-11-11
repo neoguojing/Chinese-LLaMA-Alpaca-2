@@ -57,7 +57,7 @@ class QWenAgent(Agent):
         stop = [item.replace("Human:", "_HUMAN_:").replace("Assistant:", "_ASSISTANT_:") for item in stop]
 
         result, _ = self.model.chat(self.tokenizer, prompt, history=None)
-        pdb.set_trace()
+        # pdb.set_trace()
         for stop_seq in stop:
             if result.endswith(stop_seq):
                 result = result[: -len(stop_seq)]

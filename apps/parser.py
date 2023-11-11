@@ -6,6 +6,7 @@ from typing import Any, List, Mapping, Optional,Dict,Union,Tuple
 from pydantic import  Field, BaseModel,validator
 from langchain.schema.agent import AgentAction, AgentFinish
 from langchain.agents.agent import AgentOutputParser
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 import os
 import time
@@ -162,7 +163,6 @@ class JsonOutputParser(AgentOutputParser):
 
 
 def data_generate_chain(data_dir: str,glob: str = "**/*.txt",model_type: str="tongyi",):
-    from langchain.text_splitter import RecursiveCharacterTextSplitter
     from langchain.document_loaders import DirectoryLoader,TextLoader
     from langchain.output_parsers import PydanticOutputParser
     from apps.model_factory import ModelFactory
@@ -259,6 +259,28 @@ def use_api(tools, response):
     api_output = used_tool_meta[0]["tool_api"](action_input)
     return api_output
 
+def docx_parser(file_path: str):
+    from docx import Document
+    import pandas as pd
+    document = Document(file_path)
+    with open("test.txt", 'w', encoding='utf-8') as f:
+        for paragraph in document.paragraphs:
+            print(paragraph.text+"\n")
+            f.write(paragraph.text)
+
+    with open("test.csv", 'w', encoding='utf-8') as f:
+        for table in document.tables:
+            df = [['' for i in range(len(table.columns))] for j in range(len(table.rows))]
+            
+            for i, row in enumerate(table.rows):
+                for j, cell in enumerate(row.cells):
+                    if cell.text:
+                        df[i][j] = cell.text.strip()
+            
+            tFrame = pd.DataFrame(df)
+            tb = tFrame.to_csv(header=True, index=False)
+            print(tb)
+            f.write(tb)
 
 if __name__ == '__main__':
     # qas = QAPackage(data=[])
@@ -267,8 +289,28 @@ if __name__ == '__main__':
     # output = qas.toQwen("ir2023_ashare.qw")
     # with open("ir2023_ashare.qw", 'w', encoding='utf-8') as f:
     #     f.write(output)
-    with open("../dataset/chat/ir2023_ashare.qwen") as f:
-        data = f.read()
-        qw = QwenItem.parse_raw(data) 
-        qw.toLLama("./","ir2023_ashare")
+
+    # with open("../dataset/chat/ir2023_ashare.qwen") as f:
+    #     data = f.read()
+    #     qw = QwenItem.parse_raw(data) 
+    #     qw.toLLama("./","ir2023_ashare")
     
+    # from langchain.document_loaders import PyPDFLoader
+    # # from langchain.document_loaders import UnstructuredPDFLoader
+    # from langchain.document_loaders import PDFMinerPDFasHTMLLoader
+    # from langchain.document_loaders import PDFPlumberLoader
+    # loader = PDFPlumberLoader("../dataset/chat/ir2023_ashare.pdf")
+    # # pages = loader.load_and_split()
+    # text_splitter = RecursiveCharacterTextSplitter(
+    #     chunk_size=500, chunk_overlap=50,
+    # )
+    # pages = loader.load()
+    # with open("test.txt", 'w', encoding='utf-8') as f:
+    #     for p in pages:
+    #         print(p.page_content)
+    #         # texts = text_splitter.create_documents([p.page_content])
+    #         # for t in texts:
+    #         #     print(t)
+    #         f.write(p.page_content)
+
+    docx_parser("../dataset/chat/ir2023_ashare.docx")
