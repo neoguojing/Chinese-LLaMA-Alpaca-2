@@ -1,4 +1,7 @@
-from transformers import T5Tokenizer, T5ForConditionalGeneration, T5Config
+# Load model directly
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+
+
 from torch.utils.data import Dataset, DataLoader
 import torch
 
@@ -8,9 +11,9 @@ else:
     device = torch.device('cpu')
 
 # 载入预训练的T5模型和tokenizer
-model_name = 't5-base'  # 使用T5的基础版本
-tokenizer = T5Tokenizer.from_pretrained(model_name,cache_dir="../../model/t5",model_max_length=512)
-model = T5ForConditionalGeneration.from_pretrained(model_name,cache_dir="../../model/t5")
+model_name = 'google/mt5-base'  # 使用T5的基础版本
+tokenizer = AutoTokenizer.from_pretrained(model_name,cache_dir="../../model/mt5",model_max_length=512)
+model = AutoModelForSeq2SeqLM.from_pretrained(model_name,cache_dir="../../model/mt5")
 model.to(device)
 
 # 定义问题生成任务的数据集类
@@ -71,18 +74,9 @@ def do_train():
 
 def do_eval():
     # 使用微调后的模型生成问题
-    context = '''生成问题：                        
-                                 2023 年上半年     2022 年上半年      变化 
-
-经营活动产生的现金流量净额                  160,525       147,272    9.0%
-
-投资活动产生的现金流量净额                  -59,255       -74,066   -20.0%
-
-筹资活动产生的现金流量净额                  -63,766       -45,008   41.7%
-
-自由现金流                                79,112        55,225   43.3%'''
+    context = '''translate English to Chinese:"You should definitely watch 'One Piece', it is so good, you will love the comic book'''
     print(context)
-    input_ids = tokenizer.encode(context, return_tensors='pt')
+    input_ids = tokenizer.encode(context, return_tensors='pt',padding=True)
     output = model.generate(input_ids.to(device),max_new_tokens=512)
     generated_question = tokenizer.decode(output[0].cpu(), skip_special_tokens=True)
     print("生成的问题：", generated_question)
