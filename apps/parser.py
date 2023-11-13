@@ -7,6 +7,7 @@ from pydantic import  Field, BaseModel,validator
 from langchain.schema.agent import AgentAction, AgentFinish
 from langchain.agents.agent import AgentOutputParser
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.document_loaders import DirectoryLoader,TextLoader
 
 import os
 import time
@@ -163,7 +164,6 @@ class JsonOutputParser(AgentOutputParser):
 
 
 def data_generate_chain(data_dir: str,glob: str = "**/*.txt",model_type: str="tongyi",):
-    from langchain.document_loaders import DirectoryLoader,TextLoader
     from langchain.output_parsers import PydanticOutputParser
     from apps.model_factory import ModelFactory
     from apps.parser import JsonOutputParser,QAPackage,QAItem
@@ -263,34 +263,27 @@ def parse_table_to_string(table):
     table_string = ""
     for row in table.rows:
         for cell in row.cells:
-            cell_text = cell.text.strip()
-            cell_width = cell.width
-            cell_string = f"{cell_text: <{cell_width}} | "
+            cell_text = cell.text.strip().replace('\n','')
+            cell_string = f"{cell_text} | "
             table_string += cell_string
-        table_string += "\n" + "-" * len(table_string) + "\n"  # Add a separator line between rows
-
+        table_string += "\n"
     return table_string
 
-def docx_parser(file_path: str):
+def docx_parser(file_path: str,dst_path: str):
     from docx import Document
     import pandas as pd
     document = Document(file_path)
-    with open("test.txt", 'w', encoding='utf-8') as f:
-        content = []
+    with open(dst_path, 'w', encoding='utf-8') as f:
+        i,j = 0,0
         for element in document.element.body:
             if element.tag.endswith('p'):  # Paragraph
-                content.append(element.text.strip())
+                f.write(document.paragraphs[j].text.strip()+"\n")
+                j+=1
             elif element.tag.endswith('tbl'):  # Table
-                table = []
-                for row in element.iter_children('tr'):
-                    row_data = []
-                    for cell in row.iter_children('tc'):
-                        cell_text = [p.text for p in cell.iter_descendants('t') if p.text]
-                        row_data.append(' '.join(cell_text).strip())
-                    table.append(row_data)
-                content.append(table)
-
-        return content
+                # pdb.set_trace()
+                table_str = parse_table_to_string(document.tables[i])
+                f.write(table_str)
+                i+=1
 
 if __name__ == '__main__':
     # qas = QAPackage(data=[])
@@ -323,4 +316,18 @@ if __name__ == '__main__':
     #         #     print(t)
     #         f.write(p.page_content)
 
-    docx_parser("../dataset/chat/ir2023_ashare.docx")
+    docx_parser("../dataset/chat/ir2023_ashare.docx","text.txt")
+
+    loader = TextLoader("./text.txt")
+
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=500, chunk_overlap=50,
+    )
+    pages = loader.load()
+    with open("splite.txt", 'w', encoding='utf-8') as f:
+        for p in pages:
+            print(p.page_content)
+            texts = text_splitter.create_documents([p.page_content])
+            for t in texts:
+                print(t)
+                f.write(t.page_content)
