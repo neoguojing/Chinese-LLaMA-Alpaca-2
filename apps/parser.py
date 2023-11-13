@@ -259,28 +259,38 @@ def use_api(tools, response):
     api_output = used_tool_meta[0]["tool_api"](action_input)
     return api_output
 
+def parse_table_to_string(table):
+    table_string = ""
+    for row in table.rows:
+        for cell in row.cells:
+            cell_text = cell.text.strip()
+            cell_width = cell.width
+            cell_string = f"{cell_text: <{cell_width}} | "
+            table_string += cell_string
+        table_string += "\n" + "-" * len(table_string) + "\n"  # Add a separator line between rows
+
+    return table_string
+
 def docx_parser(file_path: str):
     from docx import Document
     import pandas as pd
     document = Document(file_path)
     with open("test.txt", 'w', encoding='utf-8') as f:
-        for paragraph in document.paragraphs:
-            print(paragraph.text+"\n")
-            f.write(paragraph.text)
+        content = []
+        for element in document.element.body:
+            if element.tag.endswith('p'):  # Paragraph
+                content.append(element.text.strip())
+            elif element.tag.endswith('tbl'):  # Table
+                table = []
+                for row in element.iter_children('tr'):
+                    row_data = []
+                    for cell in row.iter_children('tc'):
+                        cell_text = [p.text for p in cell.iter_descendants('t') if p.text]
+                        row_data.append(' '.join(cell_text).strip())
+                    table.append(row_data)
+                content.append(table)
 
-    with open("test.csv", 'w', encoding='utf-8') as f:
-        for table in document.tables:
-            df = [['' for i in range(len(table.columns))] for j in range(len(table.rows))]
-            
-            for i, row in enumerate(table.rows):
-                for j, cell in enumerate(row.cells):
-                    if cell.text:
-                        df[i][j] = cell.text.strip()
-            
-            tFrame = pd.DataFrame(df)
-            tb = tFrame.to_csv(header=True, index=False)
-            print(tb)
-            f.write(tb)
+        return content
 
 if __name__ == '__main__':
     # qas = QAPackage(data=[])
