@@ -29,3 +29,4 @@ scripts/training/ir2023_ashare_llama_text_512/
 scripts/training/ir2023_ashare_llama_512/
 dataset/chat/cache
 apps/__pycache__/
+model/t5/
