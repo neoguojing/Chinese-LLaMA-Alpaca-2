@@ -74,7 +74,7 @@ def do_train():
 
 def do_eval():
     # 使用微调后的模型生成问题
-    context = '''translate English to Chinese:"You should definitely watch 'One Piece', it is so good, you will love the comic book'''
+    context = '''翻译为中文:"You should definitely watch 'One Piece', it is so good, you will love the comic book'''
     print(context)
     input_ids = tokenizer.encode(context, return_tensors='pt',padding=True)
     output = model.generate(input_ids.to(device),max_new_tokens=512)
