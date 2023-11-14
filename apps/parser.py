@@ -112,6 +112,9 @@ class JsonOutputParser(AgentOutputParser):
     pattern = re.compile(r"```(?:json)?\n(.*?)```", re.DOTALL)
     qaList: QAPackage = QAPackage(data=[])
 
+    class Config:
+        arbitrary_types_allowed = True
+
     def parse(self, llm_output: str) -> Union[AgentAction, AgentFinish]:
         print("llm_output--------",llm_output)
         data = None
