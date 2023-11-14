@@ -14,7 +14,7 @@ import asyncio
 from abc import ABC, abstractmethod
 import aioconsole
 import copy
-from app.tasks import TaskFactory,TASK_TRANSLATE,TASK_AGENT
+from apps.tasks import TaskFactory,TASK_TRANSLATE,TASK_AGENT
 
 
 
