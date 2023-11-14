@@ -42,7 +42,7 @@ async def keyboard():
 async def output_loop():
     while True:
         item = await output.get()
-        print("Output:",item)
+        print("Output:",item+"\n")
 
 # 消费者协程函数
 async def message_bus():
@@ -65,4 +65,9 @@ async def main():
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
+    try:
+        loop.run_until_complete(main())
+    except KeyboardInterrupt:
+        print("KeyboardInterrupt: Stopping the event loop")
+    finally:
+        loop.close()
