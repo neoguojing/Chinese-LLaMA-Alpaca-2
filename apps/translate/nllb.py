@@ -14,6 +14,7 @@ class Translate(LLM):
     dst_lang: str = "zho_Hans"
 
     def __init__(self, model_path: str,**kwargs):
+        super(Translate, self).__init__()
         self.model_path = model_path
         self.tokenizer = AutoTokenizer.from_pretrained("facebook/nllb-200-distilled-600M",cache_dir="../../model/nllb")
         self.model = AutoModelForSeq2SeqLM.from_pretrained("facebook/nllb-200-distilled-600M",cache_dir="../../model/nllb")
