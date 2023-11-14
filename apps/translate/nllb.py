@@ -4,9 +4,10 @@ from langchain.llms.base import LLM
 from typing import Any, List, Mapping, Optional
 from langchain.callbacks.manager import CallbackManagerForLLMRun
 from pydantic import  Field
-from apps.base import Task
+from apps.base import Task,CustomerLLM
 # BCP47 code https://github.com/facebookresearch/flores/blob/main/flores200/README.md#languages-in-flores-200
-class Translate(LLM):
+
+class Translate(CustomerLLM):
     model_path: str = Field(None, alias='model_path')
     model: Any = None 
     tokenizer: Any = None
