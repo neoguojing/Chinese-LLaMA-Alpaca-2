@@ -10,11 +10,14 @@ if torch.cuda.is_available():
 else:
     device = torch.device('cpu')
 
+tokenizer = None
+model = None
 # 载入预训练的T5模型和tokenizer
-model_name = 'google/mt5-base'  # 使用T5的基础版本
-tokenizer = AutoTokenizer.from_pretrained(model_name,cache_dir="../../model/mt5",model_max_length=512)
-model = AutoModelForSeq2SeqLM.from_pretrained(model_name,cache_dir="../../model/mt5")
-model.to(device)
+def load():
+    model_name = 'google/mt5-base'  # 使用T5的基础版本
+    tokenizer = AutoTokenizer.from_pretrained(model_name,cache_dir="../../model/mt5",model_max_length=512)
+    model = AutoModelForSeq2SeqLM.from_pretrained(model_name,cache_dir="../../model/mt5")
+    model.to(device)
 
 # 定义问题生成任务的数据集类
 class QuestionGenerationDataset(Dataset):
