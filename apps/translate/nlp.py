@@ -1,4 +1,5 @@
-from transformers import M2M100ForConditionalGeneration, M2M100Tokenizer
+# from transformers import M2M100ForConditionalGeneration, M2M100Tokenizer
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 import torch
 
 if torch.cuda.is_available():
@@ -7,16 +8,19 @@ else:
     device = torch.device('cpu')
 
 
-model = M2M100ForConditionalGeneration.from_pretrained("facebook/m2m100_418M",cache_dir="../../model/m2m")
-tokenizer = M2M100Tokenizer.from_pretrained("facebook/m2m100_418M",cache_dir="../../model/m2m")
+# model = M2M100ForConditionalGeneration.from_pretrained("facebook/m2m100_418M",cache_dir="../../model/m2m")
+# tokenizer = M2M100Tokenizer.from_pretrained("facebook/m2m100_418M",cache_dir="../../model/m2m")
+tokenizer = AutoTokenizer.from_pretrained("facebook/nllb-200-distilled-600M",cache_dir="../../model/nllb")
+model = AutoModelForSeq2SeqLM.from_pretrained("facebook/nllb-200-distilled-600M",cache_dir="../../model/nllb")
 model.to(device)
 
-def translate(input: str,src_lang: str="en",dst_lang: str="zh"):
+# BCP47 code https://github.com/facebookresearch/flores/blob/main/flores200/README.md#languages-in-flores-200
+def translate(input: str,src_lang: str="eng_Latn",dst_lang: str="zho_Hans"):
     # translate Hindi to French
     tokenizer.src_lang = src_lang
     encoded = tokenizer(input, return_tensors="pt")
     encoded.to(device)
-    generated_tokens = model.generate(**encoded, forced_bos_token_id=tokenizer.get_lang_id(dst_lang))
+    generated_tokens = model.generate(**encoded, forced_bos_token_id=tokenizer.lang_code_to_id[dst_lang],max_new_tokens=512)
     output = tokenizer.decode(generated_tokens[0].cpu(), skip_special_tokens=True)
 
     return ''.join(output).strip('</s>')
