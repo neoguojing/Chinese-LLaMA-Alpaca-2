@@ -30,3 +30,6 @@ scripts/training/ir2023_ashare_llama_512/
 dataset/chat/cache
 apps/__pycache__/
 model/mt5/
+model/nllb/
+model/stable-diffusion/
+model/seamless-m4t

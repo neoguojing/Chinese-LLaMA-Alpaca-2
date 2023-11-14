@@ -1,6 +1,16 @@
+
+import os
+import sys
+# 获取当前脚本所在的目录路径
+current_dir = os.path.dirname(os.path.abspath(__file__))
+
+# 将当前package的父目录作为顶层package的路径
+top_package_path = os.path.abspath(os.path.join(current_dir, "../../"))
+
+# 将顶层package路径添加到sys.path
+sys.path.insert(0, top_package_path)
 from diffusers import DiffusionPipeline
 import torch
-import os
 from langchain.llms.base import LLM
 from typing import Any, List, Mapping, Optional,Union
 from langchain.callbacks.manager import CallbackManagerForLLMRun
@@ -20,8 +30,6 @@ class StableDiff(CustomerLLM):
     model_path: str = Field(None, alias='model_path')
     model: Any = None 
     tokenizer: Any = None
-    src_lang: str = "eng_Latn" 
-    dst_lang: str = "zho_Hans"
     n_steps: int = 40
     high_noise_frac: float = 0.8
     file_path: str = "./"
@@ -30,7 +38,8 @@ class StableDiff(CustomerLLM):
         super(StableDiff, self).__init__()
         self.model_path = model_path
         self.model = DiffusionPipeline.from_pretrained(
-            "stabilityai/stable-diffusion-xl-base-1.0", torch_dtype=torch.float16, variant="fp16", use_safetensors=True
+            "stabilityai/stable-diffusion-xl-base-1.0", torch_dtype=torch.float16, variant="fp16", use_safetensors=True,
+            cache_dir="../../model/stable-diffusion"
         )
         self.model.to("cuda")
         self.refiner = DiffusionPipeline.from_pretrained(
@@ -40,6 +49,7 @@ class StableDiff(CustomerLLM):
             torch_dtype=torch.float16,
             use_safetensors=True,
             variant="fp16",
+            cache_dir="../../model/stable-diffusion"
         )
         self.refiner.to("cuda")
 
@@ -85,10 +95,10 @@ class StableDiff(CustomerLLM):
 class Text2Image(BaseTool):
   name = "Text to Image"
   description = "Text to image diffusion model capable of generating photo-realistic images given any text input."
-  model = StableDiff()
+  model = StableDiff("")
   def _run(self,input:str):
       return self.model.predict(input)
 
 if __name__ == '__main__':
-    sd = StableDiff()
+    sd = StableDiff("")
     sd.predict("A majestic lion jumping from a big stone at night")

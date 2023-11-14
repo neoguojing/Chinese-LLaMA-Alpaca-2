@@ -1,4 +1,14 @@
-# from transformers import M2M100ForConditionalGeneration, M2M100Tokenizer
+import os
+import sys
+# 获取当前脚本所在的目录路径
+current_dir = os.path.dirname(os.path.abspath(__file__))
+
+# 将当前package的父目录作为顶层package的路径
+top_package_path = os.path.abspath(os.path.join(current_dir, "../../"))
+
+# 将顶层package路径添加到sys.path
+sys.path.insert(0, top_package_path)
+import time
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 from langchain.llms.base import LLM
 from typing import Any, List, Mapping, Optional
@@ -17,10 +27,10 @@ class Translate(CustomerLLM):
     def __init__(self, model_path: str,**kwargs):
         super(Translate, self).__init__()
         self.model_path = model_path
-        # self.tokenizer = AutoTokenizer.from_pretrained("facebook/nllb-200-distilled-600M",cache_dir="../../model/nllb")
-        # self.model = AutoModelForSeq2SeqLM.from_pretrained("facebook/nllb-200-distilled-600M",cache_dir="../../model/nllb")
-        self.tokenizer = AutoTokenizer.from_pretrained(model_path)
-        self.model = AutoModelForSeq2SeqLM.from_pretrained(model_path)
+        self.tokenizer = AutoTokenizer.from_pretrained("facebook/nllb-200-distilled-600M",cache_dir="../../model/nllb")
+        self.model = AutoModelForSeq2SeqLM.from_pretrained("facebook/nllb-200-distilled-600M",cache_dir="../../model/nllb")
+        # self.tokenizer = AutoTokenizer.from_pretrained(model_path)
+        # self.model = AutoModelForSeq2SeqLM.from_pretrained(model_path)
         self.model.to(self.device)
         if 'src_lang' in kwargs:
             self.src_lang = kwargs.pop("src_lang")
@@ -62,11 +72,12 @@ class TranslateTask(Task):
         return output
 
 
-# if __name__ == '__main__':
-#     input = '''
-#     Step 1: Choose a topic. I'll select geography as the topic for this question, as it is a subject rich with factual information. Step 2: Decide on a specific geographical aspect to focus on. I'll concentrate on capital cities, which are concrete data points within the field of geography. Step 3: Pick a country for the question. I'll choose Australia for its unique geography and its status as both a continent and a country. Step 4: Formulate the question, ensuring that it seeks a factual answer. My question will ask about the capital city of Australia. Step 5: Verify that a factual answer to the question exists. In this case, I'll confirm that Australia does have a capital city. The question I generated is: "What is the capital city of Australia?" The factual answer to this question is: "Canberra."
-#     '''
-#     out = translate(input)
-#     print(out)
+if __name__ == '__main__':
+    input = '''
+    Step 1: Choose a topic. I'll select geography as the topic for this question, as it is a subject rich with factual information. Step 2: Decide on a specific geographical aspect to focus on. I'll concentrate on capital cities, which are concrete data points within the field of geography. Step 3: Pick a country for the question. I'll choose Australia for its unique geography and its status as both a continent and a country. Step 4: Formulate the question, ensuring that it seeks a factual answer. My question will ask about the capital city of Australia. Step 5: Verify that a factual answer to the question exists. In this case, I'll confirm that Australia does have a capital city. The question I generated is: "What is the capital city of Australia?" The factual answer to this question is: "Canberra."
+    '''
+    model = Translate("")
+    out = model.predict(input)
+    print(out)
 
     
