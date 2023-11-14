@@ -126,6 +126,7 @@ class ModelFactory:
             model_path = "../model/chinese/chinese-alpaca-2-7b-hf"
             return LLamaLLM(model_path=model_path)
         elif model_name == "translate": 
-            return Translate(model_path="")
+            model_path = "../model/nllb/models--facebook--nllb-200-distilled-600M/snapshots/bf317ec0a4a31fc9fa3da2ce08e86d3b6e4b18f1"
+            return Translate(model_path=model_path)
         else:
             raise Exception("Invalid model name")

@@ -16,8 +16,10 @@ class Translate(LLM):
     def __init__(self, model_path: str,**kwargs):
         super(Translate, self).__init__()
         self.model_path = model_path
-        self.tokenizer = AutoTokenizer.from_pretrained("facebook/nllb-200-distilled-600M",cache_dir="../../model/nllb")
-        self.model = AutoModelForSeq2SeqLM.from_pretrained("facebook/nllb-200-distilled-600M",cache_dir="../../model/nllb")
+        # self.tokenizer = AutoTokenizer.from_pretrained("facebook/nllb-200-distilled-600M",cache_dir="../../model/nllb")
+        # self.model = AutoModelForSeq2SeqLM.from_pretrained("facebook/nllb-200-distilled-600M",cache_dir="../../model/nllb")
+        self.tokenizer = AutoTokenizer.from_pretrained(model_path)
+        self.model = AutoModelForSeq2SeqLM.from_pretrained(model_path)
         self.model.to(self.device)
         src_lang = kwargs.pop("src_lang")
         if src_lang is not None:
