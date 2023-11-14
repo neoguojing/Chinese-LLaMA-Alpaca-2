@@ -39,9 +39,13 @@ class StableDiff(CustomerLLM):
     def __init__(self, model_path: str,**kwargs):
         super(StableDiff, self).__init__()
         self.model_path = model_path
+        # self.model = DiffusionPipeline.from_pretrained(
+        #     "stabilityai/stable-diffusion-xl-base-1.0", torch_dtype=torch.float16, variant="fp16", use_safetensors=True,
+        #     cache_dir=os.path.join(model_root,"stable-diffusion")
+        # )
+        # self.model.save_pretrained(os.path.join(model_root,"stable-diffusion"))
         self.model = DiffusionPipeline.from_pretrained(
-            "stabilityai/stable-diffusion-xl-base-1.0", torch_dtype=torch.float16, variant="fp16", use_safetensors=True,
-            cache_dir=os.path.join(model_root,"stable-diffusion")
+            os.path.join(model_root,"stable-diffusion"), torch_dtype=torch.float16, variant="fp16", use_safetensors=True,
         )
         self.model.to(self.device)
         # self.refiner = DiffusionPipeline.from_pretrained(
@@ -71,9 +75,9 @@ class StableDiff(CustomerLLM):
     ) -> str:
         image = self.model(
             prompt=prompt,
-            num_inference_steps=self.n_steps,
-            denoising_end=self.high_noise_frac,
-            output_type="latent",
+            # num_inference_steps=self.n_steps,
+            # denoising_end=self.high_noise_frac,
+            # output_type="latent",
         ).images[0]
         # image = self.refiner(
         #     prompt=prompt,
@@ -82,9 +86,9 @@ class StableDiff(CustomerLLM):
         #     image=image,
         # ).images[0]
 
-        file_name = calculate_md5(prompt)
+        file_name = calculate_md5(prompt)+".png"
         path = os.path.join(self.file_path, file_name)
-        image.save(image)
+        image.save(path)
 
         return path
 
@@ -102,4 +106,4 @@ class Text2Image(BaseTool):
 
 if __name__ == '__main__':
     sd = StableDiff("")
-    sd.predict("A majestic lion jumping from a big stone at night")
+    sd.predict("a beauty chinese girl")
