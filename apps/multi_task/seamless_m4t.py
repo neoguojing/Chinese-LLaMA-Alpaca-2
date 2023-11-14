@@ -8,6 +8,7 @@ from pydantic import  Field
 from apps.base import Task,CustomerLLM
 import random
 import hashlib
+from langchain.tools import BaseTool
 
 def calculate_md5(string):
     md5_hash = hashlib.md5()
@@ -69,6 +70,12 @@ class SeamlessM4t(CustomerLLM):
         """Get the identifying parameters."""
         return {"model_path": self.model_path}
     
+class SpeechText(BaseTool):
+  name = "Speech and text"
+  description = "Speech-to-speech translation.Speech-to-text translation.Text-to-speech translation.Text-to-text translation.Automatic speech recognition"
+  model = SeamlessM4t()
+  def _run(self,input:Any):
+      return self.model.predict(input)
 
 if __name__ == '__main__':
     sd = SeamlessM4t()

@@ -8,6 +8,7 @@ from pydantic import  Field
 from apps.base import Task,CustomerLLM
 import random
 import hashlib
+from langchain.tools import BaseTool
 
 def calculate_md5(string):
     md5_hash = hashlib.md5()
@@ -68,7 +69,7 @@ class StableDiff(CustomerLLM):
             denoising_start=self.high_noise_frac,
             image=image,
         ).images[0]
-        
+
         file_name = calculate_md5(prompt)
         path = os.path.join(self.file_path, file_name)
         with open(path, 'wb') as file:
@@ -80,7 +81,13 @@ class StableDiff(CustomerLLM):
     def _identifying_params(self) -> Mapping[str, Any]:
         """Get the identifying parameters."""
         return {"model_path": self.model_path}
-    
+
+class Text2Image(BaseTool):
+  name = "Text to Image"
+  description = "Text to image diffusion model capable of generating photo-realistic images given any text input."
+  model = StableDiff()
+  def _run(self,input:str):
+      return self.model.predict(input)
 
 if __name__ == '__main__':
     sd = StableDiff()
