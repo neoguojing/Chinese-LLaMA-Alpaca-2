@@ -14,7 +14,7 @@ from typing import Any, List, Mapping, Optional
 from langchain.callbacks.manager import CallbackManagerForLLMRun
 from langchain.llms.base import LLM
 from apps.inference import load_model,chat
-from app.translate.nllb import Translate
+from apps.translate.nllb import Translate
 from pydantic import  Field, root_validator
 import torch
 
