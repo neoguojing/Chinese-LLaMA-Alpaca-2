@@ -285,7 +285,7 @@ def docx_parser(file_path: str,dst_path: str):
                 f.write(table_str)
                 i+=1
 
-if __name__ == '__main__':
+# if __name__ == '__main__':
     # qas = QAPackage(data=[])
     # qas.load("./ir2023_ashare.json")
     # qas.toLLama(".","ir2023_ashare")
@@ -316,18 +316,18 @@ if __name__ == '__main__':
     #         #     print(t)
     #         f.write(p.page_content)
 
-    docx_parser("../dataset/chat/ir2023_ashare.docx","text.txt")
+    # docx_parser("../dataset/chat/ir2023_ashare.docx","text.txt")
 
-    loader = TextLoader("./text.txt")
+    # loader = TextLoader("./text.txt")
 
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=500, chunk_overlap=50,
-    )
-    pages = loader.load()
-    with open("splite.txt", 'w', encoding='utf-8') as f:
-        for p in pages:
-            print(p.page_content)
-            texts = text_splitter.create_documents([p.page_content])
-            for t in texts:
-                print(t)
-                f.write(t.page_content)
+    # text_splitter = RecursiveCharacterTextSplitter(
+    #     chunk_size=500, chunk_overlap=50,
+    # )
+    # pages = loader.load()
+    # with open("splite.txt", 'w', encoding='utf-8') as f:
+    #     for p in pages:
+    #         print(p.page_content)
+    #         texts = text_splitter.create_documents([p.page_content])
+    #         for t in texts:
+    #             print(t)
+    #             f.write(t.page_content)
