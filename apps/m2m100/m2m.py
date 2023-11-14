@@ -17,8 +17,9 @@ def translate(input: str,src_lang: str="en",dst_lang: str="zh"):
     encoded = tokenizer(input, return_tensors="pt")
     encoded.to(device)
     generated_tokens = model.generate(**encoded, forced_bos_token_id=tokenizer.get_lang_id(dst_lang))
-    output = tokenizer.batch_decode(generated_tokens[0].cpu(), skip_special_tokens=True)
-    return output
+    output = tokenizer.decode(generated_tokens[0].cpu(), skip_special_tokens=True)
+
+    return ''.join(output).strip('</s>')
 
 if __name__ == '__main__':
     input = '''
