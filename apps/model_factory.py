@@ -14,6 +14,7 @@ from typing import Any, List, Mapping, Optional
 from langchain.callbacks.manager import CallbackManagerForLLMRun
 from langchain.llms.base import LLM
 from apps.inference import load_model,chat
+from app.translate.nllb import Translate
 from pydantic import  Field, root_validator
 import torch
 
@@ -27,6 +28,7 @@ os.environ["QIANFAN_AK"] = "your_ak"
 os.environ["QIANFAN_SK"] = "your_sk"
 # tongyi
 os.environ["DASHSCOPE_API_KEY"] = ""
+
 class LLamaLLM(LLM):
     model_path: str = Field(None, alias='model_path')
 
@@ -123,5 +125,7 @@ class ModelFactory:
         elif model_name == "llama": 
             model_path = "../model/chinese/chinese-alpaca-2-7b-hf"
             return LLamaLLM(model_path=model_path)
+        elif model_name == "translate": 
+            return Translate(model_path="")
         else:
             raise Exception("Invalid model name")

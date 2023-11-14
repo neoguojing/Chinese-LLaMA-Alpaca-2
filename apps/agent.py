@@ -3,6 +3,7 @@ from langchain.utilities.wolfram_alpha import WolframAlphaAPIWrapper
 from langchain.utilities import ArxivAPIWrapper
 from langchain.agents import AgentType, initialize_agent
 from langchain.chains.llm import LLMChain
+from langchain.llms.base import LLM
 from model_factory import ModelFactory
 from prompt import QwenAgentPromptTemplate
 from parser import QwenAgentOutputParser
@@ -10,7 +11,7 @@ from langchain.agents import Tool, AgentExecutor, LLMSingleActionAgent, AgentOut
 from typing import Dict, Tuple
 import os
 import json
-
+from apps.base import Task
 os.environ['SERPAPI_API_KEY'] = 'f765e0536e1a72c2f353bb1946875937b3ac7bed0270881f966d4147ac0a7943'
 os.environ['WOLFRAM_ALPHA_APPID'] = 'QTJAQT-UPJ2R3KP89'
 
@@ -97,33 +98,31 @@ TOOLS = [
 
 ]
 
+class Agent(Task):
+    def __init__(self,llm: LLM):
+        prompt = QwenAgentPromptTemplate(
+            tools=tools,
+            # This omits the `agent_scratchpad`, `tools`, and `tool_names` variables because those are generated dynamically
+            # This includes the `intermediate_steps` variable because that is needed
+            input_variables=["input", "intermediate_steps"]
+        )
 
-if __name__ == '__main__':
-    prompt = QwenAgentPromptTemplate(
-        tools=tools,
-        # This omits the `agent_scratchpad`, `tools`, and `tool_names` variables because those are generated dynamically
-        # This includes the `intermediate_steps` variable because that is needed
-        input_variables=["input", "intermediate_steps"]
-    )
+        output_parser = QwenAgentOutputParser()
+        llm_chain = LLMChain(llm=llm, prompt=prompt)
 
-    llm = ModelFactory().get_model("qwen")
-    output_parser = QwenAgentOutputParser()
-    llm_chain = LLMChain(llm=llm, prompt=prompt)
+        tool_names = [tool.name for tool in tools]
+        agent = LLMSingleActionAgent(
+            llm_chain=llm_chain,
+            output_parser=output_parser,
+            stop=["\nObservation:"],
+            allowed_tools=tool_names
+        )
 
-    tool_names = [tool.name for tool in tools]
-    agent = LLMSingleActionAgent(
-        llm_chain=llm_chain,
-        output_parser=output_parser,
-        stop=["\nObservation:"],
-        allowed_tools=tool_names
-    )
+        self.agent_executor = AgentExecutor.from_agent_and_tools(agent=agent, tools=tools, verbose=True)
 
-    agent_executor = AgentExecutor.from_agent_and_tools(agent=agent, tools=tools, verbose=True)
+    def run(self,input: str=None):
+        output = self.agent_executor.run(input)
+        return output
 
-    # output = agent_executor.run("Search for Leo DiCaprio's girlfriend on the internet.")
-    output = agent_executor.run("今天北京的PM2.5")
-    print(output)
-    # 
-    # agent = initialize_agent(
-    #     [tool], llm, agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION, verbose=False
-    # )
+# if __name__ == '__main__':
+    

@@ -1,7 +1,6 @@
 
 import os
 import sys
-import time
 # 获取当前脚本所在的目录路径
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -10,60 +9,60 @@ top_package_path = os.path.abspath(os.path.join(current_dir, ".."))
 
 # 将顶层package路径添加到sys.path
 sys.path.insert(0, top_package_path)
-from langchain.chains.summarize import load_summarize_chain
-from langchain.chains import AnalyzeDocumentChain
-from langchain.prompts import PromptTemplate,ChatPromptTemplate, HumanMessagePromptTemplate
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.document_loaders import DirectoryLoader,TextLoader
-from langchain.chains.question_answering import load_qa_chain
-from langchain.output_parsers import PydanticOutputParser,OutputFixingParser
-from langchain.chains import create_extraction_chain
-from apps.model_factory import ModelFactory
-from apps.parser import JsonOutputParser,QAPackage,QAItem
-from apps.prompt import PromptFactory
-from typing import Any, List
-import textwrap
-verbose = True
-if __name__ == '__main__':
+import time
+import asyncio
+from abc import ABC, abstractmethod
+import aioconsole
+import copy
+from app.tasks import TaskFactory,TASK_TRANSLATE,TASK_AGENT
 
-    
-    loader = DirectoryLoader('.', glob="**/*.txt",loader_cls=TextLoader)
-    # loader = TextLoader("./doc.txt")
-    docs = loader.load()
 
-    # llm = ModelFactory().get_model("openai")
-    # llm = ModelFactory().get_model("claude")
-    # llm = ModelFactory().get_model("qwen")
-    # llm = ModelFactory().get_model("qianfan")
-    llm = ModelFactory().get_model("tongyi")
-    
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=500, chunk_overlap=0
-    )
-    
-    qaParser = PydanticOutputParser(pydantic_object=QAPackage)
 
-    prompt = PromptFactory.caibao_analyse_prompt(qaParser.get_format_instructions())
+# 创建一个共享的队列
+input = asyncio.Queue()
+output = asyncio.Queue()
 
-    fixParser = OutputFixingParser.from_llm(parser=qaParser, llm=llm)
-    
-    texts = []
-    for doc in docs:
-        text = doc.page_content
-        print(doc.metadata)
-        jsonParser = JsonOutputParser()
-        chain = prompt | llm | jsonParser 
 
-        texts += text_splitter.create_documents([text])
-        for text in texts:
-            print(text)
-            try:
-                answer = chain.invoke({"text": text,"format_instructions":qaParser.get_format_instructions()})
-            except Exception as e:
-                print("",str(e))
-                continue
-            
-            print(f"Output: {answer}")
-            time.sleep(1)
+
+message = {
+    "from":"keyboard",
+    "to":TASK_TRANSLATE,
+    "format":"text",
+    "data": ""
+}
+async def keyboard():
+    while True:
+        input_text = await aioconsole.ainput("Enter : ")
+        print("Received input:", input_text)
+        msg = copy.deepcopy(message)
+        msg["data"] = input_text
+        input.put_nowait(msg)
+        print(f"Produced: {msg}")
+
+async def output_loop():
+    while True:
+        item = await output.get()
+        print("Output:",item)
+
+# 消费者协程函数
+async def message_bus():
+    translator = TaskFactory().create_task(TASK_TRANSLATE)
+    while True:
+        item = await input.get()
         
-        jsonParser.dump(os.path.splitext(doc.metadata["source"])[0])
+        # 模拟消费延迟
+        if item["to"] == TASK_AGENT:
+            print(f"Consumed: {item}")
+        elif item["to"] == TASK_TRANSLATE:
+            print(f"Consumed: {item}")
+            out = translator.run(item["data"])
+            output.put_nowait(out)
+
+
+async def main():
+    # 并发运行多个异步任务
+    await asyncio.gather(keyboard(), message_bus(),output_loop())
+
+if __name__ == '__main__':
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main())
