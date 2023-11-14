@@ -15,6 +15,7 @@ from langchain.callbacks.manager import CallbackManagerForLLMRun
 from langchain.llms.base import LLM
 from apps.inference import load_model,chat
 from apps.translate.nllb import Translate
+from apps.config import model_root
 from pydantic import  Field, root_validator
 import torch
 
@@ -116,17 +117,17 @@ class ModelFactory:
         elif model_name == "claude":
             return ChatAnthropic()
         elif model_name == "qwen": 
-            model_path = "../model/chinese/Qwen-7B-Chat"
+            model_path = os.path.join(model_root,"chinese/Qwen-7B-Chat")
             return QwenLLM(model_path=model_path)
         elif model_name == "qianfan": 
             return QianfanChatEndpoint(streaming=True, model="ERNIE-Bot-4")
         elif model_name == "tongyi": 
             return Tongyi()
         elif model_name == "llama": 
-            model_path = "../model/chinese/chinese-alpaca-2-7b-hf"
+            model_path = os.path.join(model_root,"chinese/chinese-alpaca-2-7b-hf")
             return LLamaLLM(model_path=model_path)
         elif model_name == "translate": 
-            model_path = "../model/nllb/models--facebook--nllb-200-distilled-600M/snapshots/bf317ec0a4a31fc9fa3da2ce08e86d3b6e4b18f1"
+            model_path = os.path.join(model_root,"nllb/")
             return Translate(model_path=model_path)
         else:
             raise Exception("Invalid model name")

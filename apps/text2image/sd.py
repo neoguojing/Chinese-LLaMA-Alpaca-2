@@ -16,6 +16,7 @@ from typing import Any, List, Mapping, Optional,Union
 from langchain.callbacks.manager import CallbackManagerForLLMRun
 from pydantic import  Field
 from apps.base import Task,CustomerLLM
+from apps.config import model_root
 import random
 import hashlib
 from langchain.tools import BaseTool
@@ -29,6 +30,7 @@ def calculate_md5(string):
 class StableDiff(CustomerLLM):
     model_path: str = Field(None, alias='model_path')
     model: Any = None 
+    refiner: Any = None
     tokenizer: Any = None
     n_steps: int = 40
     high_noise_frac: float = 0.8
@@ -39,19 +41,19 @@ class StableDiff(CustomerLLM):
         self.model_path = model_path
         self.model = DiffusionPipeline.from_pretrained(
             "stabilityai/stable-diffusion-xl-base-1.0", torch_dtype=torch.float16, variant="fp16", use_safetensors=True,
-            cache_dir="../../model/stable-diffusion"
+            cache_dir=os.path.join(model_root,"stable-diffusion")
         )
-        self.model.to("cuda")
-        self.refiner = DiffusionPipeline.from_pretrained(
-            "stabilityai/stable-diffusion-xl-refiner-1.0",
-            text_encoder_2=self.model.text_encoder_2,
-            vae=self.model.vae,
-            torch_dtype=torch.float16,
-            use_safetensors=True,
-            variant="fp16",
-            cache_dir="../../model/stable-diffusion"
-        )
-        self.refiner.to("cuda")
+        self.model.to(self.device)
+        # self.refiner = DiffusionPipeline.from_pretrained(
+        #     "stabilityai/stable-diffusion-xl-refiner-1.0",
+        #     text_encoder_2=self.model.text_encoder_2,
+        #     vae=self.model.vae,
+        #     torch_dtype=torch.float16,
+        #     use_safetensors=True,
+        #     variant="fp16",
+        #     cache_dir=os.path.join(model_root,"stable-diffusion")
+        # )
+        # self.refiner.to(self.device)
 
         # Define how many steps and what % of steps to be run on each experts (80/20) here
         
@@ -72,18 +74,17 @@ class StableDiff(CustomerLLM):
             num_inference_steps=self.n_steps,
             denoising_end=self.high_noise_frac,
             output_type="latent",
-        ).images
-        image = self.refiner(
-            prompt=prompt,
-            num_inference_steps=self.n_steps,
-            denoising_start=self.high_noise_frac,
-            image=image,
         ).images[0]
+        # image = self.refiner(
+        #     prompt=prompt,
+        #     num_inference_steps=self.n_steps,
+        #     denoising_start=self.high_noise_frac,
+        #     image=image,
+        # ).images[0]
 
         file_name = calculate_md5(prompt)
         path = os.path.join(self.file_path, file_name)
-        with open(path, 'wb') as file:
-            file.write(image)
+        image.save(image)
 
         return path
 

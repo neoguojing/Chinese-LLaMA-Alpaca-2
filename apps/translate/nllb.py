@@ -15,6 +15,7 @@ from typing import Any, List, Mapping, Optional
 from langchain.callbacks.manager import CallbackManagerForLLMRun
 from pydantic import  Field
 from apps.base import Task,CustomerLLM
+from apps.config import model_root
 # BCP47 code https://github.com/facebookresearch/flores/blob/main/flores200/README.md#languages-in-flores-200
 
 class Translate(CustomerLLM):
@@ -27,8 +28,8 @@ class Translate(CustomerLLM):
     def __init__(self, model_path: str,**kwargs):
         super(Translate, self).__init__()
         self.model_path = model_path
-        self.tokenizer = AutoTokenizer.from_pretrained("facebook/nllb-200-distilled-600M",cache_dir="../../model/nllb")
-        self.model = AutoModelForSeq2SeqLM.from_pretrained("facebook/nllb-200-distilled-600M",cache_dir="../../model/nllb")
+        self.tokenizer = AutoTokenizer.from_pretrained("facebook/nllb-200-distilled-600M",cache_dir=os.path.join(model_root,"nllb"))
+        self.model = AutoModelForSeq2SeqLM.from_pretrained("facebook/nllb-200-distilled-600M",cache_dir=os.path.join(model_root,"nllb"))
         # self.tokenizer = AutoTokenizer.from_pretrained(model_path)
         # self.model = AutoModelForSeq2SeqLM.from_pretrained(model_path)
         self.model.to(self.device)

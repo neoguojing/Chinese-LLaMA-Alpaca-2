@@ -15,6 +15,7 @@ from typing import Any, List, Mapping, Optional,Union
 from langchain.callbacks.manager import CallbackManagerForLLMRun
 from pydantic import  Field
 from apps.base import Task,CustomerLLM
+from apps.config import model_root
 import random
 import hashlib
 from langchain.tools import BaseTool
@@ -36,8 +37,10 @@ class SeamlessM4t(CustomerLLM):
     def __init__(self, model_path: str,**kwargs):
         super(SeamlessM4t, self).__init__()
         self.model_path = model_path
-        self.processor = AutoProcessor.from_pretrained("facebook/hf-seamless-m4t-large",cache_dir="../../model/seamless-m4t")
-        self.model = SeamlessM4TModel.from_pretrained("facebook/hf-seamless-m4t-large",cache_dir="../../model/seamless-m4t")
+        self.processor = AutoProcessor.from_pretrained("facebook/hf-seamless-m4t-large",cache_dir=os.path.join(model_root,"seamless-m4t"))
+        self.model = SeamlessM4TModel.from_pretrained("facebook/hf-seamless-m4t-large",cache_dir=os.path.join(model_root,"seamless-m4t"))
+        print("SeamlessM4t:device =",self.device)
+        self.model.to(self.device)
 
         # Define how many steps and what % of steps to be run on each experts (80/20) here
         
@@ -52,7 +55,7 @@ class SeamlessM4t(CustomerLLM):
         stop: Optional[List[str]] = None,
         run_manager: Optional[CallbackManagerForLLMRun] = None,
         generate_speech:Optional[bool] = False,
-        tgt_lang:Optional[str] = "zh",
+        tgt_lang:Optional[str] = "cmn",
         src_lang:Optional[str] = "eng",
         **kwargs: Any,
     ) -> str:
@@ -61,9 +64,12 @@ class SeamlessM4t(CustomerLLM):
             inputs = self.processor(text=prompt, return_tensors="pt",src_lang=src_lang)
         else:
             inputs = self.processor(audios=prompt, return_tensors="pt")
-        output = self.model.generate(**inputs, tgt_lang=tgt_lang,generate_speech=generate_speech)[0].cpu().numpy().squeeze()
+
+        inputs.to(self.device)
+        
         ret = ""
         if generate_speech:
+            output = self.model.generate(**inputs, tgt_lang=tgt_lang,generate_speech=generate_speech)[0].cpu().numpy().squeeze()
             file_name = calculate_md5(prompt)
             path = os.path.join(self.file_path, file_name)
             with open(path, 'wb') as file:
@@ -71,6 +77,7 @@ class SeamlessM4t(CustomerLLM):
                     file.write(audio)
             ret = path
         else:
+            output = self.model.generate(**inputs, tgt_lang=tgt_lang,generate_speech=generate_speech)
             ret = self.processor.decode(output[0].tolist(), skip_special_tokens=True)
         return ret
 
@@ -88,4 +95,4 @@ class SpeechText(BaseTool):
 
 if __name__ == '__main__':
     sd = SeamlessM4t("")
-    sd.predict("A majestic lion jumping from a big stone at night")
+    sd.predict("Hello, my dog is cute")
