@@ -22,13 +22,10 @@ class Translate(CustomerLLM):
         self.tokenizer = AutoTokenizer.from_pretrained(model_path)
         self.model = AutoModelForSeq2SeqLM.from_pretrained(model_path)
         self.model.to(self.device)
-        src_lang = kwargs.pop("src_lang")
-        if src_lang is not None:
-            self.src_lang = src_lang
-
-        dst_lang = kwargs.pop("dst_lang")
-        if dst_lang is not None:
-            self.dst_lang = dst_lang
+        if 'src_lang' in kwargs:
+            self.src_lang = kwargs.pop("src_lang")
+        if 'dst_lang' in kwargs:
+            self.dst_lang = kwargs.pop("dst_lang")
 
     @property
     def _llm_type(self) -> str:
