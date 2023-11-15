@@ -100,10 +100,10 @@ class StableDiff(CustomerLLM):
 class Text2Image(BaseTool):
   name = "Text to Image"
   description = "Text to image diffusion model capable of generating photo-realistic images given any text input."
-  model = StableDiff("")
+  model = StableDiff()
   def _run(self,input:str):
       return self.model.predict(input)
 
 if __name__ == '__main__':
-    sd = StableDiff("")
+    sd = StableDiff()
     sd.predict("a beauty chinese girl")
