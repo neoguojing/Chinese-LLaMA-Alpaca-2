@@ -36,7 +36,7 @@ class StableDiff(CustomerLLM):
     high_noise_frac: float = 0.8
     file_path: str = "./"
 
-    def __init__(self, model_path: str,**kwargs):
+    def __init__(self, model_path: str=os.path.join(model_root,"stable-diffusion"),**kwargs):
         super(StableDiff, self).__init__()
         self.model_path = model_path
         # self.model = DiffusionPipeline.from_pretrained(
@@ -45,7 +45,7 @@ class StableDiff(CustomerLLM):
         # )
         # self.model.save_pretrained(os.path.join(model_root,"stable-diffusion"))
         self.model = DiffusionPipeline.from_pretrained(
-            os.path.join(model_root,"stable-diffusion"), torch_dtype=torch.float16, variant="fp16", use_safetensors=True,
+            model_path, torch_dtype=torch.float16, variant="fp16", use_safetensors=True,
         )
         self.model.to(self.device)
         # self.refiner = DiffusionPipeline.from_pretrained(

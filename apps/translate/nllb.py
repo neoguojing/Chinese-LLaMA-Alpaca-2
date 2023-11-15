@@ -25,15 +25,15 @@ class Translate(CustomerLLM):
     src_lang: str = "eng_Latn" 
     dst_lang: str = "zho_Hans"
 
-    def __init__(self, model_path: str,**kwargs):
+    def __init__(self, model_path: str = os.path.join(model_root,"nllb"),**kwargs):
         super(Translate, self).__init__()
         self.model_path = model_path
-        self.tokenizer = AutoTokenizer.from_pretrained("facebook/nllb-200-distilled-600M",cache_dir=os.path.join(model_root,"nllb"))
-        self.model = AutoModelForSeq2SeqLM.from_pretrained("facebook/nllb-200-distilled-600M",cache_dir=os.path.join(model_root,"nllb"))
-        self.tokenizer.save_pretrained(os.path.join(model_root,"nllb"))
-        self.model.save_pretrained(os.path.join(model_root,"nllb"))
-        # self.tokenizer = AutoTokenizer.from_pretrained(model_path)
-        # self.model = AutoModelForSeq2SeqLM.from_pretrained(model_path)
+        # self.tokenizer = AutoTokenizer.from_pretrained("facebook/nllb-200-distilled-600M",cache_dir=os.path.join(model_root,"nllb"))
+        # self.model = AutoModelForSeq2SeqLM.from_pretrained("facebook/nllb-200-distilled-600M",cache_dir=os.path.join(model_root,"nllb"))
+        # self.tokenizer.save_pretrained(os.path.join(model_root,"nllb"))
+        # self.model.save_pretrained(os.path.join(model_root,"nllb"))
+        self.tokenizer = AutoTokenizer.from_pretrained(model_path)
+        self.model = AutoModelForSeq2SeqLM.from_pretrained(model_path)
         self.model.to(self.device)
         if 'src_lang' in kwargs:
             self.src_lang = kwargs.pop("src_lang")
