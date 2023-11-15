@@ -15,6 +15,8 @@ from langchain.callbacks.manager import CallbackManagerForLLMRun
 from langchain.llms.base import LLM
 from apps.inference import load_model,chat
 from apps.translate.nllb import Translate
+from apps.multi_task.seamless_m4t import SeamlessM4t
+from apps.text2image.sd import StableDiff
 from apps.config import model_root
 from pydantic import  Field, root_validator
 import torch
@@ -129,5 +131,9 @@ class ModelFactory:
         elif model_name == "translate": 
             model_path = os.path.join(model_root,"nllb/")
             return Translate(model_path=model_path)
+        elif model_name == "speech": 
+            return SeamlessM4t()
+        elif model_name == "text2image": 
+            return StableDiff()
         else:
             raise Exception("Invalid model name")

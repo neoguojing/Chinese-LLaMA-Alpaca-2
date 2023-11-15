@@ -99,7 +99,7 @@ class StableDiff(CustomerLLM):
 
 class Text2Image(BaseTool):
   name = "Text to Image"
-  description = "Text to image diffusion model capable of generating photo-realistic images given any text input."
+  description = "Useful for when you need to generate or draw a picture by input text.Text to image diffusion model capable of generating photo-realistic images given any text input."
   model = StableDiff()
   def _run(self,input:str):
       return self.model.predict(input)

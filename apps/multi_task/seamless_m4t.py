@@ -93,7 +93,7 @@ class SeamlessM4t(CustomerLLM):
     
 class SpeechText(BaseTool):
   name = "Speech and text"
-  description = "Speech-to-speech translation.Speech-to-text translation.Text-to-speech translation.Text-to-text translation.Automatic speech recognition"
+  description = "Useful for when you need to transfer text to speech or audio.Speech to speech translation.Speech to text translation.Text to speech translation.Text to text translation.Automatic speech recognition"
   model = SeamlessM4t()
   def _run(self,input:Any):
       return self.model.predict(input)
