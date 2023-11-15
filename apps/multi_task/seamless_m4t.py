@@ -34,7 +34,7 @@ class SeamlessM4t(CustomerLLM):
     dst_lang: str = "zho_Hans"
     file_path: str = "./"
 
-    def __init__(self, model_path: str,**kwargs):
+    def __init__(self, model_path: str = os.path.join(model_root,"seamless-m4t"),**kwargs):
         super(SeamlessM4t, self).__init__()
         self.model_path = model_path
         self.processor = AutoProcessor.from_pretrained("facebook/hf-seamless-m4t-large",cache_dir=os.path.join(model_root,"seamless-m4t"))
