@@ -30,6 +30,8 @@ class Translate(CustomerLLM):
         self.model_path = model_path
         self.tokenizer = AutoTokenizer.from_pretrained("facebook/nllb-200-distilled-600M",cache_dir=os.path.join(model_root,"nllb"))
         self.model = AutoModelForSeq2SeqLM.from_pretrained("facebook/nllb-200-distilled-600M",cache_dir=os.path.join(model_root,"nllb"))
+        self.tokenizer.save_pretrained(os.path.join(model_root,"nllb"))
+        self.model.save_pretrained(os.path.join(model_root,"nllb"))
         # self.tokenizer = AutoTokenizer.from_pretrained(model_path)
         # self.model = AutoModelForSeq2SeqLM.from_pretrained(model_path)
         self.model.to(self.device)
