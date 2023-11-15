@@ -9,7 +9,8 @@ top_package_path = os.path.abspath(os.path.join(current_dir, "../../"))
 
 # 将顶层package路径添加到sys.path
 sys.path.insert(0, top_package_path)
-from diffusers import DiffusionPipeline
+from diffusers import DiffusionPipeline,DPMSolverMultistepScheduler
+from diffusers import LCMScheduler, AutoPipelineForText2Image
 import torch
 from langchain.llms.base import LLM
 from typing import Any, List, Mapping, Optional,Union
@@ -32,7 +33,7 @@ class StableDiff(CustomerLLM):
     model: Any = None 
     refiner: Any = None
     tokenizer: Any = None
-    n_steps: int = 40
+    n_steps: int = 8
     high_noise_frac: float = 0.8
     file_path: str = "./"
 
@@ -44,22 +45,23 @@ class StableDiff(CustomerLLM):
         #     cache_dir=os.path.join(model_root,"stable-diffusion")
         # )
         # self.model.save_pretrained(os.path.join(model_root,"stable-diffusion"))
-        self.model = DiffusionPipeline.from_pretrained(
-            model_path, torch_dtype=torch.float16, variant="fp16", use_safetensors=True,
-        )
-        self.model.to(self.device)
-        # self.refiner = DiffusionPipeline.from_pretrained(
-        #     "stabilityai/stable-diffusion-xl-refiner-1.0",
-        #     text_encoder_2=self.model.text_encoder_2,
-        #     vae=self.model.vae,
-        #     torch_dtype=torch.float16,
-        #     use_safetensors=True,
-        #     variant="fp16",
-        #     cache_dir=os.path.join(model_root,"stable-diffusion")
-        # )
-        # self.refiner.to(self.device)
 
-        # Define how many steps and what % of steps to be run on each experts (80/20) here
+        # self.model = DiffusionPipeline.from_pretrained(
+        #     model_path, torch_dtype=torch.float16, variant="fp16", use_safetensors=True,
+        # )
+
+        adapter_id = "latent-consistency/lcm-lora-sdxl"
+
+        self.model = AutoPipelineForText2Image.from_pretrained(model_path, torch_dtype=torch.float16, variant="fp16")
+        self.model.scheduler = LCMScheduler.from_config(self.model.scheduler.config)
+        self.model.enable_attention_slicing()
+        self.model.unet = torch.compile(self.model.unet, mode="reduce-overhead", fullgraph=True)
+        self.model.to(self.device)
+        # 使用cpu和to('cuda')互斥
+        # self.model.enable_model_cpu_offload()
+        self.model.load_lora_weights(adapter_id)
+        self.model.fuse_lora()
+        self.model.save_lora_weights(os.path.join(model_root,"stable-diffusion"))
         
 
     @property
@@ -73,9 +75,9 @@ class StableDiff(CustomerLLM):
         run_manager: Optional[CallbackManagerForLLMRun] = None,
         **kwargs: Any,
     ) -> str:
+
         image = self.model(
-            prompt=prompt,
-            # num_inference_steps=self.n_steps,
+            **self.get_inputs(batch_size=1)
             # denoising_end=self.high_noise_frac,
             # output_type="latent",
         ).images[0]
@@ -92,6 +94,12 @@ class StableDiff(CustomerLLM):
 
         return path
 
+    def get_inputs(self,prompt:str,batch_size=1):
+        generator = [torch.Generator("cuda").manual_seed(i) for i in range(batch_size)]
+        prompts = batch_size * [prompt]
+
+        return {"prompt": prompts, "generator": generator, "num_inference_steps": self.n_steps}
+    
     @property
     def _identifying_params(self) -> Mapping[str, Any]:
         """Get the identifying parameters."""
