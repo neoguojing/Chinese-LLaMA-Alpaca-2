@@ -12,7 +12,7 @@ from typing import Dict, Tuple
 import os
 import json
 from apps.base import Task
-from apps.text2image.sd import Text2Image
+from apps.text2image.sd import image_gen,StableDiff
 from apps.multi_task.seamless_m4t import SpeechText
 os.environ['SERPAPI_API_KEY'] = 'f765e0536e1a72c2f353bb1946875937b3ac7bed0270881f966d4147ac0a7943'
 os.environ['WOLFRAM_ALPHA_APPID'] = 'QTJAQT-UPJ2R3KP89'
@@ -40,8 +40,8 @@ tools = [
             Quantitative Biology, Quantitative Finance, Statistics, Electrical Engineering, and Economics from scientific articles \
             on arxiv.org."
     ),
-    Text2Image(),
-    SpeechText(),
+    image_gen
+    # SpeechText(),
 
 ]
 

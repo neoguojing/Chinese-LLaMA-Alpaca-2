@@ -26,7 +26,7 @@ output = asyncio.Queue()
 
 message = {
     "from":"keyboard",
-    "to":TASK_TRANSLATE,
+    "to":TASK_AGENT,
     "format":"text",
     "data": ""
 }
@@ -46,16 +46,18 @@ async def output_loop():
 
 # 消费者协程函数
 async def message_bus():
-    translator = TaskFactory().create_task(TASK_TRANSLATE)
-    # agent = TaskFactory().create_task(TASK_AGENT)
+    translator = None
+    agent = None
+    # translator = TaskFactory().create_task(TASK_TRANSLATE)
+    agent = TaskFactory().create_task(TASK_AGENT)
     while True:
         item = await input.get()
         
         # 模拟消费延迟
         if item["to"] == TASK_AGENT:
             print(f"Consumed: {item}")
-            # out = agent.run(item["data"])
-            # output.put_nowait(out)
+            out = agent.run(item["data"])
+            output.put_nowait(out)
         elif item["to"] == TASK_TRANSLATE:
             print(f"Consumed: {item}")
             out = translator.run(item["data"])

@@ -65,6 +65,6 @@ class QWenAgent(Agent):
         result = result.replace("_HUMAN_:", "Human:").replace("_ASSISTANT_:", "Assistant:")
         return result
 
-if __name__ == '__main__':
-    agent = QWenAgent(model_path="../model/chinese/Qwen-7B-Chat/")
-    agent.run("Draw me a picture of rivers and lakes.")
+# if __name__ == '__main__':
+#     agent = QWenAgent(model_path="../model/chinese/Qwen-7B-Chat/")
+#     agent.run("Draw me a picture of rivers and lakes.")

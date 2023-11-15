@@ -14,13 +14,18 @@ from diffusers import LCMScheduler, AutoPipelineForText2Image
 import torch
 from langchain.llms.base import LLM
 from typing import Any, List, Mapping, Optional,Union
-from langchain.callbacks.manager import CallbackManagerForLLMRun
+from langchain.callbacks.manager import (
+    AsyncCallbackManagerForToolRun,
+    CallbackManagerForToolRun,
+    CallbackManagerForLLMRun
+)
 from pydantic import  Field
 from apps.base import Task,CustomerLLM
 from apps.config import model_root
 import random
 import hashlib
-from langchain.tools import BaseTool
+from langchain.tools import BaseTool,tool
+
 
 def calculate_md5(string):
     md5_hash = hashlib.md5()
@@ -52,7 +57,7 @@ class StableDiff(CustomerLLM):
         
         # self.model = AutoPipelineForText2Image.from_pretrained(model_path, torch_dtype=torch.float16, variant="fp16")
         # self.model.scheduler = LCMScheduler.from_config(self.model.scheduler.config)
-        self.model.enable_attention_slicing()
+        # self.model.enable_attention_slicing()
         # 推理速度变慢
         # self.model.unet = torch.compile(self.model.unet, mode="reduce-overhead", fullgraph=True)
         # self.model.to(self.device)
@@ -97,14 +102,14 @@ class StableDiff(CustomerLLM):
     def _identifying_params(self) -> Mapping[str, Any]:
         """Get the identifying parameters."""
         return {"model_path": self.model_path}
+    
+@tool("image generate", return_direct=True)
+def image_gen(input:str) ->str:
+    """Useful for when you need to generate or draw a picture by input text.Text to image diffusion model capable of generating photo-realistic images given any text input."""
+    model = StableDiff()
+    return model.predict(input)
 
-class Text2Image(BaseTool):
-  name = "Text to Image"
-  description = "Useful for when you need to generate or draw a picture by input text.Text to image diffusion model capable of generating photo-realistic images given any text input."
-  model = StableDiff()
-  def _run(self,input:str):
-      return self.model.predict(input)
 
-if __name__ == '__main__':
-    sd = StableDiff()
-    sd.predict("a strong man")
+# if __name__ == '__main__':
+#     sd = StableDiff()
+#     sd.predict("a strong man")

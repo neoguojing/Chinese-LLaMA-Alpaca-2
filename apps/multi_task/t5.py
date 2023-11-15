@@ -84,5 +84,5 @@ def do_eval():
     generated_question = tokenizer.decode(output[0].cpu(), skip_special_tokens=True)
     print("生成的问题：", generated_question)
 
-if __name__ == '__main__':
-    do_eval()
+# if __name__ == '__main__':
+#     do_eval()

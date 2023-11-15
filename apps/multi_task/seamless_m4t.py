@@ -19,6 +19,7 @@ from apps.config import model_root
 import random
 import hashlib
 from langchain.tools import BaseTool
+import pdb
 
 def calculate_md5(string):
     md5_hash = hashlib.md5()
@@ -37,6 +38,7 @@ class SeamlessM4t(CustomerLLM):
     def __init__(self, model_path: str = os.path.join(model_root,"seamless-m4t"),**kwargs):
         super(SeamlessM4t, self).__init__()
         self.model_path = model_path
+        # pdb.set_trace()
         # self.processor = AutoProcessor.from_pretrained("facebook/hf-seamless-m4t-large",cache_dir=os.path.join(model_root,"seamless-m4t"))
         # self.model = SeamlessM4TModel.from_pretrained("facebook/hf-seamless-m4t-large",cache_dir=os.path.join(model_root,"seamless-m4t"))
         # self.processor.save_pretrained(os.path.join(model_root,"seamless-m4t"))
@@ -94,10 +96,11 @@ class SeamlessM4t(CustomerLLM):
 class SpeechText(BaseTool):
   name = "Speech and text"
   description = "Useful for when you need to transfer text to speech or audio.Speech to speech translation.Speech to text translation.Text to speech translation.Text to text translation.Automatic speech recognition"
-  model = SeamlessM4t()
+  model: Any = Field(None, alias='model')
+
   def _run(self,input:Any):
       return self.model.predict(input)
 
-if __name__ == '__main__':
-    sd = SeamlessM4t()
-    sd.predict("Hello, my dog is cute")
+# if __name__ == '__main__':
+#     sd = SeamlessM4t()
+#     sd.predict("Hello, my dog is cute")

@@ -75,12 +75,12 @@ class TranslateTask(Task):
         return output
 
 
-if __name__ == '__main__':
-    input = '''
-    Step 1: Choose a topic. I'll select geography as the topic for this question, as it is a subject rich with factual information. Step 2: Decide on a specific geographical aspect to focus on. I'll concentrate on capital cities, which are concrete data points within the field of geography. Step 3: Pick a country for the question. I'll choose Australia for its unique geography and its status as both a continent and a country. Step 4: Formulate the question, ensuring that it seeks a factual answer. My question will ask about the capital city of Australia. Step 5: Verify that a factual answer to the question exists. In this case, I'll confirm that Australia does have a capital city. The question I generated is: "What is the capital city of Australia?" The factual answer to this question is: "Canberra."
-    '''
-    model = Translate()
-    out = model.predict(input)
-    print(out)
+# if __name__ == '__main__':
+#     input = '''
+#     Step 1: Choose a topic. I'll select geography as the topic for this question, as it is a subject rich with factual information. Step 2: Decide on a specific geographical aspect to focus on. I'll concentrate on capital cities, which are concrete data points within the field of geography. Step 3: Pick a country for the question. I'll choose Australia for its unique geography and its status as both a continent and a country. Step 4: Formulate the question, ensuring that it seeks a factual answer. My question will ask about the capital city of Australia. Step 5: Verify that a factual answer to the question exists. In this case, I'll confirm that Australia does have a capital city. The question I generated is: "What is the capital city of Australia?" The factual answer to this question is: "Canberra."
+#     '''
+#     model = Translate()
+#     out = model.predict(input)
+#     print(out)
 
     

@@ -28,6 +28,7 @@ auto-gptq
 diffusers
 invisible_watermark
 safetensors
+aioconsole
 
 google-search-results 
 wolframalpha
