@@ -101,6 +101,9 @@ class Agent(Task):
         model = ModelFactory.get_model("qwen")
         return model
     
+    def destroy(self):
+        print("Agent model should not be destroy ")
+    
 
 class ImageGenTask(Task):
 
