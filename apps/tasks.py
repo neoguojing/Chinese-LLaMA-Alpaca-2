@@ -15,7 +15,7 @@ top_package_path = os.path.abspath(os.path.join(current_dir, ".."))
 
 # 将顶层package路径添加到sys.path
 sys.path.insert(0, top_package_path)
-import asyncio
+import threading
 from apps.base import Task
 from apps.model_factory import ModelFactory
 from apps.prompt import QwenAgentPromptTemplate
@@ -120,10 +120,10 @@ class TranslateTask(Task):
     
 class TaskFactory:
     _instances = {}
-    _lock = asyncio.Lock()  # 异步锁
+    _lock = threading.Lock()  # 异步锁
 
     @staticmethod
-    async def create_task(task_type) -> Task:
+    def create_task(task_type) -> Task:
         if task_type not in TaskFactory._instances:
             with TaskFactory._lock:
                 if task_type not in TaskFactory._instances:

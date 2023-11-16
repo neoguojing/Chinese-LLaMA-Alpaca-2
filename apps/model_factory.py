@@ -21,7 +21,7 @@ from apps.config import model_root
 from apps.base import CustomerLLM
 from pydantic import  Field, root_validator
 import torch
-import asyncio
+import threading
 
 
 from langchain.chat_models import ChatAnthropic,QianfanChatEndpoint
@@ -114,10 +114,10 @@ class QwenLLM(CustomerLLM):
 class ModelFactory:
     temperature = 0
     _instances = {}
-    _lock = asyncio.Lock()  # 异步锁
+    _lock = threading.Lock()  # 异步锁
 
     @staticmethod
-    async def get_model(model_name,model_path=""):
+    def get_model(model_name,model_path=""):
         if model_name not in ModelFactory._instances:
             with ModelFactory._lock:
                 if model_name not in ModelFactory._instances:
