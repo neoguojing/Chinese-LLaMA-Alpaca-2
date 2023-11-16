@@ -26,12 +26,14 @@ arxiv = ArxivAPIWrapper()
 @tool("image generate", return_direct=True)
 def image_gen(input:str) ->str:
     """Useful for when you need to generate or draw a picture by input text.Text to image diffusion model capable of generating photo-realistic images given any text input."""
-    return TaskFactory.create_task(TASK_IMAGE_GEN)
+    task = TaskFactory.create_task(TASK_IMAGE_GEN)
+    return task.run()
 
 @tool("speech or audio generate", return_direct=True)
 def text2speech(input:str) ->str:
     """Useful for when you need to transfer text to speech or audio.Speech to speech translation.Speech to text translation.Text to speech translation.Text to text translation.Automatic speech recognition."""
-    return TaskFactory.create_task(TASK_SPEECH)
+    task = TaskFactory.create_task(TASK_SPEECH)
+    return task.run()
 
 tools = [
     Tool(
