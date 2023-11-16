@@ -41,9 +41,10 @@ class LLamaLLM(CustomerLLM):
     max_window_size: Optional[int]   = 3096
 
     def __init__(self, model_path: str,**kwargs):
-        model,self.tokenizer = load_model(model_path=model_path,llama=True)
+        model,tokenizer = load_model(model_path=model_path,llama=True)
         super(LLamaLLM, self).__init__(llm=model)
         self.model_path: str = model_path
+        self.tokenizer = tokenizer
         
 
         
@@ -80,9 +81,10 @@ class QwenLLM(CustomerLLM):
     
 
     def __init__(self, model_path: str,**kwargs):
-        model,self.tokenizer = load_model(model_path=model_path,llama=False)
+        model,tokenizer = load_model(model_path=model_path,llama=False)
         super(QwenLLM, self).__init__(llm=model)
         self.model_path: str = model_path
+        self.tokenizer = tokenizer
         self.react_stop_words_tokens = [self.tokenizer.encode(stop_) for stop_ in self.stop]
         
 
