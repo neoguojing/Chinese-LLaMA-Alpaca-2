@@ -19,20 +19,18 @@ from apps.config import model_root
 
 # BCP47 code https://github.com/facebookresearch/flores/blob/main/flores200/README.md#languages-in-flores-200
 class Translate(CustomerLLM):
-    model_path: str = Field(None, alias='model_path')
+    model_path: str = Field(os.path.join(model_root,"nllb"), alias='model_path')
     tokenizer: Any = None
     src_lang: str = "eng_Latn" 
     dst_lang: str = "zho_Hans"
 
-    def __init__(self, model_path: str = os.path.join(model_root,"nllb"),**kwargs):
-        
-        self.model_path = model_path
+    def __init__(self, **kwargs):
         # self.tokenizer = AutoTokenizer.from_pretrained("facebook/nllb-200-distilled-600M",cache_dir=os.path.join(model_root,"nllb"))
         # self.model = AutoModelForSeq2SeqLM.from_pretrained("facebook/nllb-200-distilled-600M",cache_dir=os.path.join(model_root,"nllb"))
         # self.tokenizer.save_pretrained(os.path.join(model_root,"nllb"))
         # self.model.save_pretrained(os.path.join(model_root,"nllb"))
-        self.tokenizer = AutoTokenizer.from_pretrained(model_path)
-        self.model = AutoModelForSeq2SeqLM.from_pretrained(model_path)
+        self.tokenizer = AutoTokenizer.from_pretrained(self.model_path)
+        self.model = AutoModelForSeq2SeqLM.from_pretrained(self.model_path)
         self.model.to(self.device)
         if 'src_lang' in kwargs:
             self.src_lang = kwargs.pop("src_lang")
