@@ -17,7 +17,7 @@ class ITask(abc.ABC):
 
 class CustomerLLM(LLM):
     device: str = Field(torch.device('cpu'))
-    model: Any = Field(None)
+    model = None
     def __init__(self,**kwargs):
         super(CustomerLLM, self).__init__()
         if torch.cuda.is_available():
