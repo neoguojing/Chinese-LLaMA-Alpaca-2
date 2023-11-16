@@ -55,12 +55,12 @@ class Task(ITask):
     def input(self,input:str):
         self.qinput.put_nowait(input)
 
-    async def arun(self):
-        self.stop_event.clear()
-        while not self.stop_event.is_set():
-            _input = self.qinput.get()
-            result = self.excurtor.predict(_input)
-            self.qoutput.put_nowait(result)
+    # async def arun(self):
+    #     self.stop_event.clear()
+    #     while not self.stop_event.is_set():
+    #         _input = self.qinput.get()
+    #         result = self.excurtor.predict(_input)
+    #         self.qoutput.put_nowait(result)
 
     def destroy(self):
         self.stop_event.set()
