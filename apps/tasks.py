@@ -18,14 +18,14 @@ sys.path.insert(0, top_package_path)
 import asyncio
 from apps.base import Task
 from apps.model_factory import ModelFactory
-from prompt import QwenAgentPromptTemplate
-from parser import QwenAgentOutputParser
+from apps.prompt import QwenAgentPromptTemplate
+from apps.parser import QwenAgentOutputParser
+
 TASK_AGENT = 100
 TASK_TRANSLATE = 200
 TASK_DATA_HANDLER = 300
 TASK_IMAGE_GEN = 400
 TASK_SPEECH = 500
-
 
 
 os.environ['SERPAPI_API_KEY'] = 'f765e0536e1a72c2f353bb1946875937b3ac7bed0270881f966d4147ac0a7943'
@@ -123,15 +123,13 @@ class TaskFactory:
     _lock = asyncio.Lock()  # 异步锁
 
     @staticmethod
-    def create_task(task_type) -> Task:
+    async def create_task(task_type) -> Task:
         if task_type not in TaskFactory._instances:
             with TaskFactory._lock:
                 if task_type not in TaskFactory._instances:
                     if task_type == TASK_AGENT:
-                        # model = ModelFactory.get_model("qwen")
                         instance = Agent()
                     elif task_type == TASK_TRANSLATE:
-                        # model = ModelFactory.get_model("translate")
                         instance = TranslateTask()
                     elif task_type == TASK_IMAGE_GEN:
                         instance = ImageGenTask()

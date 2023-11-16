@@ -117,7 +117,7 @@ class ModelFactory:
     _lock = asyncio.Lock()  # 异步锁
 
     @staticmethod
-    def get_model(model_name,model_path=""):
+    async def get_model(model_name,model_path=""):
         if model_name not in ModelFactory._instances:
             with ModelFactory._lock:
                 if model_name not in ModelFactory._instances:
