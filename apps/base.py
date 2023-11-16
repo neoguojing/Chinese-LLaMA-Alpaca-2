@@ -18,7 +18,7 @@ class Task(ITask):
             self.device = torch.device('cpu')
 
     def run(self):
-        print("task")
+        print("Task")
 
 
 

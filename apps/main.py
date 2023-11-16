@@ -33,7 +33,7 @@ message = {
 async def keyboard():
     while True:
         input_text = await aioconsole.ainput("Enter : ")
-        print("Received input:", input_text)
+        await aioconsole.aprint("Received input:", input_text)
         msg = copy.deepcopy(message)
         msg["data"] = input_text
         input.put_nowait(msg)
@@ -48,8 +48,8 @@ async def output_loop():
 async def message_bus():
     translator = None
     agent = None
-    # translator = TaskFactory().create_task(TASK_TRANSLATE)
-    agent = TaskFactory().create_task(TASK_AGENT)
+    # translator = TaskFactory.create_task(TASK_TRANSLATE)
+    agent = TaskFactory.create_task(TASK_AGENT)
     while True:
         item = await input.get()
         

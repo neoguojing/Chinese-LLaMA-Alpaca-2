@@ -181,7 +181,7 @@ def data_generate_chain(data_dir: str,glob: str = "**/*.txt",model_type: str="to
     # llm = ModelFactory().get_model("claude")
     # llm = ModelFactory().get_model("qwen")
     # llm = ModelFactory().get_model("qianfan")
-    llm = ModelFactory().get_model(model_type)
+    llm = ModelFactory.get_model(model_type)
     
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=500, chunk_overlap=0
