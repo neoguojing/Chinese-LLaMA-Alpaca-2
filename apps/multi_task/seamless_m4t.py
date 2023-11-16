@@ -35,7 +35,7 @@ class SeamlessM4t(CustomerLLM):
     file_path: str = "./"
 
     def __init__(self, model_path: str = os.path.join(model_root,"seamless-m4t"),**kwargs):
-        
+        super(SeamlessM4t, self).__init__(llm=SeamlessM4TModel.from_pretrained(model_path))
         self.model_path = model_path
         # pdb.set_trace()
         # self.processor = AutoProcessor.from_pretrained("facebook/hf-seamless-m4t-large",cache_dir=os.path.join(model_root,"seamless-m4t"))
@@ -44,10 +44,9 @@ class SeamlessM4t(CustomerLLM):
         # self.model.save_pretrained(os.path.join(model_root,"seamless-m4t"))
 
         self.processor = AutoProcessor.from_pretrained(model_path)
-        self.model = SeamlessM4TModel.from_pretrained(model_path)
         print("SeamlessM4t:device =",self.device)
         self.model.to(self.device)
-        super(SeamlessM4t, self).__init__(self.model)
+        
         
 
     @property

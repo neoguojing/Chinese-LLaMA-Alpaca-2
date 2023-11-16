@@ -33,16 +33,15 @@ message = {
 async def keyboard():
     while True:
         input_text = await aioconsole.ainput("Enter : ")
-        await aioconsole.aprint("Received input:", input_text)
         msg = copy.deepcopy(message)
         msg["data"] = input_text
         input.put_nowait(msg)
-        print(f"Produced: {msg}")
+        await aioconsole.aprint(f"Produced: {msg}")
 
 async def output_loop():
     while True:
         item = await output.get()
-        print("Output:",item+"\n")
+        await aioconsole.aprint("Output:",item+"\n")
 
 # 消费者协程函数
 async def message_bus():
@@ -55,11 +54,11 @@ async def message_bus():
         
         # 模拟消费延迟
         if item["to"] == TASK_AGENT:
-            print(f"Consumed: {item}")
+            await aioconsole.aprint(f"Consumed: {item}")
             out = agent.run(item["data"])
             output.put_nowait(out)
         elif item["to"] == TASK_TRANSLATE:
-            print(f"Consumed: {item}")
+            await aioconsole.aprint(f"Consumed: {item}")
             out = translator.run(item["data"])
             output.put_nowait(out)
 

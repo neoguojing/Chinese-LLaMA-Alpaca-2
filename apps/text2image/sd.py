@@ -41,17 +41,16 @@ class StableDiff(CustomerLLM):
     file_path: str = "./"
 
     def __init__(self, model_path: str=os.path.join(model_root,"stable-diffusion"),**kwargs):
-        
+        super(StableDiff, self).__init__(
+            llm=DiffusionPipeline.from_pretrained(
+                model_path, torch_dtype=torch.float16, variant="fp16", use_safetensors=True,
+        ))
         self.model_path = model_path
         # self.model = DiffusionPipeline.from_pretrained(
         #     "stabilityai/stable-diffusion-xl-base-1.0", torch_dtype=torch.float16, variant="fp16", use_safetensors=True,
         #     cache_dir=os.path.join(model_root,"stable-diffusion")
         # )
         # self.model.save_pretrained(os.path.join(model_root,"stable-diffusion"))
-
-        self.model = DiffusionPipeline.from_pretrained(
-            model_path, torch_dtype=torch.float16, variant="fp16", use_safetensors=True,
-        )
         
         # self.model = AutoPipelineForText2Image.from_pretrained(model_path, torch_dtype=torch.float16, variant="fp16")
         # self.model.scheduler = LCMScheduler.from_config(self.model.scheduler.config)
@@ -66,7 +65,6 @@ class StableDiff(CustomerLLM):
         # self.model.load_lora_weights(adapter_id)
         # self.model.fuse_lora()
         # self.model.save_lora_weights(os.path.join(model_root,"stable-diffusion"),unet_lora_layers)
-        super(StableDiff, self).__init__(self.model)
 
     @property
     def _llm_type(self) -> str:
