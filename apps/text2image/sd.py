@@ -22,8 +22,6 @@ from langchain.callbacks.manager import (
 from pydantic import  Field
 from apps.base import Task,CustomerLLM
 from apps.config import model_root
-from apps.model_factory import ModelFactory
-import random
 import hashlib
 
 
