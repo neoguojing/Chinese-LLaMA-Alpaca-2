@@ -25,21 +25,18 @@ class Translate(CustomerLLM):
     dst_lang: str = "zho_Hans"
 
     def __init__(self, model_path: str = os.path.join(model_root,"nllb"),**kwargs):
-        
+        super(Translate, self).__init__(model=AutoModelForSeq2SeqLM.from_pretrained(model_path))
         self.model_path = model_path
         # self.tokenizer = AutoTokenizer.from_pretrained("facebook/nllb-200-distilled-600M",cache_dir=os.path.join(model_root,"nllb"))
         # self.model = AutoModelForSeq2SeqLM.from_pretrained("facebook/nllb-200-distilled-600M",cache_dir=os.path.join(model_root,"nllb"))
         # self.tokenizer.save_pretrained(os.path.join(model_root,"nllb"))
         # self.model.save_pretrained(os.path.join(model_root,"nllb"))
         self.tokenizer = AutoTokenizer.from_pretrained(model_path)
-        self.model = AutoModelForSeq2SeqLM.from_pretrained(model_path)
         self.model.to(self.device)
         if 'src_lang' in kwargs:
             self.src_lang = kwargs.pop("src_lang")
         if 'dst_lang' in kwargs:
             self.dst_lang = kwargs.pop("dst_lang")
-
-        super(Translate, self).__init__(self.model)
 
     @property
     def _llm_type(self) -> str:
