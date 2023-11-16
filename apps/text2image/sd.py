@@ -22,9 +22,10 @@ from langchain.callbacks.manager import (
 from pydantic import  Field
 from apps.base import Task,CustomerLLM
 from apps.config import model_root
+from apps.model_factory import ModelFactory
 import random
 import hashlib
-from langchain.tools import BaseTool,tool
+
 
 
 def calculate_md5(string):
@@ -35,7 +36,6 @@ def calculate_md5(string):
 
 class StableDiff(CustomerLLM):
     model_path: str = Field(None, alias='model_path')
-    model: Any = None 
     refiner: Any = None
     tokenizer: Any = None
     n_steps: int = 20
@@ -43,7 +43,7 @@ class StableDiff(CustomerLLM):
     file_path: str = "./"
 
     def __init__(self, model_path: str=os.path.join(model_root,"stable-diffusion"),**kwargs):
-        super(StableDiff, self).__init__()
+        
         self.model_path = model_path
         # self.model = DiffusionPipeline.from_pretrained(
         #     "stabilityai/stable-diffusion-xl-base-1.0", torch_dtype=torch.float16, variant="fp16", use_safetensors=True,
@@ -68,7 +68,7 @@ class StableDiff(CustomerLLM):
         # self.model.load_lora_weights(adapter_id)
         # self.model.fuse_lora()
         # self.model.save_lora_weights(os.path.join(model_root,"stable-diffusion"),unet_lora_layers)
-        
+        super(StableDiff, self).__init__(self.model)
 
     @property
     def _llm_type(self) -> str:
@@ -102,12 +102,6 @@ class StableDiff(CustomerLLM):
     def _identifying_params(self) -> Mapping[str, Any]:
         """Get the identifying parameters."""
         return {"model_path": self.model_path}
-    
-@tool("image generate", return_direct=True)
-def image_gen(input:str) ->str:
-    """Useful for when you need to generate or draw a picture by input text.Text to image diffusion model capable of generating photo-realistic images given any text input."""
-    model = StableDiff()
-    return model.predict(input)
 
 
 # if __name__ == '__main__':

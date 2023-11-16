@@ -1,6 +1,4 @@
-from langchain import SerpAPIWrapper
-from langchain.utilities.wolfram_alpha import WolframAlphaAPIWrapper
-from langchain.utilities import ArxivAPIWrapper
+
 from langchain.agents import AgentType, initialize_agent
 from langchain.chains.llm import LLMChain
 from langchain.llms.base import LLM
@@ -10,101 +8,21 @@ from parser import QwenAgentOutputParser
 from langchain.agents import Tool, AgentExecutor, LLMSingleActionAgent, AgentOutputParser
 from typing import Dict, Tuple
 import os
-import json
-from apps.base import Task
-from apps.text2image.sd import image_gen,StableDiff
+import sys
+# 获取当前脚本所在的目录路径
+current_dir = os.path.dirname(os.path.abspath(__file__))
+
+# 将当前package的父目录作为顶层package的路径
+top_package_path = os.path.abspath(os.path.join(current_dir, ".."))
+
+# 将顶层package路径添加到sys.path
+sys.path.insert(0, top_package_path)
+from apps.base import Task,CustomerLLM
 from apps.multi_task.seamless_m4t import SpeechText
-os.environ['SERPAPI_API_KEY'] = 'f765e0536e1a72c2f353bb1946875937b3ac7bed0270881f966d4147ac0a7943'
-os.environ['WOLFRAM_ALPHA_APPID'] = 'QTJAQT-UPJ2R3KP89'
-
-search = SerpAPIWrapper()
-WolframAlpha = WolframAlphaAPIWrapper()
-arxiv = ArxivAPIWrapper()
-
-
-tools = [
-    Tool(
-        name="Search",
-        func=search.run,
-        description="useful for when you need to answer questions about current events"
-    ),
-    Tool(
-        name="Math",
-        func=WolframAlpha.run,
-        description="Useful for when you need to answer questions about Math, Science, Technology, Culture, Society and Everyday Life."
-    ),
-    Tool(
-        name="arxiv",
-        func=arxiv.run,
-        description="A wrapper around Arxiv.org Useful for when you need to answer questions about Physics, Mathematics, Computer Science, \
-            Quantitative Biology, Quantitative Finance, Statistics, Electrical Engineering, and Economics from scientific articles \
-            on arxiv.org."
-    ),
-    image_gen
-    # SpeechText(),
-
-]
-
-def tool_wrapper_for_qwen(tool):
-    def tool_(query):
-        query = json.loads(query)["query"]
-        return tool.run(query)
-    return tool_
-
-# 以下是给千问看的工具描述：
-TOOLS = [
-    {
-        'name_for_human':
-            'google search',
-        'name_for_model':
-            'Search',
-        'description_for_model':
-            'useful for when you need to answer questions about current events.',
-        'parameters': [{
-            "name": "query",
-            "type": "string",
-            "description": "search query of google",
-            'required': True
-        }], 
-        'tool_api': tool_wrapper_for_qwen(search)
-    },
-    {
-        'name_for_human':
-            'Wolfram Alpha',
-        'name_for_model':
-            'Math',
-        'description_for_model':
-            'Useful for when you need to answer questions about Math, Science, Technology, Culture, Society and Everyday Life.',
-        'parameters': [{
-            "name": "query",
-            "type": "string",
-            "description": "the problem to solved by Wolfram Alpha",
-            'required': True
-        }], 
-        'tool_api': tool_wrapper_for_qwen(WolframAlpha)
-    },  
-    {
-        'name_for_human':
-            'arxiv',
-        'name_for_model':
-            'Arxiv',
-        'description_for_model':
-            'A wrapper around Arxiv.org Useful for when you need to answer questions about Physics, Mathematics, Computer Science, \
-            Quantitative Biology, Quantitative Finance, Statistics, Electrical Engineering, and Economics from scientific articles \
-            on arxiv.org.',
-        'parameters': [{
-            "name": "query",
-            "type": "string",
-            "description": "the document id of arxiv to search",
-            'required': True
-        }], 
-        'tool_api': tool_wrapper_for_qwen(arxiv)
-    }
-
-]
+from apps.tools import tools 
 
 class Agent(Task):
-    def __init__(self,llm: LLM):
+    def __init__(self):
         prompt = QwenAgentPromptTemplate(
             tools=tools,
             # This omits the `agent_scratchpad`, `tools`, and `tool_names` variables because those are generated dynamically
@@ -113,7 +31,7 @@ class Agent(Task):
         )
 
         output_parser = QwenAgentOutputParser()
-        llm_chain = LLMChain(llm=llm, prompt=prompt)
+        llm_chain = LLMChain(llm=self.excurtor, prompt=prompt)
 
         tool_names = [tool.name for tool in tools]
         agent = LLMSingleActionAgent(
@@ -128,6 +46,11 @@ class Agent(Task):
     def run(self,input: str=None):
         output = self.agent_executor.run(input)
         return output
+    
+    def init_model(self):
+        model = ModelFactory.get_model("qwen")
+        return model
+    
 
 # if __name__ == '__main__':
     

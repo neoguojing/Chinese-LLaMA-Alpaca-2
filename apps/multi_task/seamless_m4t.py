@@ -29,14 +29,13 @@ def calculate_md5(string):
 
 class SeamlessM4t(CustomerLLM):
     model_path: str = Field(None, alias='model_path')
-    model: Any = None 
     processor: Any = None
     src_lang: str = "eng_Latn" 
     dst_lang: str = "zho_Hans"
     file_path: str = "./"
 
     def __init__(self, model_path: str = os.path.join(model_root,"seamless-m4t"),**kwargs):
-        super(SeamlessM4t, self).__init__()
+        
         self.model_path = model_path
         # pdb.set_trace()
         # self.processor = AutoProcessor.from_pretrained("facebook/hf-seamless-m4t-large",cache_dir=os.path.join(model_root,"seamless-m4t"))
@@ -48,8 +47,7 @@ class SeamlessM4t(CustomerLLM):
         self.model = SeamlessM4TModel.from_pretrained(model_path)
         print("SeamlessM4t:device =",self.device)
         self.model.to(self.device)
-
-        # Define how many steps and what % of steps to be run on each experts (80/20) here
+        super(SeamlessM4t, self).__init__(self.model)
         
 
     @property
@@ -93,13 +91,6 @@ class SeamlessM4t(CustomerLLM):
         """Get the identifying parameters."""
         return {"model_path": self.model_path}
     
-class SpeechText(BaseTool):
-  name = "Speech and text"
-  description = "Useful for when you need to transfer text to speech or audio.Speech to speech translation.Speech to text translation.Text to speech translation.Text to text translation.Automatic speech recognition"
-  model: Any = Field(None, alias='model')
-
-  def _run(self,input:Any):
-      return self.model.predict(input)
 
 # if __name__ == '__main__':
 #     sd = SeamlessM4t()

@@ -16,17 +16,17 @@ from langchain.callbacks.manager import CallbackManagerForLLMRun
 from pydantic import  Field
 from apps.base import Task,CustomerLLM
 from apps.config import model_root
+from apps.model_factory import ModelFactory
 # BCP47 code https://github.com/facebookresearch/flores/blob/main/flores200/README.md#languages-in-flores-200
 
 class Translate(CustomerLLM):
     model_path: str = Field(None, alias='model_path')
-    model: Any = None 
     tokenizer: Any = None
     src_lang: str = "eng_Latn" 
     dst_lang: str = "zho_Hans"
 
     def __init__(self, model_path: str = os.path.join(model_root,"nllb"),**kwargs):
-        super(Translate, self).__init__()
+        
         self.model_path = model_path
         # self.tokenizer = AutoTokenizer.from_pretrained("facebook/nllb-200-distilled-600M",cache_dir=os.path.join(model_root,"nllb"))
         # self.model = AutoModelForSeq2SeqLM.from_pretrained("facebook/nllb-200-distilled-600M",cache_dir=os.path.join(model_root,"nllb"))
@@ -39,6 +39,8 @@ class Translate(CustomerLLM):
             self.src_lang = kwargs.pop("src_lang")
         if 'dst_lang' in kwargs:
             self.dst_lang = kwargs.pop("dst_lang")
+
+        super(Translate, self).__init__(self.model)
 
     @property
     def _llm_type(self) -> str:
@@ -64,15 +66,6 @@ class Translate(CustomerLLM):
     def _identifying_params(self) -> Mapping[str, Any]:
         """Get the identifying parameters."""
         return {"model_path": self.model_path}
-
-class TranslateTask(Task):
-    excurtor: Any = None
-    def __init__(self,llm: LLM):
-        self.excurtor = llm
-
-    def run(self,input: str=None):
-        output = self.excurtor.predict(input)
-        return output
 
 
 # if __name__ == '__main__':

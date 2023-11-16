@@ -18,6 +18,7 @@ from apps.translate.nllb import Translate
 from apps.multi_task.seamless_m4t import SeamlessM4t
 from apps.text2image.sd import StableDiff
 from apps.config import model_root
+from apps.base import CustomerLLM
 from pydantic import  Field, root_validator
 import torch
 import asyncio
@@ -33,10 +34,8 @@ os.environ["QIANFAN_SK"] = "your_sk"
 # tongyi
 os.environ["DASHSCOPE_API_KEY"] = ""
 
-class LLamaLLM(LLM):
+class LLamaLLM(CustomerLLM):
     model_path: str = Field(None, alias='model_path')
-
-    model: Any = None 
     tokenizer: Any = None
     chat_format: Optional[str]   = 'llama'
     max_window_size: Optional[int]   = 3096
@@ -45,6 +44,8 @@ class LLamaLLM(LLM):
         super(LLamaLLM, self).__init__()
         self.model_path: str = model_path
         self.model,self.tokenizer = load_model(model_path=model_path,llama=True)
+
+        super(LLamaLLM, self).__init__(self.model)
 
     @property
     def _llm_type(self) -> str:
@@ -67,10 +68,9 @@ class LLamaLLM(LLM):
         """Get the identifying parameters."""
         return {"model_path": self.model_path}
 
-class QwenLLM(LLM):
+class QwenLLM(CustomerLLM):
     model_path: str = Field(None, alias='model_path')
 
-    model: Any = None 
     tokenizer: Any = None
     chat_format: Optional[str]   = 'chatml'
     max_window_size: Optional[int]   = 8192
@@ -79,10 +79,11 @@ class QwenLLM(LLM):
     
 
     def __init__(self, model_path: str,**kwargs):
-        super(QwenLLM, self).__init__()
         self.model_path: str = model_path
         self.model,self.tokenizer = load_model(model_path=model_path,llama=False)
         self.react_stop_words_tokens = [self.tokenizer.encode(stop_) for stop_ in self.stop]
+
+        super(QwenLLM, self).__init__(self.model)
 
     @property
     def _llm_type(self) -> str:
@@ -154,4 +155,5 @@ class ModelFactory:
             with ModelFactory._lock:
                 if model_name in ModelFactory._instances:
                     instance = ModelFactory._instances.pop(model_name)
-                    del instance
+                    if isinstance(instance, CustomerLLM) :
+                        instance.destroy()
