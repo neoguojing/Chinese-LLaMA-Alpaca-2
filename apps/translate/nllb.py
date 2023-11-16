@@ -16,9 +16,8 @@ from langchain.callbacks.manager import CallbackManagerForLLMRun
 from pydantic import  Field
 from apps.base import Task,CustomerLLM
 from apps.config import model_root
-from apps.model_factory import ModelFactory
-# BCP47 code https://github.com/facebookresearch/flores/blob/main/flores200/README.md#languages-in-flores-200
 
+# BCP47 code https://github.com/facebookresearch/flores/blob/main/flores200/README.md#languages-in-flores-200
 class Translate(CustomerLLM):
     model_path: str = Field(None, alias='model_path')
     tokenizer: Any = None
