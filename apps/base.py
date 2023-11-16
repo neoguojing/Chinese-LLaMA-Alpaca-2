@@ -18,12 +18,13 @@ class ITask(abc.ABC):
 class CustomerLLM(LLM):
     device: str = Field(torch.device('cpu'))
     model: Any = None
-    def __init__(self,**kwargs):
+    def __init__(self,llm,**kwargs):
         super(CustomerLLM, self).__init__()
         if torch.cuda.is_available():
             self.device = torch.device(0)
         else:
             self.device = torch.device('cpu')
+        self.model = llm
 
     def destroy(self):
         if self.model is not None:
