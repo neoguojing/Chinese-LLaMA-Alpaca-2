@@ -121,6 +121,7 @@ class ModelFactory:
         if model_name not in ModelFactory._instances:
             with ModelFactory._lock:
                 if model_name not in ModelFactory._instances:
+                    print("loading the model,wait a minute...")
                     if model_name == "openai":
                         instance = OpenAI()
                     elif model_name == "claude":
@@ -146,6 +147,7 @@ class ModelFactory:
                         raise Exception("Invalid model name")
                     
                     ModelFactory._instances[model_name] = instance
+                    print("model load finished...")
                     
         return  ModelFactory._instances[model_name]
     
