@@ -26,7 +26,7 @@ output = asyncio.Queue()
 
 message = {
     "from":"keyboard",
-    "to":TASK_AGENT,
+    "to":TASK_TRANSLATE,
     "format":"text",
     "data": ""
 }
@@ -47,7 +47,7 @@ async def output_loop():
 async def message_bus():
     translator = None
     agent = None
-    # translator = TaskFactory.create_task(TASK_TRANSLATE)
+    translator = TaskFactory.create_task(TASK_TRANSLATE)
     agent = TaskFactory.create_task(TASK_AGENT)
     while True:
         item = await input.get()
