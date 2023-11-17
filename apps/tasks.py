@@ -154,6 +154,7 @@ class TaskFactory:
 
                 if elapsed_minutes >= 10:
                     model_name = task.bind_model_name()
+                    print("ready to release ",model_name)
                     if model_name is not None:
                         ModelFactory.destroy(model_name)
 

@@ -30,6 +30,7 @@ class CustomerLLM(LLM):
     def destroy(self):
         if self.model is not None:
             del self.model
+            print("model destroy success")
 
     @property
     def model_name(self) -> str:
