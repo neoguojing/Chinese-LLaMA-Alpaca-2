@@ -53,6 +53,10 @@ class SeamlessM4t(CustomerLLM):
     def _llm_type(self) -> str:
         return "facebook/hf-seamless-m4t-large"
     
+    @property
+    def model_name(self) -> str:
+        return "speech"
+    
     def _call(
         self,
         prompt: Union[str,any],

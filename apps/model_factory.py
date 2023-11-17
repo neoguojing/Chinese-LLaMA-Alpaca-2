@@ -22,6 +22,7 @@ from apps.base import CustomerLLM
 from pydantic import  Field, root_validator
 import torch
 import threading
+import gc
 
 
 from langchain.chat_models import ChatAnthropic,QianfanChatEndpoint
@@ -51,6 +52,10 @@ class LLamaLLM(CustomerLLM):
 
     @property
     def _llm_type(self) -> str:
+        return "llama"
+    
+    @property
+    def model_name(self) -> str:
         return "llama"
 
     def _call(
@@ -90,6 +95,10 @@ class QwenLLM(CustomerLLM):
 
     @property
     def _llm_type(self) -> str:
+        return "qwen"
+    
+    @property
+    def model_name(self) -> str:
         return "qwen"
 
     def _call(
@@ -159,6 +168,12 @@ class ModelFactory:
         if model_name in ModelFactory._instances:
             with ModelFactory._lock:
                 if model_name in ModelFactory._instances:
-                    instance = ModelFactory._instances.pop(model_name)
-                    if isinstance(instance, CustomerLLM) :
-                        instance.destroy()
+                    obj = ModelFactory._instances.get(model_name)
+                    referrers = gc.get_referrers(obj)
+                    for referrer in referrers:
+                        for referrer in referrers:
+                            print(referrer)
+                    if len(referrers) == 0:
+                        instance = ModelFactory._instances.pop(model_name)
+                        if isinstance(instance, CustomerLLM) :
+                            instance.destroy()

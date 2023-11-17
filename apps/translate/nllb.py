@@ -42,6 +42,10 @@ class Translate(CustomerLLM):
     def _llm_type(self) -> str:
         return "facebook/nllb-200-distilled-600M"
     
+    @property
+    def model_name(self) -> str:
+        return "translate"
+    
     def _call(
         self,
         prompt: str,

@@ -62,10 +62,14 @@ async def message_bus():
             out = translator.run(item["data"])
             output.put_nowait(out)
 
+async def garbage_collection():
+    while True:
+        await asyncio.sleep(60)
+        TaskFactory.release()
 
 async def main():
     # 并发运行多个异步任务
-    await asyncio.gather(keyboard(), message_bus(),output_loop())
+    await asyncio.gather(keyboard(), message_bus(),output_loop(),garbage_collection())
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()

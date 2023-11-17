@@ -70,6 +70,10 @@ class StableDiff(CustomerLLM):
     def _llm_type(self) -> str:
         return "stabilityai/stable-diffusion-xl-base-1.0"
     
+    @property
+    def model_name(self) -> str:
+        return "text2image"
+    
     def _call(
         self,
         prompt: str,

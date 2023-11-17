@@ -7,6 +7,7 @@ from langchain.utilities import ArxivAPIWrapper
 from langchain.agents import Tool
 import os
 import sys
+import time
 # 获取当前脚本所在的目录路径
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -142,3 +143,19 @@ class TaskFactory:
                     TaskFactory._instances[task_type] = instance
 
         return TaskFactory._instances[task_type]
+
+    @staticmethod
+    def release():
+        with TaskFactory._lock:
+            for k,task in TaskFactory._instances:
+                call_count,last_call_time = task.statistic()
+                elapsed_time = time.time() - last_call_time
+                elapsed_minutes = int(elapsed_time / 60)
+
+                if elapsed_minutes >= 10:
+                    model_name = task.bind_model_name()
+                    if model_name is not None:
+                        ModelFactory.destroy(model_name)
+
+
+        
