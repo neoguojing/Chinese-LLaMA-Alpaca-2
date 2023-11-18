@@ -16,7 +16,7 @@ import aioconsole
 import copy
 from apps.tasks import TaskFactory,TASK_TRANSLATE,TASK_AGENT
 from apps.model_factory import ModelFactory
-
+from apps.recorder import AudioRecorder
 
 
 # 创建一个共享的队列
@@ -69,9 +69,13 @@ async def garbage_collection():
         TaskFactory.release()
         ModelFactory.release()
 
+async def audio_input(duration_per_file, silence_threshold, output_directory):
+    recorder = AudioRecorder(duration_per_file, silence_threshold, output_directory)
+    recorder.record()
+
 async def main():
     # 并发运行多个异步任务
-    await asyncio.gather(keyboard(), message_bus(),output_loop(),garbage_collection())
+    await asyncio.gather(keyboard(),audio_input, message_bus(),output_loop(),garbage_collection())
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
