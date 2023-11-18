@@ -131,9 +131,9 @@ class ModelFactory:
 
     @staticmethod
     def get_model(model_name,model_path=""):
-        if model_name not in ModelFactory._instances:
+        if model_name not in ModelFactory._instances or ModelFactory._instances[model_name] is None:
             with ModelFactory._lock:
-                if model_name not in ModelFactory._instances:
+                if model_name not in ModelFactory._instances or ModelFactory._instances[model_name] is None:
                     print(f"loading the model {model_name},wait a minute...")
                     if model_name == "openai":
                         instance = OpenAI()
@@ -166,14 +166,14 @@ class ModelFactory:
     
     @staticmethod
     def destroy(model_name):
-        if model_name in ModelFactory._instances:
+        if model_name in ModelFactory._instances and ModelFactory._instances[model_name] is not None:
             with ModelFactory._lock:
-                if model_name in ModelFactory._instances:
+                if model_name in ModelFactory._instances and ModelFactory._instances[model_name] is not None:
                     obj = ModelFactory._instances.get(model_name)
                     refcount = len(gc.get_referrers(obj))
                     print(f"{type(obj)} refer by {refcount} object")
                     if refcount == 2:
-                        instance = ModelFactory._instances.pop(model_name)
+                        instance = ModelFactory._instances[model_name]
                         refcount = len(gc.get_referrers(obj))
                         print(f"----{type(instance)} refer by {refcount} object")
                         if isinstance(instance, CustomerLLM) and refcount == 1 :
