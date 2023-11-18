@@ -31,7 +31,7 @@ class CustomerLLM(LLM):
         if self.model is not None:
             del self.model
             torch.cuda.empty_cache()
-            print("model destroy success")
+            print(f"model {self.model_name} destroy success")
 
     @property
     def model_name(self) -> str:

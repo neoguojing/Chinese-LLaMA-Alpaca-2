@@ -172,12 +172,12 @@ class ModelFactory:
                     obj = ModelFactory._instances.get(model_name)
                     refcount = len(gc.get_referrers(obj))
                     print(f"{type(obj)} refer by {refcount} object")
-                    if refcount == 2:
-                        instance = ModelFactory._instances[model_name]
+                    if refcount <= 2:
+                        ModelFactory._instances[model_name] = None
                         refcount = len(gc.get_referrers(obj))
-                        print(f"----{type(instance)} refer by {refcount} object")
-                        if isinstance(instance, CustomerLLM) and refcount == 1 :
-                            instance.destroy()
+                        print(f"----{type(obj)} refer by {refcount} object")
+                        if isinstance(obj, CustomerLLM) and refcount <= 1 :
+                            obj.destroy()
 
     @staticmethod
     def release():
