@@ -23,6 +23,7 @@ from pydantic import  Field, root_validator
 import torch
 import threading
 import gc
+import weakref
 
 
 from langchain.chat_models import ChatAnthropic,QianfanChatEndpoint
@@ -133,7 +134,7 @@ class ModelFactory:
         if model_name not in ModelFactory._instances:
             with ModelFactory._lock:
                 if model_name not in ModelFactory._instances:
-                    print("loading the model,wait a minute...")
+                    print(f"loading the model {model_name},wait a minute...")
                     if model_name == "openai":
                         instance = OpenAI()
                     elif model_name == "claude":
@@ -159,7 +160,7 @@ class ModelFactory:
                         raise Exception("Invalid model name")
                     
                     ModelFactory._instances[model_name] = instance
-                    print("model load finished...")
+                    print(f"model {model_name} load finished...")
                     
         return  ModelFactory._instances[model_name]
     
@@ -169,11 +170,16 @@ class ModelFactory:
             with ModelFactory._lock:
                 if model_name in ModelFactory._instances:
                     obj = ModelFactory._instances.get(model_name)
-                    referrers = gc.get_referrers(obj)
-                    for referrer in referrers:
-                        for referrer in referrers:
-                            print(referrer)
-                    if len(referrers) == 0:
+                    refcount = len(gc.get_referrers(obj))
+                    print(f"{type(obj)} refer by {refcount} object")
+                    if refcount == 2:
                         instance = ModelFactory._instances.pop(model_name)
-                        if isinstance(instance, CustomerLLM) :
+                        refcount = len(gc.get_referrers(obj))
+                        print(f"----{type(instance)} refer by {refcount} object")
+                        if isinstance(instance, CustomerLLM) and refcount == 1 :
                             instance.destroy()
+
+    @staticmethod
+    def release():
+        for k, model in ModelFactory._instances.items():
+            ModelFactory.destroy(k)

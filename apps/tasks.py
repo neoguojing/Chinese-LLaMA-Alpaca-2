@@ -147,15 +147,19 @@ class TaskFactory:
     @staticmethod
     def release():
         with TaskFactory._lock:
-            for k,task in TaskFactory._instances:
-                call_count,last_call_time = task.statistic()
+            for k,task in TaskFactory._instances.items():
+                last_call_time = task.get_last_call_time
+                if last_call_time is None:
+                    continue
+                
                 elapsed_time = time.time() - last_call_time
                 elapsed_minutes = int(elapsed_time / 60)
-
-                if elapsed_minutes >= 10:
+                print("elapsed_time:",elapsed_time)
+                if elapsed_minutes >= 1:
                     model_name = task.bind_model_name()
                     print("ready to release ",model_name)
                     if model_name is not None:
+                        task.destroy()
                         ModelFactory.destroy(model_name)
 
 

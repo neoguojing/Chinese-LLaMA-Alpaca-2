@@ -15,6 +15,7 @@ from abc import ABC, abstractmethod
 import aioconsole
 import copy
 from apps.tasks import TaskFactory,TASK_TRANSLATE,TASK_AGENT
+from apps.model_factory import ModelFactory
 
 
 
@@ -48,7 +49,7 @@ async def message_bus():
     translator = None
     agent = None
     translator = TaskFactory.create_task(TASK_TRANSLATE)
-    agent = TaskFactory.create_task(TASK_AGENT)
+    # agent = TaskFactory.create_task(TASK_AGENT)
     while True:
         item = await input.get()
         
@@ -64,8 +65,9 @@ async def message_bus():
 
 async def garbage_collection():
     while True:
-        await asyncio.sleep(60)
+        await asyncio.sleep(10)
         TaskFactory.release()
+        ModelFactory.release()
 
 async def main():
     # 并发运行多个异步任务

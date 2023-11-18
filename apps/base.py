@@ -30,11 +30,37 @@ class CustomerLLM(LLM):
     def destroy(self):
         if self.model is not None:
             del self.model
+            torch.cuda.empty_cache()
             print("model destroy success")
 
     @property
     def model_name(self) -> str:
         return ""
+    
+def function_stats(func):
+    call_stats = {"call_count": 0, "last_call_time": None}
+
+    def wrapper(*args, **kwargs):
+        nonlocal call_stats
+
+        # 更新调用次数和时间
+        call_stats["call_count"] += 1
+        current_time = time.time()
+        # if call_stats["last_call_time"] is not None:
+        #     elapsed_time = current_time - call_stats["last_call_time"]
+        #     print(f"函数 {func.__name__} 上次调用时间间隔: {elapsed_time}秒")
+        call_stats["last_call_time"] = current_time
+
+        # 执行目标函数
+        return func(*args, **kwargs)
+
+    # 添加访问方法到装饰器函数对象
+    wrapper.get_call_count = lambda: call_stats["call_count"]
+    wrapper.get_last_call_time = lambda: call_stats["last_call_time"]
+    wrapper.reset = lambda: call_stats.update({"call_count": 0, "last_call_time": None})
+
+    # 返回装饰后的函数
+    return wrapper
 
 class Task(ITask):
     _excurtor: CustomerLLM = None
@@ -45,44 +71,21 @@ class Task(ITask):
     def __init__(self,output:asyncio.Queue=None):
         self.qoutput = output
 
-    def function_stats(self, func):
-        call_stats = {"call_count": 0, "last_call_time": None}
-
-        def wrapper(*args, **kwargs):
-            nonlocal call_stats
-
-            # 更新调用次数和时间
-            call_stats["call_count"] += 1
-            current_time = time.time()
-            if call_stats["last_call_time"] is not None:
-                elapsed_time = current_time - call_stats["last_call_time"]
-                print(f"函数 {func.__name__} 上次调用时间间隔: {elapsed_time}秒")
-            call_stats["last_call_time"] = current_time
-
-            # 执行目标函数
-            return func(*args, **kwargs)
-
-        def get_call_count():
-            return call_stats["call_count"]
-
-        def get_last_call_time():
-            return call_stats["last_call_time"]
-
-        # 添加访问方法到装饰器函数对象
-        wrapper.get_call_count = get_call_count
-        wrapper.get_last_call_time = get_last_call_time
-
-        # 返回装饰后的函数
-        return wrapper
-    
-    def statistic(self):
-        return self.run.get_call_count(),self.get_last_call_time()
-
     @function_stats
     def run(self,input:str):
+        if input == "":
+            return ""
         output = self.excurtor.predict(input)
         return output
 
+    @property
+    def get_last_call_time(self):
+        return self.run.get_last_call_time()
+    
+    @property
+    def get_call_count(self):
+        return self.run.get_call_count()
+    
     @property
     def excurtor(self):
         if self._excurtor is None:
@@ -106,6 +109,7 @@ class Task(ITask):
     def destroy(self):
         self.stop_event.set()
         self._excurtor = None
+        self.run.reset()
 
 
     def bind_model_name(self):
