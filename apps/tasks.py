@@ -96,7 +96,7 @@ class Agent(Task):
 
     @function_stats
     def run(self,input: str=None):
-        if input is None or input is "":
+        if input is None or input == "":
             return ""
         output = self._executor.run(input)
         return output
