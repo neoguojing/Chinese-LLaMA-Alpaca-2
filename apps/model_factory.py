@@ -171,11 +171,11 @@ class ModelFactory:
                 if model_name in ModelFactory._instances and ModelFactory._instances[model_name] is not None:
                     obj = ModelFactory._instances.get(model_name)
                     refcount = len(gc.get_referrers(obj))
-                    print(f"{type(obj)} refer by {refcount} object")
+                    # print(f"{type(obj)} refer by {refcount} object")
                     if refcount <= 2:
                         ModelFactory._instances[model_name] = None
                         refcount = len(gc.get_referrers(obj))
-                        print(f"----{type(obj)} refer by {refcount} object")
+                        # print(f"----{type(obj)} refer by {refcount} object")
                         if isinstance(obj, CustomerLLM) and refcount <= 1 :
                             obj.destroy()
 
