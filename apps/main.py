@@ -65,7 +65,7 @@ async def message_bus():
 
 async def garbage_collection():
     while True:
-        await asyncio.sleep(10)
+        await asyncio.sleep(60)
         TaskFactory.release()
         ModelFactory.release()
 

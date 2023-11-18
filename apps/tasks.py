@@ -158,7 +158,7 @@ class TaskFactory:
                 elapsed_time = time.time() - last_call_time
                 elapsed_minutes = int(elapsed_time / 60)
                 print("elapsed_time:",elapsed_time)
-                if elapsed_minutes >= 1:
+                if elapsed_minutes >= 10:
                     model_name = task.bind_model_name()
                     print("ready to release ",model_name)
                     if model_name is not None:
