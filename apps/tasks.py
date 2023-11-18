@@ -17,7 +17,7 @@ top_package_path = os.path.abspath(os.path.join(current_dir, ".."))
 # 将顶层package路径添加到sys.path
 sys.path.insert(0, top_package_path)
 import threading
-from apps.base import Task
+from apps.base import Task,function_stats
 from apps.model_factory import ModelFactory
 from apps.prompt import QwenAgentPromptTemplate
 from apps.parser import QwenAgentOutputParser
@@ -92,10 +92,13 @@ class Agent(Task):
             allowed_tools=tool_names
         )
 
-        self.agent_executor = AgentExecutor.from_agent_and_tools(agent=agent, tools=tools, verbose=True)
+        self._executor = AgentExecutor.from_agent_and_tools(agent=agent, tools=tools, verbose=True)
 
+    @function_stats
     def run(self,input: str=None):
-        output = self.agent_executor.run(input)
+        if input is None or input is "":
+            return ""
+        output = self._executor.run(input)
         return output
     
     def init_model(self):
@@ -151,7 +154,7 @@ class TaskFactory:
                 last_call_time = task.get_last_call_time
                 if last_call_time is None:
                     continue
-                
+
                 elapsed_time = time.time() - last_call_time
                 elapsed_minutes = int(elapsed_time / 60)
                 print("elapsed_time:",elapsed_time)
