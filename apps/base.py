@@ -72,8 +72,8 @@ class Task(ITask):
         self.qoutput = output
 
     @function_stats
-    def run(self,input:str):
-        if input == "":
+    def run(self,input:Any):
+        if input is None:
             return ""
         output = self.excurtor.predict(input)
         return output

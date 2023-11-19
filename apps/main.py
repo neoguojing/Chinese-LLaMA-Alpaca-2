@@ -14,7 +14,7 @@ import asyncio
 from abc import ABC, abstractmethod
 import aioconsole
 import copy
-from apps.tasks import TaskFactory,TASK_TRANSLATE,TASK_AGENT
+from apps.tasks import TaskFactory,TASK_TRANSLATE,TASK_AGENT,TASK_SPEECH
 from apps.model_factory import ModelFactory
 from apps.recorder import AudioRecorder
 
@@ -27,7 +27,7 @@ output = asyncio.Queue()
 
 message = {
     "from":"keyboard",
-    "to":TASK_AGENT,
+    "to":TASK_SPEECH,
     "format":"text",
     "data": ""
 }
@@ -49,7 +49,8 @@ async def message_bus():
     translator = None
     agent = None
     # translator = TaskFactory.create_task(TASK_TRANSLATE)
-    agent = TaskFactory.create_task(TASK_AGENT)
+    # agent = TaskFactory.create_task(TASK_AGENT)
+    speech = TaskFactory.create_task(TASK_SPEECH)
     while True:
         item = await input.get()
         
@@ -61,6 +62,10 @@ async def message_bus():
         elif item["to"] == TASK_TRANSLATE:
             await aioconsole.aprint(f"Consumed: {item}")
             out = translator.run(item["data"])
+            output.put_nowait(out)
+        elif item["to"] == TASK_SPEECH:
+            await aioconsole.aprint(f"Consumed: {item}")
+            out = speech.run(item["data"])
             output.put_nowait(out)
 
 async def garbage_collection():
@@ -75,7 +80,7 @@ async def audio_input():
 
 async def main():
     # 并发运行多个异步任务
-    await asyncio.gather(keyboard(),audio_input(), message_bus(),output_loop(),garbage_collection())
+    await asyncio.gather(keyboard(), message_bus(),output_loop(),garbage_collection())
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()

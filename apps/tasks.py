@@ -8,6 +8,7 @@ from langchain.agents import Tool
 import os
 import sys
 import time
+from typing import Any
 # 获取当前脚本所在的目录路径
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -95,7 +96,7 @@ class Agent(Task):
         self._executor = AgentExecutor.from_agent_and_tools(agent=agent, tools=tools, verbose=True)
 
     @function_stats
-    def run(self,input: str=None):
+    def run(self,input: Any=None):
         if input is None or input == "":
             return ""
         output = self._executor.run(input)

@@ -86,7 +86,7 @@ class SeamlessM4t(CustomerLLM):
             ret = path
         else:
             output = self.model.generate(**inputs, tgt_lang=tgt_lang,generate_speech=generate_speech)
-            ret = self.processor.decode(output[0].tolist(), skip_special_tokens=True)
+            ret = self.processor.decode(output[0].tolist()[0], skip_special_tokens=True)
         return ret
 
     @property
