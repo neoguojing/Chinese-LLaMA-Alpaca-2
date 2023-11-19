@@ -16,23 +16,24 @@ from langchain.callbacks.manager import CallbackManagerForLLMRun
 from pydantic import  Field
 from apps.base import Task,CustomerLLM
 from apps.config import model_root
-import random
-import hashlib
 from langchain.tools import BaseTool
+import datetime
+from scipy.io import wavfile
+import sounddevice as sd
 import pdb
 
-def calculate_md5(string):
-    md5_hash = hashlib.md5()
-    md5_hash.update(string.encode('utf-8'))
-    md5_value = md5_hash.hexdigest()
-    return md5_value
 
 class SeamlessM4t(CustomerLLM):
     model_path: str = Field(None, alias='model_path')
     processor: Any = None
-    src_lang: str = "eng_Latn" 
-    dst_lang: str = "zho_Hans"
+    generate_speech:Optional[bool] = True
+    src_lang: str = "eng"
+    tgt_lang: str = "cmn"
+    # src_lang: str = "eng_Latn" 
+    # dst_lang: str = "zho_Hans"
     file_path: str = "./"
+    sample_rate: Any = None
+    save_to_file: bool = False
 
     def __init__(self, model_path: str = os.path.join(model_root,"seamless-m4t"),**kwargs):
         super(SeamlessM4t, self).__init__(llm=SeamlessM4TModel.from_pretrained(model_path))
@@ -45,10 +46,9 @@ class SeamlessM4t(CustomerLLM):
 
         self.processor = AutoProcessor.from_pretrained(model_path)
         print("SeamlessM4t:device =",self.device)
+        self.sample_rate = self.model.config.sampling_rate
         self.model.to(self.device)
         
-        
-
     @property
     def _llm_type(self) -> str:
         return "facebook/hf-seamless-m4t-large"
@@ -62,30 +62,27 @@ class SeamlessM4t(CustomerLLM):
         prompt: Union[str,any],
         stop: Optional[List[str]] = None,
         run_manager: Optional[CallbackManagerForLLMRun] = None,
-        generate_speech:Optional[bool] = False,
-        tgt_lang:Optional[str] = "cmn",
-        src_lang:Optional[str] = "eng",
         **kwargs: Any,
     ) -> str:
         inputs = None
         if isinstance(prompt, str):
-            inputs = self.processor(text=prompt, return_tensors="pt",src_lang=src_lang)
+            inputs = self.processor(text=prompt, return_tensors="pt",src_lang=self.src_lang)
         else:
             inputs = self.processor(audios=prompt, return_tensors="pt")
 
         inputs.to(self.device)
-        
         ret = ""
-        if generate_speech:
-            output = self.model.generate(**inputs, tgt_lang=tgt_lang,generate_speech=generate_speech)[0].cpu().numpy().squeeze()
-            file_name = calculate_md5(prompt)
-            path = os.path.join(self.file_path, file_name)
-            with open(path, 'wb') as file:
-                for audio in output:
-                    file.write(audio)
-            ret = path
+        if self.generate_speech:
+            output = self.model.generate(**inputs, tgt_lang=self.tgt_lang,generate_speech=self.generate_speech)[0].cpu().numpy().squeeze()
+            sd.play(output,self.sample_rate, blocking=False)
+            if self.save_to_file:
+                now = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+                file_name = f"{now}_{self.tgt_lang}_{self.sample_rate}.wav"
+                path = os.path.join(self.file_path, file_name)
+                wavfile.write(path,rate=self.sample_rate, data=output)
+                ret = path
         else:
-            output = self.model.generate(**inputs, tgt_lang=tgt_lang,generate_speech=generate_speech)
+            output = self.model.generate(**inputs, tgt_lang=self.tgt_lang,generate_speech=self.generate_speech)
             ret = self.processor.decode(output[0].tolist()[0], skip_special_tokens=True)
         return ret
 

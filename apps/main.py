@@ -80,7 +80,7 @@ async def audio_input():
 
 async def main():
     # 并发运行多个异步任务
-    await asyncio.gather(keyboard(), message_bus(),output_loop(),garbage_collection())
+    await asyncio.gather(keyboard(),audio_input(), message_bus(),output_loop(),garbage_collection())
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()

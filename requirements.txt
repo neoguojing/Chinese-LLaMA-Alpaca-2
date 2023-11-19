@@ -44,8 +44,9 @@ pymupdf
 pdfplumber
 docx
 docx-parser
+
+sounddevice
+
 portaudio
 pyaudio
-
-
 # sudo apt install python3-pyaudio
