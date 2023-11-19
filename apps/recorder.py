@@ -65,21 +65,3 @@ class AudioRecorder:
             print(f"已保存音频文件: {file_path}")
 
             self.frames = []
-
-async def main(duration_per_file, silence_threshold, output_directory):
-    recorder = AudioRecorder(duration_per_file, silence_threshold, output_directory)
-    task = asyncio.create_task(recorder.record())
-
-    # 这里可以执行其他后台任务或等待一段时间
-
-    # 停止录音
-    await asyncio.sleep(30)  # 运行30秒后停止录音
-    recorder.stop()
-
-    await task
-
-duration_per_file = 10  # 每个音频文件的录制时长（秒）
-silence_threshold = 50  # 音频能量的阈值，低于该阈值的段落将被忽略
-output_directory = "audio_files"  # 音频文件保存目录
-
-asyncio.run(main(duration_per_file, silence_threshold, output_directory))
