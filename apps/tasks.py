@@ -4,6 +4,7 @@ from langchain.agents import AgentExecutor, LLMSingleActionAgent
 from langchain import SerpAPIWrapper
 from langchain.utilities.wolfram_alpha import WolframAlphaAPIWrapper
 from langchain.utilities import ArxivAPIWrapper
+from langchain.utilities.alpha_vantage import AlphaVantageAPIWrapper
 from langchain.agents import Tool
 import os
 import sys
@@ -32,10 +33,12 @@ TASK_SPEECH = 500
 
 os.environ['SERPAPI_API_KEY'] = 'f765e0536e1a72c2f353bb1946875937b3ac7bed0270881f966d4147ac0a7943'
 os.environ['WOLFRAM_ALPHA_APPID'] = 'QTJAQT-UPJ2R3KP89'
+os.environ["ALPHAVANTAGE_API_KEY"] = ''
 
 search = SerpAPIWrapper()
 WolframAlpha = WolframAlphaAPIWrapper()
 arxiv = ArxivAPIWrapper()
+alpha_vantage = AlphaVantageAPIWrapper()
 
 
 @tool("image generate", return_direct=True)
@@ -54,7 +57,7 @@ tools = [
     Tool(
         name="Search",
         func=search.run,
-        description="useful for when you need to answer questions about current events"
+        description="Useful for when you need to answer questions about current events"
     ),
     Tool(
         name="Math",
@@ -67,6 +70,14 @@ tools = [
         description="A wrapper around Arxiv.org Useful for when you need to answer questions about Physics, Mathematics, Computer Science, \
             Quantitative Biology, Quantitative Finance, Statistics, Electrical Engineering, and Economics from scientific articles \
             on arxiv.org."
+    ),
+    Tool(
+        name="alphaVantage",
+        func=alpha_vantage.run,
+        description ="Alpha Vantage is a platform useful for provides financial market data and related services. It offers a wide range \
+              of financial data, including stock market data, cryptocurrency data, and forex data. Developers can access real-time and \
+                historical market data through Alpha Vantage, enabling them to perform technical analysis, modeling, and develop financial\
+                applications."
     ),
     image_gen,
     text2speech,
