@@ -38,7 +38,7 @@ os.environ["ALPHAVANTAGE_API_KEY"] = ''
 search = SerpAPIWrapper()
 WolframAlpha = WolframAlphaAPIWrapper()
 arxiv = ArxivAPIWrapper()
-alpha_vantage = AlphaVantageAPIWrapper()
+# alpha_vantage = AlphaVantageAPIWrapper()
 
 
 @tool("image generate", return_direct=True)
@@ -71,14 +71,14 @@ tools = [
             Quantitative Biology, Quantitative Finance, Statistics, Electrical Engineering, and Economics from scientific articles \
             on arxiv.org."
     ),
-    Tool(
-        name="alphaVantage",
-        func=alpha_vantage.run,
-        description ="Alpha Vantage is a platform useful for provides financial market data and related services. It offers a wide range \
-              of financial data, including stock market data, cryptocurrency data, and forex data. Developers can access real-time and \
-                historical market data through Alpha Vantage, enabling them to perform technical analysis, modeling, and develop financial\
-                applications."
-    ),
+    # Tool(
+    #     name="alphaVantage",
+    #     func=alpha_vantage.run,
+    #     description ="Alpha Vantage is a platform useful for provides financial market data and related services. It offers a wide range \
+    #           of financial data, including stock market data, cryptocurrency data, and forex data. Developers can access real-time and \
+    #             historical market data through Alpha Vantage, enabling them to perform technical analysis, modeling, and develop financial\
+    #             applications."
+    # ),
     image_gen,
     text2speech,
 
