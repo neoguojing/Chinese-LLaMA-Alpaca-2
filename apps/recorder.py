@@ -4,9 +4,10 @@ import datetime
 import os
 import asyncio
 import pdb
+from scipy.signal import medfilt
 
 class AudioRecorder:
-    def __init__(self, duration_per_file=5, silence_threshold=0, output_directory="./audio_files"):
+    def __init__(self, duration_per_file=5, silence_threshold=0.01, output_directory="./audio_files"):
         self.duration_per_file = duration_per_file
         self.silence_threshold = silence_threshold
         self.output_directory = output_directory
@@ -14,6 +15,7 @@ class AudioRecorder:
 
         self.frames = []
         self.sample_rate = 16000
+        self.gain_factor = 2.0  # 增益因子
 
     async def record(self):
         duration = int(self.duration_per_file)
@@ -21,12 +23,31 @@ class AudioRecorder:
 
         def callback(indata, frames, time, status):
             # pdb.set_trace()
+            audio_data = indata[0]  # 获取第一个维度的音频数据
+            # denoised_data = medfilt(audio_data)
+
             self.frames.append(indata.copy())
 
-            audio_data = np.abs(indata).mean()
-            if audio_data < self.silence_threshold:
-                self.frames = []
+            
+            # non_silent_indices = np.where(np.abs(audio_data) > silence_threshold)[0]
+            # non_silent_data = audio_data[non_silent_indices]
+            # audio_data = np.abs(indata).mean()
+            # if audio_data < self.silence_threshold:
+            #     self.frames = []
+            # adjusted_data = non_silent_data * self.gain_factor
+            # 获取音频数据
+            
 
+            # 计算音频数据的能量/功率
+            audio_power = np.sum(np.square(audio_data), axis=1)
+
+            # 标记静音段
+            silence_segments = audio_power < self.silence_threshold
+
+            # 过滤静音段
+            filtered_audio_data = audio_data[~silence_segments]
+
+            self.frames = filtered_audio_data
             elapsed_time = len(self.frames) / self.sample_rate
             if elapsed_time >= duration:
                 self.save_audio_file()
