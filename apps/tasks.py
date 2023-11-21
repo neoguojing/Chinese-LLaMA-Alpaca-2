@@ -127,7 +127,7 @@ class ImageGenTask(Task):
         model = ModelFactory.get_model("text2image")
         return model
 
-class Text2Speech(Task):
+class Speech(Task):
   def init_model(self):
         model = ModelFactory.get_model("speech")
         return model
@@ -153,7 +153,7 @@ class TaskFactory:
                     elif task_type == TASK_IMAGE_GEN:
                         instance = ImageGenTask()
                     elif task_type == TASK_SPEECH:
-                        instance = Text2Speech()
+                        instance = Speech()
 
                     TaskFactory._instances[task_type] = instance
 

@@ -17,25 +17,18 @@ import copy
 from apps.tasks import TaskFactory,TASK_TRANSLATE,TASK_AGENT,TASK_SPEECH
 from apps.model_factory import ModelFactory
 from apps.recorder import AudioRecorder
-
-
+from apps.config import message
 # 创建一个共享的队列
 input = asyncio.Queue()
 output = asyncio.Queue()
 
 
-
-message = {
-    "from":"keyboard",
-    "to":TASK_SPEECH,
-    "format":"text",
-    "data": ""
-}
 async def keyboard():
     while True:
         input_text = await aioconsole.ainput("Enter : ")
         msg = copy.deepcopy(message)
         msg["data"] = input_text
+        msg["to"] = TASK_AGENT
         input.put_nowait(msg)
         await aioconsole.aprint(f"Produced: {msg}")
 
@@ -48,12 +41,12 @@ async def output_loop():
 async def message_bus():
     translator = None
     agent = None
-    # translator = TaskFactory.create_task(TASK_TRANSLATE)
-    # agent = TaskFactory.create_task(TASK_AGENT)
+    translator = TaskFactory.create_task(TASK_TRANSLATE)
+    agent = TaskFactory.create_task(TASK_AGENT)
     speech = TaskFactory.create_task(TASK_SPEECH)
     while True:
         item = await input.get()
-        
+        _from = item["from"]
         # 模拟消费延迟
         if item["to"] == TASK_AGENT:
             await aioconsole.aprint(f"Consumed: {item}")
@@ -75,7 +68,7 @@ async def garbage_collection():
         ModelFactory.release()
 
 async def audio_input():
-    recorder = AudioRecorder()
+    recorder = AudioRecorder(input)
     await recorder.record()
 
 async def main():

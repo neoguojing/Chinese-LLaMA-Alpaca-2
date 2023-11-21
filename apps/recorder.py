@@ -7,9 +7,12 @@ import queue
 import pdb
 from scipy.io import wavfile
 from scipy.signal import medfilt
+from apps.tasks import TaskFactory,TASK_SPEECH,TASK_AGENT
+from apps.config import message
+import copy
 
 class AudioRecorder:
-    def __init__(self, duration_per_file=5, silence_threshold=0, output_directory="./"):
+    def __init__(self,output_queue:asyncio.Queue, duration_per_file=5, silence_threshold=0.001, output_directory="./"):
         self.duration_per_file = duration_per_file
         self.silence_threshold = silence_threshold
         self.output_directory = output_directory
@@ -18,9 +21,12 @@ class AudioRecorder:
         self.frames = None
         self.sample_rate = 16000
         self.gain_factor = 2.0  # 增益因子
-        self.queue = queue.Queue()
+        self.input_queue = queue.Queue()
+        self.output_queue = output_queue
+        self.need_save_audio = True
+        self.speeh2text = TaskFactory.create_task(TASK_SPEECH)
+
     async def record(self):
-        duration = int(self.duration_per_file)
         channels = 2
         # indata 二维数组,每一列代表一个channel的数据,2个channel则有两列
         # frames 帧数
@@ -50,7 +56,7 @@ class AudioRecorder:
             duration = num_samples / self.sample_rate
             print("num_samples:",num_samples,self.sample_rate,duration)
             if duration >= self.duration_per_file:
-                self.queue.put(self.frames)
+                self.input_queue.put(self.frames)
                 self.frames = None
 
             # 中值滤波器 表示在每个通道上应用大小为 3 的窗口进行中值滤波
@@ -61,13 +67,22 @@ class AudioRecorder:
 
         with sd.InputStream(callback=callback, channels=channels, samplerate=self.sample_rate):
             while not self.stop_recording:
-                await self.save_audio_file()
+                frames = self.input_queue.get()
+                if self.need_save_audio:
+                    await self.save_audio_file(frames)
+                elif self.output_queue is not None:
+                    text = self.speeh2text.run(frames)
+                    msg = copy.deepcopy(message)
+                    msg["data"] = text
+                    msg["to"] = TASK_AGENT
+                    await self.output_queue.put(msg)
+                else:
+                    await asyncio.sleep(0.1)
 
-        await self.save_audio_file()
         print("录音退出...")
 
-    async def save_audio_file(self):
-        frames = self.queue.get()
+    async def save_audio_file(self,frames):
+        
         filename = datetime.datetime.now().strftime("%Y%m%d%H%M%S") + ".wav"
         file_path = os.path.join(self.output_directory, filename)
         wavfile.write(file_path,rate=self.sample_rate, data=frames)

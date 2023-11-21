@@ -11,3 +11,11 @@ sys.path.insert(0, top_package_path)
 
 model_root = os.path.join(top_package_path, "model")
 print("model root:",model_root)
+
+
+message = {
+    "from":"keyboard",
+    "to":None,
+    "format":"text",
+    "data": ""
+}
