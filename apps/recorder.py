@@ -27,22 +27,22 @@ class AudioRecorder:
         self.speeh2text = TaskFactory.create_task(TASK_SPEECH)
 
     async def record(self):
-        channels = 2
+        channels = 1
         # indata 二维数组,每一列代表一个channel的数据,2个channel则有两列
         # frames 帧数
         def callback(indata, frames, time, status):
             # 
-            print("indata:",indata)
+            # print("indata:",indata)
             audio_data = indata.copy()
             # 计算每个通道的能量
             energy_per_channel = np.sum(np.square(audio_data), axis=0)
-            print("energy_per_channel:",energy_per_channel)
+            # print("energy_per_channel:",energy_per_channel)
             # 过滤较低能量的通道
             is_silent_channel = energy_per_channel < self.silence_threshold
-            print("is_silent_channel:",is_silent_channel)
+            # print("is_silent_channel:",is_silent_channel)
             #选择非静音的通道
             filtered_audio_data = audio_data[:, ~is_silent_channel]
-            print("filtered_audio_data:",filtered_audio_data)
+            # print("filtered_audio_data:",filtered_audio_data)
 
             if filtered_audio_data.size == 0:
                 return 
@@ -55,8 +55,9 @@ class AudioRecorder:
             num_samples = self.frames.shape[0] 
             duration = num_samples / self.sample_rate
             print("num_samples:",num_samples,self.sample_rate,duration)
+            # pdb.set_trace()
             if duration >= self.duration_per_file:
-                self.input_queue.put(self.frames)
+                self.input_queue.put_nowait(self.frames)
                 self.frames = None
 
             # 中值滤波器 表示在每个通道上应用大小为 3 的窗口进行中值滤波
@@ -67,14 +68,20 @@ class AudioRecorder:
 
         with sd.InputStream(callback=callback, channels=channels, samplerate=self.sample_rate):
             while not self.stop_recording:
-                frames = self.input_queue.get()
+                try:
+                    frames = self.input_queue.get_nowait()
+                except:
+                    await asyncio.sleep(0.1)
+                    continue
+
                 if self.need_save_audio:
                     await self.save_audio_file(frames)
                 elif self.output_queue is not None:
-                    text = self.speeh2text.run(frames)
+                    text =  await self.speeh2text.arun(frames)
                     msg = copy.deepcopy(message)
                     msg["data"] = text
                     msg["to"] = TASK_AGENT
+                    msg["from"] = "recorder"
                     await self.output_queue.put(msg)
                 else:
                     await asyncio.sleep(0.1)

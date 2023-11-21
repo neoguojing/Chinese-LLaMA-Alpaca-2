@@ -113,6 +113,9 @@ class Agent(Task):
         output = self._executor.run(input)
         return output
     
+    async def arun(self,input: Any=None):
+        return self.run(input)
+    
     def init_model(self):
         model = ModelFactory.get_model("qwen")
         return model

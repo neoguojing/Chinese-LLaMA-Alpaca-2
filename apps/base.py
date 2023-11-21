@@ -77,6 +77,9 @@ class Task(ITask):
             return ""
         output = self.excurtor.predict(input)
         return output
+    
+    async def arun(self,input:Any):
+        return self.run(input)
 
     @property
     def get_last_call_time(self):

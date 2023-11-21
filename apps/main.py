@@ -42,7 +42,6 @@ async def keyboard():
         msg = to_agent(input_text,"keyboard")
         input.put_nowait(msg)
         await aioconsole.aprint(f"Produced: {msg}")
-
 async def output_loop():
     while True:
         item = await output.get()
@@ -57,22 +56,20 @@ async def message_bus():
     speech = TaskFactory.create_task(TASK_SPEECH)
     while True:
         item = await input.get()
+        await aioconsole.aprint(f"Consumed: {item}")
         _from = item["from"]
         # 模拟消费延迟
         if item["to"] == TASK_AGENT:
-            await aioconsole.aprint(f"Consumed: {item}")
-            out = agent.run(item["data"])
+            out = await agent.arun(item["data"])
             output.put_nowait(out)
             if _from == TASK_SPEECH:
                 msg = to_speech(out,"agent")
                 input.put_nowait(msg)
         elif item["to"] == TASK_TRANSLATE:
-            await aioconsole.aprint(f"Consumed: {item}")
-            out = translator.run(item["data"])
+            out = await translator.arun(item["data"])
             output.put_nowait(out)
         elif item["to"] == TASK_SPEECH:
-            await aioconsole.aprint(f"Consumed: {item}")
-            out = speech.run(item["data"])
+            out = await speech.arun(item["data"])
             output.put_nowait(out)
 
 async def garbage_collection():

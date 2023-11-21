@@ -76,7 +76,8 @@ class SeamlessM4t(CustomerLLM):
 
         inputs.to(self.device)
         ret = ""
-        if generate_speech or isinstance(prompt, str):
+        if isinstance(prompt, str):
+            generate_speech= True
             output = self.model.generate(**inputs, tgt_lang=self.tgt_lang,generate_speech=generate_speech)[0].cpu().numpy().squeeze()
             sd.play(output,self.sample_rate, blocking=False)
             if self.save_to_file:
