@@ -45,6 +45,7 @@ class AudioRecorder:
             # print("filtered_audio_data:",filtered_audio_data)
 
             if filtered_audio_data.size == 0:
+                # print("silence")
                 return 
             
             if self.frames is None:
@@ -54,7 +55,7 @@ class AudioRecorder:
 
             num_samples = self.frames.shape[0] 
             duration = num_samples / self.sample_rate
-            print("num_samples:",num_samples,self.sample_rate,duration)
+            # print("num_samples:",num_samples,self.sample_rate,duration)
             # pdb.set_trace()
             if duration >= self.duration_per_file:
                 self.input_queue.put_nowait(self.frames)
@@ -76,9 +77,11 @@ class AudioRecorder:
 
                 if self.need_save_audio:
                     await self.save_audio_file(frames)
-                elif self.output_queue is not None:
+                    
+                if self.output_queue is not None:
                     text =  await self.speeh2text.arun(frames)
                     msg = copy.deepcopy(message)
+                    print("audio to text:",text)
                     msg["data"] = text
                     msg["to"] = TASK_AGENT
                     msg["from"] = "recorder"

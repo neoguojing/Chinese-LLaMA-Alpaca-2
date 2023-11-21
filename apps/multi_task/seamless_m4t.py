@@ -32,7 +32,7 @@ class SeamlessM4t(CustomerLLM):
     # src_lang: str = "eng_Latn" 
     # dst_lang: str = "zho_Hans"
     file_path: str = "./"
-    sample_rate: Any = None
+    sample_rate: Any = 16000
     save_to_file: bool = False
 
     def __init__(self, model_path: str = os.path.join(model_root,"seamless-m4t"),**kwargs):
@@ -72,11 +72,12 @@ class SeamlessM4t(CustomerLLM):
         if isinstance(prompt, str):
             inputs = self.processor(text=prompt, return_tensors="pt",src_lang=self.src_lang)
         else:
-            inputs = self.processor(audios=prompt, return_tensors="pt")
+            # pdb.set_trace()
+            inputs = self.processor(audios=[prompt.T],sampling_rate=self.sample_rate, return_tensors="pt")
 
         inputs.to(self.device)
         ret = ""
-        if isinstance(prompt, str):
+        if generate_speech:
             generate_speech= True
             output = self.model.generate(**inputs, tgt_lang=self.tgt_lang,generate_speech=generate_speech)[0].cpu().numpy().squeeze()
             sd.play(output,self.sample_rate, blocking=False)

@@ -52,7 +52,7 @@ async def message_bus():
     translator = None
     agent = None
     translator = TaskFactory.create_task(TASK_TRANSLATE)
-    agent = TaskFactory.create_task(TASK_AGENT)
+    # agent = TaskFactory.create_task(TASK_AGENT)
     speech = TaskFactory.create_task(TASK_SPEECH)
     while True:
         item = await input.get()

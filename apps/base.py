@@ -75,7 +75,10 @@ class Task(ITask):
     def run(self,input:Any):
         if input is None:
             return ""
-        output = self.excurtor.predict(input)
+        if isinstance(input,str):
+            output = self.excurtor.predict(input)
+        else:
+            output = self.excurtor._call(input)
         return output
     
     async def arun(self,input:Any):

@@ -131,7 +131,7 @@ class ImageGenTask(Task):
         return model
 
 class Speech(Task):
-  def init_model(self):
+    def init_model(self):
         model = ModelFactory.get_model("speech")
         return model
 
