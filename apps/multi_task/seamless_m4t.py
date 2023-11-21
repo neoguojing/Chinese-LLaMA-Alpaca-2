@@ -64,6 +64,10 @@ class SeamlessM4t(CustomerLLM):
         run_manager: Optional[CallbackManagerForLLMRun] = None,
         **kwargs: Any,
     ) -> str:
+        generate_speech = kwargs.pop("generate_speech",None)
+        if generate_speech is None:
+            generate_speech = self.generate_speech
+
         inputs = None
         if isinstance(prompt, str):
             inputs = self.processor(text=prompt, return_tensors="pt",src_lang=self.src_lang)
@@ -72,8 +76,8 @@ class SeamlessM4t(CustomerLLM):
 
         inputs.to(self.device)
         ret = ""
-        if self.generate_speech:
-            output = self.model.generate(**inputs, tgt_lang=self.tgt_lang,generate_speech=self.generate_speech)[0].cpu().numpy().squeeze()
+        if generate_speech or isinstance(prompt, str):
+            output = self.model.generate(**inputs, tgt_lang=self.tgt_lang,generate_speech=generate_speech)[0].cpu().numpy().squeeze()
             sd.play(output,self.sample_rate, blocking=False)
             if self.save_to_file:
                 now = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
@@ -82,7 +86,7 @@ class SeamlessM4t(CustomerLLM):
                 wavfile.write(path,rate=self.sample_rate, data=output)
                 ret = path
         else:
-            output = self.model.generate(**inputs, tgt_lang=self.tgt_lang,generate_speech=self.generate_speech)
+            output = self.model.generate(**inputs, tgt_lang=self.tgt_lang,generate_speech=generate_speech)
             ret = self.processor.decode(output[0].tolist()[0], skip_special_tokens=True)
         return ret
 

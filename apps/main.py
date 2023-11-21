@@ -22,13 +22,24 @@ from apps.config import message
 input = asyncio.Queue()
 output = asyncio.Queue()
 
+def to_agent(input:str,_from:str):
+    msg = copy.deepcopy(message)
+    msg["data"] = input
+    msg["to"] = TASK_AGENT
+    msg["from"] = _from
+    return msg
+
+def to_speech(input:str,_from:str):
+    msg = copy.deepcopy(message)
+    msg["data"] = input
+    msg["to"] = TASK_SPEECH
+    msg["from"] = _from
+    return msg
 
 async def keyboard():
     while True:
         input_text = await aioconsole.ainput("Enter : ")
-        msg = copy.deepcopy(message)
-        msg["data"] = input_text
-        msg["to"] = TASK_AGENT
+        msg = to_agent(input_text,"keyboard")
         input.put_nowait(msg)
         await aioconsole.aprint(f"Produced: {msg}")
 
@@ -52,6 +63,9 @@ async def message_bus():
             await aioconsole.aprint(f"Consumed: {item}")
             out = agent.run(item["data"])
             output.put_nowait(out)
+            if _from == TASK_SPEECH:
+                msg = to_speech(out,"agent")
+                input.put_nowait(msg)
         elif item["to"] == TASK_TRANSLATE:
             await aioconsole.aprint(f"Consumed: {item}")
             out = translator.run(item["data"])
