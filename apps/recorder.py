@@ -10,9 +10,10 @@ from scipy.signal import medfilt
 from apps.tasks import TaskFactory,TASK_SPEECH,TASK_AGENT
 from apps.config import message
 import copy
+import time
 
 class AudioRecorder:
-    def __init__(self,output_queue:asyncio.Queue, duration_per_file=5, silence_threshold=0.001, output_directory="./"):
+    def __init__(self,output_queue:asyncio.Queue, duration_per_file=2, silence_threshold=0.001, output_directory="./"):
         self.duration_per_file = duration_per_file
         self.silence_threshold = silence_threshold
         self.output_directory = output_directory
@@ -23,14 +24,16 @@ class AudioRecorder:
         self.gain_factor = 2.0  # 增益因子
         self.input_queue = queue.Queue()
         self.output_queue = output_queue
-        self.need_save_audio = True
+        self.need_save_audio = False
         self.speeh2text = TaskFactory.create_task(TASK_SPEECH)
 
     async def record(self):
         channels = 1
+        last_record_time = time.time()
         # indata 二维数组,每一列代表一个channel的数据,2个channel则有两列
         # frames 帧数
-        def callback(indata, frames, time, status):
+        def callback(indata, frames, _time, status):
+            nonlocal last_record_time
             # 
             # print("indata:",indata)
             audio_data = indata.copy()
@@ -57,9 +60,12 @@ class AudioRecorder:
             duration = num_samples / self.sample_rate
             # print("num_samples:",num_samples,self.sample_rate,duration)
             # pdb.set_trace()
+            # if duration >= self.duration_per_file or (time.time()-last_record_time) >= 3:
             if duration >= self.duration_per_file:
-                self.input_queue.put_nowait(self.frames)
-                self.frames = None
+                if self.frames.size != 0:
+                    self.input_queue.put_nowait(self.frames)
+                    last_record_time = time.time()
+                    self.frames = None
 
             # 中值滤波器 表示在每个通道上应用大小为 3 的窗口进行中值滤波
             # filtered_audio_data = medfilt(filtered_audio_data, kernel_size=(3, 1))

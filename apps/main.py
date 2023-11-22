@@ -52,7 +52,7 @@ async def message_bus():
     translator = None
     agent = None
     translator = TaskFactory.create_task(TASK_TRANSLATE)
-    # agent = TaskFactory.create_task(TASK_AGENT)
+    agent = TaskFactory.create_task(TASK_AGENT)
     speech = TaskFactory.create_task(TASK_SPEECH)
     while True:
         item = await input.get()
@@ -61,10 +61,11 @@ async def message_bus():
         # 模拟消费延迟
         if item["to"] == TASK_AGENT:
             out = await agent.arun(item["data"])
-            output.put_nowait(out)
-            if _from == TASK_SPEECH:
-                msg = to_speech(out,"agent")
-                input.put_nowait(msg)
+            # if _from == TASK_SPEECH:
+            msg = to_speech(out,"agent")
+            input.put_nowait(msg)
+            # else:
+            #     output.put_nowait(out)
         elif item["to"] == TASK_TRANSLATE:
             out = await translator.arun(item["data"])
             output.put_nowait(out)

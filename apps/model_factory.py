@@ -87,7 +87,7 @@ class QwenLLM(CustomerLLM):
     
 
     def __init__(self, model_path: str,**kwargs):
-        model,tokenizer = load_model(model_path=model_path,llama=False,load_in_8bit=True)
+        model,tokenizer = load_model(model_path=model_path,llama=False,load_in_8bit=False)
         super(QwenLLM, self).__init__(llm=model)
         self.model_path: str = model_path
         self.tokenizer = tokenizer
@@ -140,7 +140,8 @@ class ModelFactory:
                     elif model_name == "claude":
                         instance = ChatAnthropic()
                     elif model_name == "qwen": 
-                        model_path = os.path.join(model_root,"chinese/Qwen-7B-Chat")
+                        # model_path = os.path.join(model_root,"chinese/Qwen-7B-Chat")
+                        model_path = os.path.join(model_root,"chinese/Qwen/Qwen-7B-Chat-Int4")
                         instance = QwenLLM(model_path=model_path)
                     elif model_name == "qianfan": 
                         instance = QianfanChatEndpoint(streaming=True, model="ERNIE-Bot-4")

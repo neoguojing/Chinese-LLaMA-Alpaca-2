@@ -140,11 +140,11 @@ class Speech(Task):
         if input is None:
             return ""
         
-        output = self.excurtor._call(input,kwargs)
+        output = self.excurtor._call(input,**kwargs)
         return output
     
     async def arun(self,input:Any,**kwargs):
-        return self.run(input,kwargs)
+        return self.run(input,**kwargs)
 
 class TranslateTask(Task):
     def init_model(self):

@@ -41,6 +41,11 @@ class SeamlessM4t(CustomerLLM):
         # self.processor.save_pretrained(os.path.join(model_root,"seamless-m4t"))
         # self.model.save_pretrained(os.path.join(model_root,"seamless-m4t"))
 
+        # processor = AutoProcessor.from_pretrained("facebook/hf-seamless-m4t-medium")
+        # model = SeamlessM4TModel.from_pretrained("facebook/hf-seamless-m4t-medium")
+        # processor.save_pretrained(os.path.join(model_root,"seamless-m4t-medium"))
+        # model.save_pretrained(os.path.join(model_root,"seamless-m4t-medium"))
+
         self.processor = AutoProcessor.from_pretrained(model_path)
         print("SeamlessM4t:device =",self.device)
         self.sample_rate = self.model.config.sampling_rate
@@ -94,6 +99,6 @@ class SeamlessM4t(CustomerLLM):
         return {"model_path": self.model_path}
     
 
-# if __name__ == '__main__':
-#     sd = SeamlessM4t()
-#     sd.predict("Hello, my dog is cute")
+if __name__ == '__main__':
+    sd = SeamlessM4t()
+    sd.predict("Hello, my dog is cute")
