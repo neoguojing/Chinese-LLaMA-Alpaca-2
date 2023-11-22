@@ -26,9 +26,6 @@ import pdb
 class SeamlessM4t(CustomerLLM):
     model_path: str = Field(None, alias='model_path')
     processor: Any = None
-    generate_speech:Optional[bool] = True
-    src_lang: str = "eng"
-    tgt_lang: str = "cmn"
     # src_lang: str = "eng_Latn" 
     # dst_lang: str = "zho_Hans"
     file_path: str = "./"
@@ -64,13 +61,13 @@ class SeamlessM4t(CustomerLLM):
         run_manager: Optional[CallbackManagerForLLMRun] = None,
         **kwargs: Any,
     ) -> str:
-        generate_speech = kwargs.pop("generate_speech",None)
-        if generate_speech is None:
-            generate_speech = self.generate_speech
+        generate_speech = kwargs.pop("generate_speech",True)
+        src_lang = kwargs.pop("src_lang","eng")
+        tgt_lang = kwargs.pop("tgt_lang","cmn")
 
         inputs = None
         if isinstance(prompt, str):
-            inputs = self.processor(text=prompt, return_tensors="pt",src_lang=self.src_lang)
+            inputs = self.processor(text=prompt, return_tensors="pt",src_lang=src_lang)
         else:
             # pdb.set_trace()
             inputs = self.processor(audios=[prompt.T],sampling_rate=self.sample_rate, return_tensors="pt")
@@ -78,8 +75,7 @@ class SeamlessM4t(CustomerLLM):
         inputs.to(self.device)
         ret = ""
         if generate_speech:
-            generate_speech= True
-            output = self.model.generate(**inputs, tgt_lang=self.tgt_lang,generate_speech=generate_speech)[0].cpu().numpy().squeeze()
+            output = self.model.generate(**inputs, tgt_lang=tgt_lang,generate_speech=generate_speech)[0].cpu().numpy().squeeze()
             sd.play(output,self.sample_rate, blocking=False)
             if self.save_to_file:
                 now = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
@@ -88,7 +84,7 @@ class SeamlessM4t(CustomerLLM):
                 wavfile.write(path,rate=self.sample_rate, data=output)
                 ret = path
         else:
-            output = self.model.generate(**inputs, tgt_lang=self.tgt_lang,generate_speech=generate_speech)
+            output = self.model.generate(**inputs, tgt_lang=tgt_lang,generate_speech=generate_speech)
             ret = self.processor.decode(output[0].tolist()[0], skip_special_tokens=True)
         return ret
 

@@ -72,17 +72,17 @@ class Task(ITask):
         self.qoutput = output
 
     @function_stats
-    def run(self,input:Any):
+    def run(self,input:Any,**kwargs):
         if input is None:
             return ""
         if isinstance(input,str):
             output = self.excurtor.predict(input)
         else:
-            output = self.excurtor._call(input)
+            output = self.excurtor._call(input,kwargs)
         return output
     
-    async def arun(self,input:Any):
-        return self.run(input)
+    async def arun(self,input:Any,**kwargs):
+        return self.run(input,kwargs)
 
     @property
     def get_last_call_time(self):

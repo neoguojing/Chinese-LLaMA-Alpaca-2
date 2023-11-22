@@ -134,6 +134,17 @@ class Speech(Task):
     def init_model(self):
         model = ModelFactory.get_model("speech")
         return model
+    
+    @function_stats
+    def run(self,input:Any,**kwargs):
+        if input is None:
+            return ""
+        
+        output = self.excurtor._call(input,kwargs)
+        return output
+    
+    async def arun(self,input:Any,**kwargs):
+        return self.run(input,kwargs)
 
 class TranslateTask(Task):
     def init_model(self):

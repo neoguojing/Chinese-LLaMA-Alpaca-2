@@ -87,7 +87,7 @@ class QwenLLM(CustomerLLM):
     
 
     def __init__(self, model_path: str,**kwargs):
-        model,tokenizer = load_model(model_path=model_path,llama=False)
+        model,tokenizer = load_model(model_path=model_path,llama=False,load_in_8bit=True)
         super(QwenLLM, self).__init__(llm=model)
         self.model_path: str = model_path
         self.tokenizer = tokenizer

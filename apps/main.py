@@ -70,7 +70,8 @@ async def message_bus():
             output.put_nowait(out)
         elif item["to"] == TASK_SPEECH:
             out = await speech.arun(item["data"])
-            output.put_nowait(out)
+            if isinstance(out,str):
+                output.put_nowait(out)
 
 async def garbage_collection():
     while True:

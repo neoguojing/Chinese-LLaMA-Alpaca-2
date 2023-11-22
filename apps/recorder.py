@@ -71,7 +71,7 @@ class AudioRecorder:
             while not self.stop_recording:
                 try:
                     frames = self.input_queue.get_nowait()
-                except:
+                except Exception:
                     await asyncio.sleep(0.1)
                     continue
 
@@ -79,7 +79,7 @@ class AudioRecorder:
                     await self.save_audio_file(frames)
                     
                 if self.output_queue is not None:
-                    text =  await self.speeh2text.arun(frames)
+                    text =  await self.speeh2text.arun(frames,generate_speech=False,tgt_lang="cmn")
                     msg = copy.deepcopy(message)
                     print("audio to text:",text)
                     msg["data"] = text
