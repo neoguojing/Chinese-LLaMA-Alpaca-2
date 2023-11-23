@@ -12,9 +12,11 @@ from apps.config import message
 import copy
 import time
 import threading
+import noisereduce as nr
+import librosa
 
 class AudioRecorder:
-    def __init__(self,output_queue:asyncio.Queue, duration_per_file=0, silence_threshold=0.001, output_directory="./"):
+    def __init__(self,output_queue:asyncio.Queue, duration_per_file=10, silence_threshold=0.001, output_directory="./"):
         self.duration_per_file = duration_per_file
         self.silence_threshold = silence_threshold
         self.output_directory = output_directory
@@ -39,19 +41,28 @@ class AudioRecorder:
                 if self.frames is not None and self.frames.size > 0:
                     self.input_queue.put_nowait(self.frames)
                     self.frames = None
+                    print("中止录音")
                 return 
             
+            print("继续录音")
             audio_data = indata.copy()
+
             # 计算每个通道的能量
             energy_per_channel = np.sum(np.square(audio_data), axis=0)
             # 过滤较低能量的通道
             is_silent_channel = energy_per_channel < self.silence_threshold
             #选择非静音的通道
             filtered_audio_data = audio_data[:, ~is_silent_channel]
+            # 去除静音
+            # filtered_audio_data, _ = librosa.effects.trim(audio_data,top_db=5)
 
             if filtered_audio_data.size == 0:
                 return 
             
+            # 降噪
+            filtered_audio_data = nr.reduce_noise(y=filtered_audio_data.T, sr=self.sample_rate).T
+            print(filtered_audio_data.shape)
+
             if self.frames is None:
                 self.frames = filtered_audio_data
             else:
@@ -59,9 +70,11 @@ class AudioRecorder:
 
             num_samples = self.frames.shape[0] 
             duration = num_samples / self.sample_rate
-            if self.duration_per_file>0 and duration >= self.duration_per_file:
+            if duration >= self.duration_per_file:
                 self.input_queue.put_nowait(self.frames)
                 self.frames = None
+                self.pause = True
+                print("录音超过10s,中止录音")
 
         print("开始录音...")
         self.frames = None
@@ -78,6 +91,7 @@ class AudioRecorder:
                     await self.save_audio_file(frames)
                     
                 if self.output_queue is not None:
+                    # 将语音转文字，并输出到agent
                     text =  await self.speeh2text.arun(frames,generate_speech=False,tgt_lang="cmn")
                     msg = copy.deepcopy(message)
                     print("audio to text:",text)

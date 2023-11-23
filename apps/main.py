@@ -20,7 +20,7 @@ from apps.recorder import AudioRecorder
 from apps.config import message
 # 创建一个共享的队列
 input = asyncio.Queue()
-output = asyncio.Queue()
+terminator_output = asyncio.Queue()
 
 recorder = AudioRecorder(input)
 
@@ -43,7 +43,6 @@ async def keyboard():
         input_text = await aioconsole.ainput("Enter : ")
         msg = to_agent(input_text,"keyboard")
         input.put_nowait(msg)
-        await aioconsole.aprint(f"Produced: {msg}")
 
 async def keyboard_event():
     keyboard.on_press(recorder.on_keypress)
@@ -52,7 +51,7 @@ async def keyboard_event():
         
 async def output_loop():
     while True:
-        item = await output.get()
+        item = await terminator_output.get()
         await aioconsole.aprint("Output:",item+"\n")
 
 # 消费者协程函数
@@ -65,22 +64,19 @@ async def message_bus():
     while True:
         item = await input.get()
         await aioconsole.aprint(f"Consumed: {item}")
-        _from = item["from"]
         # 模拟消费延迟
         if item["to"] == TASK_AGENT:
             out = await agent.arun(item["data"])
-            # if _from == TASK_SPEECH:
             msg = to_speech(out,"agent")
             input.put_nowait(msg)
-            # else:
-            #     output.put_nowait(out)
+            terminator_output.put_nowait(out)
         elif item["to"] == TASK_TRANSLATE:
             out = await translator.arun(item["data"])
-            output.put_nowait(out)
+            terminator_output.put_nowait(out)
         elif item["to"] == TASK_SPEECH:
             out = await speech.arun(item["data"])
             if isinstance(out,str):
-                output.put_nowait(out)
+                terminator_output.put_nowait(out)
 
 async def garbage_collection():
     while True:

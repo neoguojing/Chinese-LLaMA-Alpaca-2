@@ -21,6 +21,7 @@ import datetime
 from scipy.io import wavfile
 import sounddevice as sd
 import pdb
+import librosa
 
 
 class SeamlessM4t(CustomerLLM):
@@ -81,6 +82,9 @@ class SeamlessM4t(CustomerLLM):
         ret = ""
         if generate_speech:
             output = self.model.generate(**inputs, tgt_lang=tgt_lang,generate_speech=generate_speech)[0].cpu().numpy().squeeze()
+            print("SeamlessM4t video shape:",output.shape)
+            output *= 1.2 # 增大音量
+            # output = librosa.resample(output, self.sample_rate, 44100) #增加采样率
             sd.play(output,self.sample_rate, blocking=False)
             if self.save_to_file:
                 now = datetime.datetime.now().strftime("%Y%m%d%H%M%S")

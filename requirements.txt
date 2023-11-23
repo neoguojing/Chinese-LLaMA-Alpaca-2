@@ -46,6 +46,8 @@ docx
 docx-parser
 
 sounddevice
+librosa
+noisereduce
 
 portaudio
 pyaudio
