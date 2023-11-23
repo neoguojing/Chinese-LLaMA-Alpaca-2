@@ -49,4 +49,5 @@ sounddevice
 
 portaudio
 pyaudio
+keyboard
 # sudo apt install python3-pyaudio

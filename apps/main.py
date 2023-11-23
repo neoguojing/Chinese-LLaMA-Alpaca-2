@@ -22,6 +22,8 @@ from apps.config import message
 input = asyncio.Queue()
 output = asyncio.Queue()
 
+recorder = AudioRecorder(input)
+
 def to_agent(input:str,_from:str):
     msg = copy.deepcopy(message)
     msg["data"] = input
@@ -42,6 +44,12 @@ async def keyboard():
         msg = to_agent(input_text,"keyboard")
         input.put_nowait(msg)
         await aioconsole.aprint(f"Produced: {msg}")
+
+async def keyboard_event():
+    keyboard.on_press(recorder.on_keypress)
+    while True:
+        keyboard.wait()
+        
 async def output_loop():
     while True:
         item = await output.get()
@@ -81,12 +89,18 @@ async def garbage_collection():
         ModelFactory.release()
 
 async def audio_input():
-    recorder = AudioRecorder(input)
     await recorder.record()
 
 async def main():
     # 并发运行多个异步任务
-    await asyncio.gather(keyboard(),audio_input(), message_bus(),output_loop(),garbage_collection())
+    await asyncio.gather(
+        keyboard(),
+        keyboard_event(),
+        audio_input(),
+        message_bus(),
+        output_loop(),
+        garbage_collection()
+        )
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
