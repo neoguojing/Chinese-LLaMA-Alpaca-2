@@ -51,5 +51,5 @@ noisereduce
 
 portaudio
 pyaudio
-keyboard
+pynput
 # sudo apt install python3-pyaudio

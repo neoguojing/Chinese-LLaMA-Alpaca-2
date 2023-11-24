@@ -14,13 +14,14 @@ import time
 import threading
 import noisereduce as nr
 import librosa
+from pynput.keyboard import Key
 
 class AudioRecorder:
     def __init__(self,output_queue:asyncio.Queue, duration_per_file=10, silence_threshold=0.001, output_directory="./"):
         self.duration_per_file = duration_per_file
         self.silence_threshold = silence_threshold
         self.output_directory = output_directory
-        self.stop_recording = False
+        self.stop_recording = True
 
         self.frames = None
         self.sample_rate = 16000
@@ -116,6 +117,6 @@ class AudioRecorder:
         self.stop_recording = True
 
     def on_keypress(self,event):
-        if event.name == 'space':
+        if event == Key.space:
             self.pause = not self.pause
         
