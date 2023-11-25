@@ -36,8 +36,8 @@ os.environ['SERPAPI_API_KEY'] = 'f765e0536e1a72c2f353bb1946875937b3ac7bed0270881
 os.environ['WOLFRAM_ALPHA_APPID'] = 'QTJAQT-UPJ2R3KP89'
 os.environ["ALPHAVANTAGE_API_KEY"] = ''
 
-# search = SerpAPIWrapper()
-search = DuckDuckGoSearchRun()
+search = SerpAPIWrapper()
+# search = DuckDuckGoSearchRun()
 WolframAlpha = WolframAlphaAPIWrapper()
 arxiv = ArxivAPIWrapper()
 # alpha_vantage = AlphaVantageAPIWrapper()
