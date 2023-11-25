@@ -21,14 +21,14 @@ class AudioRecorder:
         self.duration_per_file = duration_per_file
         self.silence_threshold = silence_threshold
         self.output_directory = output_directory
-        self.stop_recording = True
+        self.record_swich = True
 
         self.frames = None
         self.sample_rate = 16000
         self.gain_factor = 2.0  # 增益因子
         self.input_queue = queue.Queue()
         self.output_queue = output_queue
-        self.need_save_audio = False
+        self.need_save_audio = True
         self.speeh2text = TaskFactory.create_task(TASK_SPEECH)
         self.pause = True
 
@@ -46,17 +46,19 @@ class AudioRecorder:
                 return 
             
             print("继续录音")
-            audio_data = indata.copy()
+            audio_data = indata.copy() 
+            print("audio_data",audio_data.shape)
 
             # 计算每个通道的能量
             energy_per_channel = np.sum(np.square(audio_data), axis=0)
+            print("energy_per_channel:",energy_per_channel)
             # 过滤较低能量的通道
             is_silent_channel = energy_per_channel < self.silence_threshold
+            print("energy_per_channel:",is_silent_channel)
             #选择非静音的通道
             filtered_audio_data = audio_data[:, ~is_silent_channel]
             # 去除静音
-            # filtered_audio_data, _ = librosa.effects.trim(audio_data,top_db=5)
-
+            # filtered_audio_data, _ = librosa.effects.trim(audio_data,top_db=50)
             if filtered_audio_data.size == 0:
                 return 
             
@@ -81,9 +83,10 @@ class AudioRecorder:
         self.frames = None
 
         with sd.InputStream(callback=callback, channels=channels, samplerate=self.sample_rate):
-            while not self.stop_recording:
+            while self.record_swich:
                 try:
                     frames = self.input_queue.get_nowait()
+                    
                 except Exception:
                     await asyncio.sleep(0.1)
                     continue
@@ -114,9 +117,8 @@ class AudioRecorder:
         print(f"已保存音频文件: {file_path}")
 
     def stop_recording(self):
-        self.stop_recording = True
+        self.record_swich = False
 
     def on_keypress(self,event):
-        if event == Key.space:
-            self.pause = not self.pause
+        self.pause = not self.pause
         

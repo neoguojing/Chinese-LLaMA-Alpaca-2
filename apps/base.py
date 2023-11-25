@@ -73,7 +73,7 @@ class Task(ITask):
 
     @function_stats
     def run(self,input:Any,**kwargs):
-        if input is None:
+        if input is None or input == "":
             return ""
         if isinstance(input,str):
             output = self.excurtor.predict(input)

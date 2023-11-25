@@ -22,6 +22,8 @@ from scipy.io import wavfile
 import sounddevice as sd
 import pdb
 import librosa
+import numpy as np
+
 
 
 class SeamlessM4t(CustomerLLM):
@@ -48,9 +50,9 @@ class SeamlessM4t(CustomerLLM):
         # model.save_pretrained(os.path.join(model_root,"seamless-m4t-medium"))
 
         self.processor = AutoProcessor.from_pretrained(model_path)
-        print("SeamlessM4t:device =",self.device)
         self.sample_rate = self.model.config.sampling_rate
         self.model.to(self.device)
+        print(f"SeamlessM4t:device ={self.device},sample_rate={self.sample_rate}")
         
     @property
     def _llm_type(self) -> str:
@@ -76,6 +78,8 @@ class SeamlessM4t(CustomerLLM):
             inputs = self.processor(text=prompt, return_tensors="pt",src_lang=src_lang)
         else:
             # pdb.set_trace()
+            print("***********",prompt.shape)
+            print("***********",prompt.T.shape)
             inputs = self.processor(audios=[prompt.T],sampling_rate=self.sample_rate, return_tensors="pt")
 
         inputs.to(self.device)
@@ -83,8 +87,11 @@ class SeamlessM4t(CustomerLLM):
         if generate_speech:
             output = self.model.generate(**inputs, tgt_lang=tgt_lang,generate_speech=generate_speech)[0].cpu().numpy().squeeze()
             print("SeamlessM4t video shape:",output.shape)
-            output *= 1.2 # 增大音量
+            output *= 2 # 增大音量
+            output = np.reshape(output, (-1, 1))
+            print("2d output",output.shape)
             # output = librosa.resample(output, orig_sr=self.sample_rate, target_sr=44100) #增加采样率
+            # print("resample output",output.shape)
             sd.play(output,self.sample_rate, blocking=False)
             if self.save_to_file:
                 now = datetime.datetime.now().strftime("%Y%m%d%H%M%S")

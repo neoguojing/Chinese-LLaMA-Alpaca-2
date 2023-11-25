@@ -18,7 +18,8 @@ from apps.tasks import TaskFactory,TASK_TRANSLATE,TASK_AGENT,TASK_SPEECH
 from apps.model_factory import ModelFactory
 from apps.recorder import AudioRecorder
 from apps.config import message
-from pynput import keyboard
+import keyboard
+from evdev import InputDevice, ecodes, categorize
 import pdb
 # 创建一个共享的队列
 input = asyncio.Queue()
@@ -42,25 +43,29 @@ def to_speech(input:str,_from:str):
 
 async def keyboard_input():
     while True:
-        input_text = await aioconsole.ainput("Enter : ")
-        msg = to_agent(input_text,"keyboard")
-        input.put_nowait(msg)
+        input_text = await aioconsole.ainput("Enter:")
+        input_text = input_text.strip()
+        if len(input_text) > 0:
+            msg = to_agent(input_text,"keyboard")
+            input.put_nowait(msg)
 
 async def keyboard_event():
-    
-    with keyboard.Events() as events:
-        # Block at most one second
-        event = events.get()
-        if event.key == keyboard.Key.space:
-            recorder.on_keypress(event.key)
-        else:
-            print('Received event {}'.format(event))
-            
+    device = InputDevice('/dev/input/event3')  # 替换为实际的设备路径
+    async for event in device.async_read_loop():
+        if event.type == ecodes.EV_KEY and event.code == ecodes.KEY_SPACE:
+            key_event = categorize(event)
+            if key_event.keystate == key_event.key_up:
+                # 处理 Space 键的键盘事件
+                print(event.code)
+                recorder.on_keypress(event)
+    # keyboard.on_press(recorder.on_keypress)
+    # while True:
+    #     keyboard.wait()
         
 async def output_loop():
     while True:
         item = await terminator_output.get()
-        await aioconsole.aprint("Output:",item+"\n")
+        print("Output:",item)
 
 # 消费者协程函数
 async def message_bus():
@@ -71,7 +76,7 @@ async def message_bus():
     speech = TaskFactory.create_task(TASK_SPEECH)
     while True:
         item = await input.get()
-        await aioconsole.aprint(f"Consumed: {item}")
+        # print(f"Consumed: {item}")
         # 模拟消费延迟
         if item["to"] == TASK_AGENT:
             out = await agent.arun(item["data"])
