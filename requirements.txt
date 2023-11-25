@@ -44,6 +44,7 @@ pymupdf
 pdfplumber
 docx
 docx-parser
+duckduckgo-search
 
 sounddevice
 librosa

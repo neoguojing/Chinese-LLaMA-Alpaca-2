@@ -8,7 +8,7 @@ top_package_path = os.path.abspath(os.path.join(current_dir, "../../"))
 
 # 将顶层package路径添加到sys.path
 sys.path.insert(0, top_package_path)
-from transformers import AutoProcessor, SeamlessM4TModel,AutoModelForSpeechSeq2Seq
+from transformers import AutoProcessor, SeamlessM4TModel,AutoModelForSpeechSeq2Seq,pipeline
 import torch
 from langchain.llms.base import LLM
 from typing import Any, List, Mapping, Optional,Union
@@ -113,16 +113,16 @@ class SeamlessM4t(CustomerLLM):
 class Whisper(CustomerLLM):
     model_path: str = Field(None, alias='model_path')
     processor: Any = None
-    # src_lang: str = "eng_Latn" 
-    # dst_lang: str = "zho_Hans"
     file_path: str = "./"
     sample_rate: Any = 16000
     save_to_file: bool = False
     torch_dtype = torch.float16 if torch.cuda.is_available() else torch.float32
+    pipe: Any  = None
 
     def __init__(self, model_path: str = os.path.join(model_root,"whisper"),**kwargs):
         super(Whisper, self).__init__(llm=AutoModelForSpeechSeq2Seq.from_pretrained(
-            model_path, torch_dtype=self.torch_dtype, low_cpu_mem_usage=True, use_safetensors=True
+            model_path, torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32, 
+            low_cpu_mem_usage=True, use_safetensors=True,use_flash_attention_2=True
         ))
         self.model_path = model_path
         # model_id = "openai/whisper-large-v3"
@@ -133,9 +133,20 @@ class Whisper(CustomerLLM):
         # self.processor.save_pretrained(os.path.join(model_root,"whisper"))
         # model.save_pretrained(os.path.join(model_root,"whisper"))
         self.processor = AutoProcessor.from_pretrained(model_path)
-        self.sample_rate = self.model.config.sampling_rate
         self.model.to(self.device)
         print(f"Whisper:device ={self.device},sample_rate={self.sample_rate}")
+        self.pipe = pipeline(
+            "automatic-speech-recognition",
+            model=self.model,
+            tokenizer=self.processor.tokenizer,
+            feature_extractor=self.processor.feature_extractor,
+            max_new_tokens=128,
+            chunk_length_s=30,
+            batch_size=16,
+            return_timestamps=True,
+            torch_dtype=self.torch_dtype,
+            device=self.device,
+        )
         
     @property
     def _llm_type(self) -> str:
@@ -152,40 +163,14 @@ class Whisper(CustomerLLM):
         run_manager: Optional[CallbackManagerForLLMRun] = None,
         **kwargs: Any,
     ) -> str:
-        generate_speech = kwargs.pop("generate_speech",True)
-        src_lang = kwargs.pop("src_lang","eng")
-        tgt_lang = kwargs.pop("tgt_lang","cmn")
-
-        inputs = None
+        generate_speech = kwargs.pop("language","mandarin")
         if isinstance(prompt, str):
-            inputs = self.processor(text=prompt, return_tensors="pt",src_lang=src_lang)
-        else:
-            # pdb.set_trace()
-            print("***********",prompt.shape)
-            print("***********",prompt.T.shape)
-            inputs = self.processor(audios=[prompt.T],sampling_rate=self.sample_rate, return_tensors="pt")
-
-        inputs.to(self.device)
-        ret = ""
-        if generate_speech:
-            output = self.model.generate(**inputs, tgt_lang=tgt_lang,generate_speech=generate_speech)[0].cpu().numpy().squeeze()
-            print("SeamlessM4t video shape:",output.shape)
-            output *= 2 # 增大音量
-            output = np.reshape(output, (-1, 1))
-            print("2d output",output.shape)
-            # output = librosa.resample(output, orig_sr=self.sample_rate, target_sr=44100) #增加采样率
-            # print("resample output",output.shape)
-            sd.play(output,self.sample_rate, blocking=False)
-            if self.save_to_file:
-                now = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-                file_name = f"{now}_{self.tgt_lang}_{self.sample_rate}.wav"
-                path = os.path.join(self.file_path, file_name)
-                wavfile.write(path,rate=self.sample_rate, data=output)
-                ret = path
-        else:
-            output = self.model.generate(**inputs, tgt_lang=tgt_lang,generate_speech=generate_speech)
-            ret = self.processor.decode(output[0].tolist()[0], skip_special_tokens=True)
-        return ret
+            return prompt
+        print(prompt.shape)
+        prompt= np.squeeze(prompt)
+        print(prompt.shape)
+        result = self.pipe(prompt)
+        return result["text"]
 
     @property
     def _identifying_params(self) -> Mapping[str, Any]:

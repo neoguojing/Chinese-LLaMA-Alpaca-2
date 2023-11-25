@@ -38,7 +38,7 @@ class StableDiff(CustomerLLM):
     tokenizer: Any = None
     n_steps: int = 20
     high_noise_frac: float = 0.8
-    file_path: str = "./gen_images"
+    file_path: str = "./"
 
     def __init__(self, model_path: str=os.path.join(model_root,"stable-diffusion"),**kwargs):
         super(StableDiff, self).__init__(
