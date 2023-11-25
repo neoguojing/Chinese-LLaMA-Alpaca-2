@@ -87,9 +87,9 @@ class SeamlessM4t(CustomerLLM):
         if generate_speech:
             output = self.model.generate(**inputs, tgt_lang=tgt_lang,generate_speech=generate_speech)[0].cpu().numpy().squeeze()
             print("SeamlessM4t video shape:",output.shape)
-            output *= 2 # 增大音量
-            output = np.reshape(output, (-1, 1))
-            print("2d output",output.shape)
+            output *= 1.2 # 增大音量
+            # output = np.reshape(output, (-1, 1))
+            # print("2d output",output.shape)
             # output = librosa.resample(output, orig_sr=self.sample_rate, target_sr=44100) #增加采样率
             # print("resample output",output.shape)
             sd.play(output,self.sample_rate, blocking=False)
