@@ -52,7 +52,7 @@ async def keyboard_input():
 async def keyboard_event():
     device = InputDevice('/dev/input/event3')  # 替换为实际的设备路径
     async for event in device.async_read_loop():
-        if event.type == ecodes.EV_KEY and event.code == ecodes.KEY_SPACE:
+        if event.type == ecodes.EV_KEY and event.code == ecodes.KEY_PAUSE:
             key_event = categorize(event)
             if key_event.keystate == key_event.key_up:
                 # 处理 Space 键的键盘事件
