@@ -15,7 +15,7 @@ from langchain.callbacks.manager import CallbackManagerForLLMRun
 from langchain.llms.base import LLM
 from apps.inference import load_model,chat
 from apps.translate.nllb import Translate
-from apps.multi_task.seamless_m4t import SeamlessM4t
+from apps.multi_task.speech import SeamlessM4t
 from apps.text2image.sd import StableDiff
 from apps.config import model_root
 from apps.base import CustomerLLM

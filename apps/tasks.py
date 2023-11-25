@@ -6,6 +6,7 @@ from langchain.utilities.wolfram_alpha import WolframAlphaAPIWrapper
 from langchain.utilities import ArxivAPIWrapper
 from langchain.utilities.alpha_vantage import AlphaVantageAPIWrapper
 from langchain.agents import Tool
+from langchain.tools import DuckDuckGoSearchRun
 import os
 import sys
 import time
@@ -35,7 +36,8 @@ os.environ['SERPAPI_API_KEY'] = 'f765e0536e1a72c2f353bb1946875937b3ac7bed0270881
 os.environ['WOLFRAM_ALPHA_APPID'] = 'QTJAQT-UPJ2R3KP89'
 os.environ["ALPHAVANTAGE_API_KEY"] = ''
 
-search = SerpAPIWrapper()
+# search = SerpAPIWrapper()
+search = DuckDuckGoSearchRun()
 WolframAlpha = WolframAlphaAPIWrapper()
 arxiv = ArxivAPIWrapper()
 # alpha_vantage = AlphaVantageAPIWrapper()
