@@ -85,10 +85,11 @@ class SeamlessM4t(CustomerLLM):
         inputs.to(self.device)
         ret = ""
         if generate_speech:
-            output = self.model.generate(**inputs, tgt_lang=tgt_lang,generate_speech=generate_speech)[0].cpu().numpy().squeeze()
+            output = self.model.generate(**inputs, tgt_lang=tgt_lang,generate_speech=generate_speech,spkr_id=7,
+                                          num_beams=5, speech_do_sample=True, speech_temperature=0.6)[0].cpu().numpy().squeeze()
             print("SeamlessM4t video shape:",output.shape)
             output *= 1.2 # 增大音量
-            # output = np.reshape(output, (-1, 1))
+            output = np.reshape(output, (-1, 1))
             # print("2d output",output.shape)
             # output = librosa.resample(output, orig_sr=self.sample_rate, target_sr=44100) #增加采样率
             # print("resample output",output.shape)
@@ -177,6 +178,6 @@ class Whisper(CustomerLLM):
         """Get the identifying parameters."""
         return {"model_path": self.model_path}
     
-if __name__ == '__main__':
-    sd = Whisper()
-    sd.predict("Hello, my dog is cute")
+# if __name__ == '__main__':
+#     sd = Whisper()
+#     sd.predict("Hello, my dog is cute")
