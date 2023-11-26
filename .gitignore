@@ -39,3 +39,4 @@ model/whisper
 apps/multi_task/__pycache__/
 apps/text2image/__pycache__/
 apps/translate/__pycache__/
+apps/stock
