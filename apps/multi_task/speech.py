@@ -85,7 +85,7 @@ class SeamlessM4t(CustomerLLM):
         inputs.to(self.device)
         ret = ""
         if generate_speech:
-            output = self.model.generate(**inputs, tgt_lang=tgt_lang,generate_speech=generate_speech,spkr_id=7,
+            output = self.model.generate(**inputs, tgt_lang=tgt_lang,generate_speech=generate_speech,spkr_id=4,
                                           num_beams=5, speech_do_sample=True, speech_temperature=0.6)[0].cpu().numpy().squeeze()
             print("SeamlessM4t video shape:",output.shape)
             output *= 1.2 # 增大音量
