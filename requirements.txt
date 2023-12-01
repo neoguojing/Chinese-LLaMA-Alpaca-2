@@ -29,6 +29,7 @@ diffusers
 invisible_watermark
 safetensors
 aioconsole
+TTS
 
 google-search-results 
 wolframalpha

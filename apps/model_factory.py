@@ -15,7 +15,7 @@ from langchain.callbacks.manager import CallbackManagerForLLMRun
 from langchain.llms.base import LLM
 from apps.inference import load_model,chat
 from apps.translate.nllb import Translate
-from apps.multi_task.speech import SeamlessM4t,Whisper
+from apps.multi_task.speech import SeamlessM4t,Whisper,XTTS
 from apps.text2image.sd import StableDiff
 from apps.config import model_root
 from apps.base import CustomerLLM
@@ -159,6 +159,8 @@ class ModelFactory:
                         instance = StableDiff()
                     elif model_name == "speech2text": 
                         instance = Whisper()
+                    elif model_name == "text2speech": 
+                        instance = XTTS()
                     else:
                         raise Exception("Invalid model name")
                     

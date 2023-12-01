@@ -63,7 +63,7 @@ def function_stats(func):
     return wrapper
 
 class Task(ITask):
-    _excurtor: CustomerLLM = None
+    _excurtor: list[CustomerLLM] = None
     qinput = asyncio.Queue()
     qoutput: asyncio.Queue = None
     stop_event = asyncio.Event()
@@ -76,9 +76,9 @@ class Task(ITask):
         if input is None or input == "":
             return ""
         if isinstance(input,str):
-            output = self.excurtor.predict(input)
+            output = self.excurtor[0].predict(input)
         else:
-            output = self.excurtor._call(input,**kwargs)
+            output = self.excurtor[0]._call(input,**kwargs)
         return output
     
     async def arun(self,input:Any,**kwargs):
@@ -120,7 +120,10 @@ class Task(ITask):
 
     def bind_model_name(self):
         if self._excurtor is not None:
-            return self._excurtor.model_name
+            names = []
+            for exc in self._excurtor:
+                names.append(exc.model_name)
+            return names
         return None
 
 

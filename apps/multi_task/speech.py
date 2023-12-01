@@ -155,7 +155,7 @@ class Whisper(CustomerLLM):
     
     @property
     def model_name(self) -> str:
-        return "speech"
+        return "speech2text"
     
     def _call(
         self,
@@ -172,6 +172,56 @@ class Whisper(CustomerLLM):
         print(prompt.shape)
         result = self.pipe(prompt)
         return result["text"]
+
+    @property
+    def _identifying_params(self) -> Mapping[str, Any]:
+        """Get the identifying parameters."""
+        return {"model_path": self.model_path}
+
+from TTS.tts.configs.xtts_config import XttsConfig
+from TTS.tts.models.xtts import Xtts
+config = XttsConfig()
+config.load_json(os.path.join(model_root,"XTTS-v2","config.json"))
+class XTTS(CustomerLLM):
+    
+    model_path: str = Field(None, alias='model_path')
+    processor: Any = None
+    file_path: str = "./"
+    sample_rate: Any = 24000
+    save_to_file: bool = False
+    torch_dtype = torch.float16 if torch.cuda.is_available() else torch.float32
+    
+
+    def __init__(self, model_path: str = os.path.join(model_root,"XTTS-v2"),**kwargs):
+        super(Whisper, self).__init__(llm=Xtts.init_from_config(config))
+        self.model_path = model_path
+        self.model.load_checkpoint(config, checkpoint_dir=self.model_path, eval=True)
+        self.model.cuda()
+
+    @property
+    def _llm_type(self) -> str:
+        return "coqui/XTTS-v2"
+    
+    @property
+    def model_name(self) -> str:
+        return "text2speech"
+    
+    def _call(
+        self,
+        prompt: Union[str,any],
+        stop: Optional[List[str]] = None,
+        run_manager: Optional[CallbackManagerForLLMRun] = None,
+        **kwargs: Any,
+    ) -> str:
+        generate_speech = kwargs.pop("language","zh-cn")
+        outputs = self.model.synthesize(
+            prompt,
+            config,
+            speaker_wav=os.path.join(self.model_path,"samples/zh-cn-sample.wav"),
+            gpt_cond_len=3,
+            language=generate_speech,
+        )
+        sd.play(outputs,self.sample_rate, blocking=False)
 
     @property
     def _identifying_params(self) -> Mapping[str, Any]:

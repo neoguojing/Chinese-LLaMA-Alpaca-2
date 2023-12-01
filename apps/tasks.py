@@ -120,7 +120,7 @@ class Agent(Task):
     
     def init_model(self):
         model = ModelFactory.get_model("qwen")
-        return model
+        return [model]
     
     def destroy(self):
         print("Agent model should not be destroy ")
@@ -130,29 +130,35 @@ class ImageGenTask(Task):
 
     def init_model(self):
         model = ModelFactory.get_model("text2image")
-        return model
+        return [model]
 
 class Speech(Task):
     def init_model(self):
-        model = ModelFactory.get_model("speech")
-        # model = ModelFactory.get_model("speech2text")
-        return model
+        # model = ModelFactory.get_model("speech")
+        model = ModelFactory.get_model("speech2text")
+        model1 = ModelFactory.get_model("text2speech")
+        return [model,model1]
     
     @function_stats
     def run(self,input:Any,**kwargs):
         if input is None:
             return ""
         
-        output = self.excurtor._call(input,**kwargs)
+        if isinstance(input,str):
+            output = self.excurtor[1]._call(input,**kwargs)
+        else:
+            output = self.excurtor[0]._call(input,**kwargs)
+        
         return output
     
     async def arun(self,input:Any,**kwargs):
         return self.run(input,**kwargs)
+    
 
 class TranslateTask(Task):
     def init_model(self):
         model = ModelFactory.get_model("translate")
-        return model
+        return [model]
     
 class TaskFactory:
     _instances = {}
@@ -188,11 +194,12 @@ class TaskFactory:
                 elapsed_minutes = int(elapsed_time / 60)
                 # print("elapsed_time:",elapsed_time)
                 if elapsed_minutes >= 10:
-                    model_name = task.bind_model_name()
+                    model_names = task.bind_model_name()
                     print("ready to release ",model_name)
-                    if model_name is not None:
+                    if model_names is not None:
                         task.destroy()
-                        ModelFactory.destroy(model_name)
+                        for name in model_names:
+                            ModelFactory.destroy(name)
 
 
         

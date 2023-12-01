@@ -36,6 +36,7 @@ model/stable-diffusion/
 model/seamless-m4t
 model/seamless-m4t-medium
 model/whisper
+model/XTTS-v2
 apps/multi_task/__pycache__/
 apps/text2image/__pycache__/
 apps/translate/__pycache__/
