@@ -102,8 +102,64 @@ class StableDiff(CustomerLLM):
     def _identifying_params(self) -> Mapping[str, Any]:
         """Get the identifying parameters."""
         return {"model_path": self.model_path}
+    
+from diffusers import AutoPipelineForImage2Image
+from diffusers.utils import load_image
+class Image2Image(CustomerLLM):
+    model_path: str = Field(None, alias='model_path')
+    refiner: Any = None
+    tokenizer: Any = None
+    n_steps: int = 20
+    high_noise_frac: float = 0.8
+    file_path: str = "./"
+
+    def __init__(self, model_path: str=os.path.join(model_root,"sdxl-turbo"),**kwargs):
+        super(Image2Image, self).__init__(
+            llm=AutoPipelineForImage2Image.from_pretrained(
+                "stabilityai/sdxl-turbo", torch_dtype=torch.float16, variant="fp16"
+        ))
+        self.model.save_pretrained(os.path.join(model_root,"sdxl-turbo"))
+        self.model_path = model_path
+
+    @property
+    def _llm_type(self) -> str:
+        return "stabilityai/sdxl-turbo"
+    
+    @property
+    def model_name(self) -> str:
+        return "image2image"
+    
+    def _call(
+        self,
+        prompt: str,
+        stop: Optional[List[str]] = None,
+        run_manager: Optional[CallbackManagerForLLMRun] = None,
+        **kwargs: Any,
+    ) -> str:
+        output = ""
+        image_path = kwargs.pop("image_path","")
+        if image_path != "":
+            init_image = load_image(image_path).resize((512, 512))
+            image = self.model(prompt, image=init_image, num_inference_steps=2, strength=0.5, guidance_scale=0.0).images[0]
+            file_name = calculate_md5(prompt)+".png"
+            output = os.path.join(self.file_path, file_name)
+            image.save(output)
+        return output
+
+    def get_inputs(self,prompt:str,batch_size=1):
+        generator = [torch.Generator("cuda").manual_seed(i) for i in range(batch_size)]
+        prompts = batch_size * [prompt]
+
+        return {"prompt": prompts, "generator": generator, "num_inference_steps": self.n_steps}
+    
+    @property
+    def _identifying_params(self) -> Mapping[str, Any]:
+        """Get the identifying parameters."""
+        return {"model_path": self.model_path}
 
 
-# if __name__ == '__main__':
-#     sd = StableDiff()
-#     sd.predict("a strong man")
+
+
+if __name__ == '__main__':
+    sd = Image2Image()
+    sd.predict("a strong man")

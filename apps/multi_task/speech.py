@@ -193,7 +193,7 @@ class XTTS(CustomerLLM):
     
 
     def __init__(self, model_path: str = os.path.join(model_root,"XTTS-v2"),**kwargs):
-        super(Whisper, self).__init__(llm=Xtts.init_from_config(config))
+        super(XTTS, self).__init__(llm=Xtts.init_from_config(config))
         self.model_path = model_path
         self.model.load_checkpoint(config, checkpoint_dir=self.model_path, eval=True)
         self.model.cuda()

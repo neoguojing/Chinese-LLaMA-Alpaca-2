@@ -16,7 +16,7 @@ from langchain.llms.base import LLM
 from apps.inference import load_model,chat
 from apps.translate.nllb import Translate
 from apps.multi_task.speech import SeamlessM4t,Whisper,XTTS
-from apps.text2image.sd import StableDiff
+from apps.image.sd import StableDiff,Image2Image
 from apps.config import model_root
 from apps.base import CustomerLLM
 from pydantic import  Field, root_validator
@@ -157,6 +157,8 @@ class ModelFactory:
                         instance = SeamlessM4t()
                     elif model_name == "text2image": 
                         instance = StableDiff()
+                    elif model_name == "image2image": 
+                        instance = Image2Image()
                     elif model_name == "speech2text": 
                         instance = Whisper()
                     elif model_name == "text2speech": 
