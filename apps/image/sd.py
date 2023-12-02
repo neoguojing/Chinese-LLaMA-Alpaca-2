@@ -160,6 +160,6 @@ class Image2Image(CustomerLLM):
 
 
 
-if __name__ == '__main__':
-    sd = Image2Image()
-    sd.predict("a strong man")
+# if __name__ == '__main__':
+#     sd = Image2Image()
+#     sd.predict("a strong man")

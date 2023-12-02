@@ -96,7 +96,7 @@ class Agent(Task):
         )
 
         output_parser = QwenAgentOutputParser()
-        llm_chain = LLMChain(llm=self.excurtor, prompt=prompt)
+        llm_chain = LLMChain(llm=self.excurtor[0], prompt=prompt)
 
         tool_names = [tool.name for tool in tools]
         agent = LLMSingleActionAgent(
