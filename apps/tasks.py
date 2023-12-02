@@ -134,20 +134,22 @@ class ImageGenTask(Task):
 
 class Speech(Task):
     def init_model(self):
-        # model = ModelFactory.get_model("speech")
-        model = ModelFactory.get_model("speech2text")
-        model1 = ModelFactory.get_model("text2speech")
-        return [model,model1]
+        model = ModelFactory.get_model("speech")
+        # model = ModelFactory.get_model("speech2text")
+        # model1 = ModelFactory.get_model("text2speech")
+        # return [model,model1]
+        return [model]
     
     @function_stats
     def run(self,input:Any,**kwargs):
         if input is None:
             return ""
         
-        if isinstance(input,str):
-            output = self.excurtor[1]._call(input,**kwargs)
-        else:
-            output = self.excurtor[0]._call(input,**kwargs)
+        output = self.excurtor[0]._call(input,**kwargs)
+        # if isinstance(input,str):
+        #     output = self.excurtor[1]._call(input,**kwargs)
+        # else:
+        #     output = self.excurtor[0]._call(input,**kwargs)
         
         return output
     
@@ -195,7 +197,7 @@ class TaskFactory:
                 # print("elapsed_time:",elapsed_time)
                 if elapsed_minutes >= 10:
                     model_names = task.bind_model_name()
-                    print("ready to release ",model_name)
+                    print("ready to release ",model_names)
                     if model_names is not None:
                         task.destroy()
                         for name in model_names:
