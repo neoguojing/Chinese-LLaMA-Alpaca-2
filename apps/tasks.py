@@ -134,22 +134,23 @@ class ImageGenTask(Task):
 
 class Speech(Task):
     def init_model(self):
-        model = ModelFactory.get_model("speech")
-        # model = ModelFactory.get_model("speech2text")
-        # model1 = ModelFactory.get_model("text2speech")
-        # return [model,model1]
-        return [model]
+        # model = ModelFactory.get_model("speech")
+        # return [model]
+        model = ModelFactory.get_model("speech2text")
+        model1 = ModelFactory.get_model("text2speech")
+        return [model,model1]
+        
     
     @function_stats
     def run(self,input:Any,**kwargs):
         if input is None:
             return ""
         
-        output = self.excurtor[0]._call(input,**kwargs)
-        # if isinstance(input,str):
-        #     output = self.excurtor[1]._call(input,**kwargs)
-        # else:
-        #     output = self.excurtor[0]._call(input,**kwargs)
+        # output = self.excurtor[0]._call(input,**kwargs)
+        if isinstance(input,str):
+            output = self.excurtor[1]._call(input,**kwargs)
+        else:
+            output = self.excurtor[0]._call(input,**kwargs)
         
         return output
     

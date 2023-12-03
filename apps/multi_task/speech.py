@@ -221,7 +221,8 @@ class XTTS(CustomerLLM):
             gpt_cond_len=3,
             language=generate_speech,
         )
-        sd.play(outputs,self.sample_rate, blocking=False)
+        # print(outputs["wav"])
+        sd.play(outputs["wav"],self.sample_rate, blocking=False)
 
     @property
     def _identifying_params(self) -> Mapping[str, Any]:
