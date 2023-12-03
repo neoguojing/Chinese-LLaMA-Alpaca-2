@@ -187,7 +187,7 @@ class XTTS(CustomerLLM):
     model_path: str = Field(None, alias='model_path')
     processor: Any = None
     file_path: str = "./"
-    sample_rate: Any = 24000
+    sample_rate: Any = 22050
     save_to_file: bool = False
     torch_dtype = torch.float16 if torch.cuda.is_available() else torch.float32
     
