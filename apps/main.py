@@ -111,6 +111,17 @@ async def main():
         garbage_collection()
         )
 
+import threading
+class AsyncioThread(threading.Thread):
+    def run(self):
+        loop = asyncio.get_event_loop()
+        try:
+            loop.run_until_complete(main())
+        except KeyboardInterrupt:
+            print("KeyboardInterrupt: Stopping the event loop")
+        finally:
+            loop.close()
+
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
     try:
