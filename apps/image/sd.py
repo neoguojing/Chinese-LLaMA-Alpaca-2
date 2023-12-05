@@ -68,7 +68,7 @@ class StableDiff(CustomerLLM):
     #     # self.model.fuse_lora()
     #     # self.model.save_lora_weights(os.path.join(model_root,"stable-diffusion"),unet_lora_layers)
 
-    def __init__(self, model_path: str=os.path.join(model_root,"stable-diffusion"),**kwargs):
+    def __init__(self, model_path: str=os.path.join(model_root,"sdxl-turbo"),**kwargs):
         super(StableDiff, self).__init__(
             llm=AutoPipelineForText2Image.from_pretrained(
                 os.path.join(model_root,"sdxl-turbo"), torch_dtype=torch.float16, variant="fp16"
@@ -76,7 +76,7 @@ class StableDiff(CustomerLLM):
         self.model_path = model_path
         self.model.to(self.device)
         # 使用cpu和to('cuda')互斥，内存减小一半
-        self.model.enable_model_cpu_offload()
+        # self.model.enable_model_cpu_offload()
 
 
     @property
